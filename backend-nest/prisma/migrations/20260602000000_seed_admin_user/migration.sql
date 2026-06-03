@@ -1,0 +1,2 @@
+-- This migration intentionally left empty.
+-- Use scripts/create-admin.sh to create the first admin user after deployment.

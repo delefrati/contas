@@ -1,0 +1,123 @@
+{
+  "app": {
+    "title": "Expense Report",
+    "health": "Loading...",
+    "logout": "Logout",
+    "language": "Language",
+    "confirmLogout": "Are you sure you want to logout?"
+  },
+  "login": {
+    "title": "Login",
+    "subtitle": "Sign in with your Google account",
+    "loggingIn": "Logging in...",
+    "loginFailed": "Login failed. Please try again.",
+    "info": "Only authorized accounts can sign in. Contact an administrator if you need access."
+  },
+  "tabs": {
+    "expenses": "Expenses",
+    "report": "Report",
+    "members": "Members",
+    "logs": "Logs"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "loadingError": "Could not load data from the API.",
+    "successCreate": "Expense added successfully!",
+    "successDelete": "Expense removed successfully!",
+    "invalidAmount": "Amount cannot be zero",
+    "originRequired": "Origin is required",
+    "noExpenses": "No expenses found",
+    "date": "Date",
+    "actions": "Actions",
+    "total": "Total:",
+    "edit": "Edit Expense",
+    "successUpdate": "Expense updated successfully!"
+  },
+  "form": {
+    "addExpense": "Add Expense",
+    "description": "Description",
+    "type": "Type",
+    "selectType": "Select a type",
+    "addType": "Add type",
+    "newTypePlaceholder": "New expense type",
+    "typeRequired": "Type is required",
+    "typeNameRequired": "Type name is required",
+    "amount": "Amount (R$)",
+    "members": "Members",
+    "membersHint": "Hold Ctrl (or Cmd on Mac) to select multiple.",
+    "notes": "Notes",
+    "submit": "Add",
+    "reset": "Clear"
+  },
+  "report": {
+    "titleByMember": "Values by Member",
+    "noData": "No data available for the report.",
+    "member": "Member",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "total": "Total:",
+    "summary": "Summary",
+    "description": "Description",
+    "totalInflows": "Total Inflows",
+    "totalExpenses": "Total Expenses",
+    "netBalance": "Net Balance",
+    "settlement": "Settlement per Member"
+  },
+  "types": {
+    "1": "Equipment Sale",
+    "2": "Fee",
+    "3": "Equipment Expense",
+    "4": "Advertising",
+    "5": "Previous Balance"
+  },
+  "actions": {
+    "delete": "Delete",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "refresh": "Refresh"
+  },
+  "filters": {
+    "text": "Search",
+    "textPlaceholder": "Search by description...",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "allTypes": "All types",
+    "clear": "Clear filters",
+    "toggle": "Filters"
+  },
+  "members": {
+    "title": "Members",
+    "addMember": "Add Member",
+    "noMembers": "No members found",
+    "name": "Name",
+    "email": "Email",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enable": "Enable",
+    "disable": "Disable",
+    "successCreate": "Member added successfully!",
+    "successUpdate": "Member updated successfully!",
+    "editMember": "Edit Member",
+    "nameRequired": "Name is required"
+  },
+  "logs": {
+    "action": "Action",
+    "resource": "Resource",
+    "resourceId": "Resource ID",
+    "user": "User",
+    "details": "Details",
+    "createdAt": "Created At",
+    "noLogs": "No logs found"
+  },
+  "errors": {
+    "genericError": "An error occurred. Please try again."
+  },
+  "language": {
+    "select": "Language"
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "app": {
+    "title": "Rendición de Cuentas",
+    "health": "Cargando...",
+    "logout": "Cerrar sesión",
+    "language": "Idioma",
+    "confirmLogout": "¿Estás seguro de que deseas cerrar sesión?"
+  },
+  "login": {
+    "title": "Iniciar sesión",
+    "subtitle": "Inicia sesión con tu cuenta de Google",
+    "loggingIn": "Iniciando sesión...",
+    "loginFailed": "Error al iniciar sesión. Intenta de nuevo.",
+    "info": "Solo las cuentas autorizadas pueden iniciar sesión. Contacta a un administrador si necesitas acceso."
+  },
+  "tabs": {
+    "expenses": "Gastos",
+    "report": "Informe",
+    "members": "Miembros",
+    "logs": "Registros"
+  },
+  "expenses": {
+    "title": "Gastos",
+    "loadingError": "No se pudieron cargar los datos de la API.",
+    "successCreate": "¡Gasto agregado con éxito!",
+    "successDelete": "¡Gasto eliminado con éxito!",
+    "invalidAmount": "El monto no puede ser cero",
+    "originRequired": "El origen es obligatorio",
+    "noExpenses": "No se encontraron gastos",
+    "date": "Fecha",
+    "actions": "Acciones",
+    "total": "Total:",
+    "edit": "Editar Gasto",
+    "successUpdate": "¡Gasto actualizado con éxito!"
+  },
+  "form": {
+    "addExpense": "Agregar Gasto",
+    "description": "Origen",
+    "type": "Tipo",
+    "selectType": "Seleccione un tipo",
+    "addType": "Agregar tipo",
+    "newTypePlaceholder": "Nuevo tipo de gasto",
+    "typeRequired": "El tipo es obligatorio",
+    "typeNameRequired": "El nombre del tipo es obligatorio",
+    "amount": "Monto (R$)",
+    "members": "Miembros",
+    "membersHint": "Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples.",
+    "notes": "Nota",
+    "submit": "Agregar",
+    "reset": "Limpiar"
+  },
+  "report": {
+    "titleByMember": "Valores por Miembro",
+    "noData": "No hay datos disponibles para el informe.",
+    "member": "Integrante",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "total": "Total General:",
+    "summary": "Resumen",
+    "description": "Descripción",
+    "totalInflows": "Total de Entradas",
+    "totalExpenses": "Total de Gastos",
+    "netBalance": "Saldo Neto",
+    "settlement": "Liquidación por Integrante"
+  },
+  "types": {
+    "1": "Venta de Equipos",
+    "2": "Honorario",
+    "3": "Gasto de Equipos",
+    "4": "Publicidad",
+    "5": "Saldo Anterior"
+  },
+  "actions": {
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "loading": "Cargando...",
+    "refresh": "Actualizar"
+  },
+  "filters": {
+    "text": "Buscar",
+    "textPlaceholder": "Buscar por descripción...",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "allTypes": "Todos los tipos",
+    "clear": "Limpiar filtros",
+    "toggle": "Filtros"
+  },
+  "members": {
+    "title": "Miembros",
+    "addMember": "Agregar Miembro",
+    "noMembers": "No se encontraron miembros",
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "status": "Estado",
+    "actions": "Acciones",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "successCreate": "¡Miembro agregado con éxito!",
+    "successUpdate": "¡Miembro actualizado con éxito!",
+    "editMember": "Editar Miembro",
+    "nameRequired": "El nombre es obligatorio"
+  },
+  "logs": {
+    "action": "Acción",
+    "resource": "Recurso",
+    "resourceId": "ID del Recurso",
+    "user": "Usuario",
+    "details": "Detalles",
+    "createdAt": "Creado en",
+    "noLogs": "No se encontraron registros"
+  },
+  "errors": {
+    "genericError": "Ocurrió un error. Por favor intente de nuevo."
+  },
+  "language": {
+    "select": "Idioma"
+  }
+}

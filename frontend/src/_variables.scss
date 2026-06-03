@@ -1,0 +1,207 @@
+// ============================================================================
+// VARIABLES - Centralized Colors, Sizes, and Design Tokens
+// ============================================================================
+
+// ============================================================================
+// BREAKPOINTS
+// ============================================================================
+$breakpoint-sm: 600px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+
+// ============================================================================
+// COLORS - Light Mode
+// ============================================================================
+$color-text: #2d3748;
+$color-text-light: #718096;
+$color-text-heading: #1a202c;
+$color-bg: #f7fafc;
+$color-bg-white: #fff;
+$color-border: #e2e8f0;
+$color-accent: #667eea;
+$color-accent-light: #edf2f7;
+$color-success: #48bb78;
+$color-error: #f56565;
+
+// ============================================================================
+// COLORS - Dark Mode
+// ============================================================================
+$color-text-dark: #cbd5e0;
+$color-text-light-dark: #a0aec0;
+$color-text-heading-dark: #f7fafc;
+$color-bg-dark: #1a202c;
+$color-bg-white-dark: #2d3748;
+$color-border-dark: #4a5568;
+$color-accent-dark: #a5f3fc;
+$color-accent-light-dark: rgba(165, 243, 252, 0.1);
+$color-success-dark: #68d391;
+$color-error-dark: #fc8181;
+
+// ============================================================================
+// SHADOWS
+// ============================================================================
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+$shadow-sm-dark: 0 1px 3px rgba(0, 0, 0, 0.3);
+$shadow-lg-dark: 0 10px 25px rgba(0, 0, 0, 0.3);
+
+// ============================================================================
+// FONTS
+// ============================================================================
+$font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+$font-heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+$font-mono: ui-monospace, Consolas, monospace;
+
+// ============================================================================
+// FONT SIZES
+// ============================================================================
+$font-size-base: 16px;
+$font-size-base-md: 15px;
+$font-size-h1: 56px;
+$font-size-h1-md: 36px;
+$font-size-h2: 24px;
+$font-size-h2-md: 20px;
+$font-size-header: 32px;
+$font-size-subtitle: 16px;
+$font-size-large: 16px;
+$font-size-normal: 14px;
+$font-size-small: 12px;
+$font-size-xs: 13px;
+
+// ============================================================================
+// LINE HEIGHTS
+// ============================================================================
+$line-height-base: 1.6;
+$line-height-h2: 118%;
+$line-height-code: 135%;
+
+// ============================================================================
+// SPACING
+// ============================================================================
+$space-0: 0;
+$space-2: 2px;
+$space-4: 4px;
+$space-6: 6px;
+$space-8: 8px;
+$space-10: 10px;
+$space-12: 12px;
+$space-16: 16px;
+$space-20: 20px;
+$space-24: 24px;
+$space-25: 25px;
+$space-30: 30px;
+$space-32: 32px;
+$space-36: 36px;
+$space-40: 40px;
+$space-88: 88px;
+$space-48: 48px;
+
+// ============================================================================
+// PADDING
+// ============================================================================
+$padding-section: 24px;
+$padding-container: 20px;
+$padding-button: 10px 20px;
+$padding-button-small: 4px 8px;
+$padding-input: 10px 12px;
+$padding-table-cell: 12px;
+$padding-table-cell-sm: 8px;
+$padding-badge: 4px 8px;
+$padding-badge-lg: 4px 10px;
+$padding-status: 8px 16px;
+$padding-tab: 12px 20px;
+$padding-code: 4px 8px;
+$padding-counter: 5px 10px;
+$padding-header-section: 24px;
+$padding-link: 6px 12px;
+
+// ============================================================================
+// MARGINS
+// ============================================================================
+$margin-h1: 32px 0;
+$margin-h1-md: 20px 0;
+$margin-h2: 0 0 8px;
+$margin-p: 0;
+$margin-counter: 0 0 24px;
+$margin-section-bottom: 30px;
+$margin-section-gap: 25px;
+$margin-header-bottom: 10px;
+$margin-status-bottom: 30px;
+$margin-tabs-bottom: 30px;
+$margin-link-margin: 32px 0 0;
+$margin-link-margin-md: 20px 0 0;
+
+// ============================================================================
+// WIDTHS
+// ============================================================================
+$width-container: 1200px;
+$width-app-max: 1126px;
+$width-report: 100%;
+$width-report-max: 1126px;
+$width-icon-base: 18px;
+$width-icon-large: 22px;
+$width-hero-base: 170px;
+$width-description-sm: 150px;
+$width-table-id: 50px;
+$width-table-type: 140px;
+$width-table-date: 90px;
+$width-table-amount: 100px;
+
+// ============================================================================
+// BORDER RADIUS
+// ============================================================================
+$border-radius-sm: 4px;
+$border-radius-md: 6px;
+$border-radius-lg: 8px;
+$border-radius-round: 20px;
+$border-radius-full: 999px;
+
+// ============================================================================
+// BORDER WIDTHS
+// ============================================================================
+$border-width-thin: 1px;
+$border-width-md: 2px;
+$border-width-left: 4px;
+
+// ============================================================================
+// TRANSITIONS
+// ============================================================================
+$transition-fast: 0.2s;
+$transition-base: 0.3s;
+$transition-slow: 0.3s;
+
+// ============================================================================
+// Z-INDEX
+// ============================================================================
+$z-index-base: 0;
+$z-index-middle: 1;
+$z-index-top: 2;
+
+// ============================================================================
+// LETTER SPACING
+// ============================================================================
+$letter-spacing-h1: -1.68px;
+$letter-spacing-h2: -0.24px;
+$letter-spacing-table: 0.5px;
+
+// ============================================================================
+// COLOR OPACITY
+// ============================================================================
+$opacity-accent-focus: 0.1;
+$opacity-accent-focus-dark: 0.1;
+$opacity-success-bg: 0.15;
+$opacity-error-bg: 0.15;
+$opacity-disabled: 0.6;
+
+// ============================================================================
+// HEIGHT VALUES
+// ============================================================================
+$height-icon-base: 18px;
+$height-icon-large: 22px;
+$height-textarea-min: 80px;
+
+// ============================================================================
+// TRANSFORMS
+// ============================================================================
+$transform-hero-framework: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4);
+$transform-hero-vite: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8);

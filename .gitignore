@@ -1,0 +1,7 @@
+node_modules/
+dist/
+doc/
+.env*
+!.env.example
+!.env.prod.example
+coverage/

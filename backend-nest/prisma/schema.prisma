@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  email     String?   @unique @db.VarChar(255)
+  oidcSub   String?   @unique @map("oidc_sub") @db.VarChar(255)
+  active    Boolean   @default(true)
+
+  expenseMembers ExpenseMember[]
+  sessions       Session[]
+  logs           Log[]
+
+  @@map("members")
+}
+
+model ExpenseType {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  deletedAt DateTime? @map("deleted_at")
+
+  expenses  Expense[]
+
+  @@map("expense_types")
+}
+
+model Expense {
+  id          Int       @id @default(autoincrement())
+  description String    @db.VarChar(255)
+  amount      Decimal   @db.Decimal(12, 2)
+  fkType      Int?      @map("fk_type")
+  fkMember    Int?      @map("fk_member")
+  date        String    @default("") @db.VarChar(10)
+  createdAt   String    @map("created_at") @db.VarChar(40)
+  deletedAt   DateTime? @map("deleted_at")
+
+  type     ExpenseType? @relation(fields: [fkType], references: [id])
+
+  members  ExpenseMember[]
+
+  @@map("expenses")
+}
+
+model ExpenseMember {
+  expenseId Int @map("expense_id")
+  memberId  Int @map("member_id")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([expenseId, memberId])
+  @@map("expense_members")
+}
+
+model Log {
+  id        Int       @id @default(autoincrement())
+  action    String    @db.VarChar(50)
+  resource  String    @db.VarChar(100)
+  resourceId Int?     @map("resource_id")
+  details   String?   @db.LongText
+  createdAt DateTime  @default(now()) @map("created_at")
+  userId    Int?      @map("user_id")
+
+  user      Member?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("logs")
+}
+
+model Session {
+  id        Int       @id @default(autoincrement())
+  memberId  Int       @map("member_id")
+  token     String    @unique @db.VarChar(500)
+  oidcSub   String?   @map("oidc_sub") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([expiresAt])
+  @@index([oidcSub])
+  @@map("sessions")
+}
