@@ -1203,3 +1203,134 @@ code {
     }
   }
 }
+
+// ============================================================================
+// PRINT
+// ============================================================================
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  :root,
+  body,
+  .container {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  // Hide interactive / on-screen-only chrome
+  .header,
+  .tabs,
+  .header-controls,
+  .section-header,
+  .section-actions,
+  .filters,
+  .actions,
+  th.actions,
+  td.actions,
+  .log-details-btn,
+  .app-footer,
+  .modal-overlay,
+  .modal-stub,
+  .alert,
+  .loading,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+
+    h1 {
+      margin: 0;
+      font-size: 20pt;
+      color: #000;
+    }
+
+    .print-meta {
+      margin: 4px 0 0;
+      font-size: 9pt;
+      color: #333;
+    }
+  }
+
+  .print-tab-title {
+    font-size: 14pt;
+    margin: 0 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #999;
+    color: #000;
+  }
+
+  .content {
+    display: block !important;
+    page-break-after: always;
+    break-after: page;
+
+    &:last-of-type {
+      page-break-after: auto;
+      break-after: auto;
+    }
+  }
+
+  .expenses-table,
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-bottom: 12px;
+
+    th,
+    td {
+      border: 1px solid #999;
+      padding: 4px 6px;
+      color: #000 !important;
+    }
+
+    thead {
+      background: #eee !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+
+  tr,
+  .expense-row,
+  .report-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  // Always show full type names instead of the compact responsive letter
+  .type-letter {
+    display: none !important;
+  }
+
+  .type-full {
+    display: inline !important;
+  }
+
+  .summary {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #000;
+  }
+
+  .amount-negative {
+    color: #000 !important;
+    font-weight: bold;
+  }
+}

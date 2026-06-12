@@ -4,6 +4,8 @@
     "health": "Cargando...",
     "logout": "Cerrar sesión",
     "language": "Idioma",
+    "print": "Imprimir",
+    "printedOn": "Generado el",
     "confirmLogout": "¿Estás seguro de que deseas cerrar sesión?"
   },
   "login": {

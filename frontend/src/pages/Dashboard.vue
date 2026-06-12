@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
@@ -47,6 +47,8 @@ const editingMember = ref(null)
 const editMemberFormData = ref({ name: '', email: '' })
 const updatingMember = ref(false)
 const newTypeName = ref('')
+const printing = ref(false)
+const printedAt = ref('')
 
 // Filters
 const filters = ref({
@@ -496,12 +498,26 @@ async function toggleMemberActive(id) {
   }
 }
 
+async function printPage() {
+  printing.value = true
+  await nextTick()
+  window.print()
+}
+
+function setPrintedAt() {
+  printedAt.value = new Date().toLocaleString(locale.value === 'pt' ? 'pt-BR' : locale.value)
+}
+
 onMounted(() => {
   loadData()
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.actions-mobile')) {
       openActionMenuId.value = null
     }
+  })
+  window.addEventListener('beforeprint', setPrintedAt)
+  window.addEventListener('afterprint', () => {
+    printing.value = false
   })
 })
 
@@ -523,6 +539,9 @@ async function handleLogout() {
             <i class="fa-solid fa-globe"></i>
           </button>
           <LanguageSelector v-if="showLanguageSelector" />
+          <button @click="printPage" class="btn-secondary btn-print" :title="$t('app.print')">
+            <i class="fa-solid fa-print"></i>
+          </button>
           <div v-if="member" class="user-info">
             <span class="user-name">{{ member.name }}</span>
           </div>
@@ -532,6 +551,14 @@ async function handleLogout() {
         </div>
       </div>
     </header>
+
+    <div class="print-header print-only">
+      <h1>{{ $t('app.title') }}</h1>
+      <p class="print-meta">{{ $t('app.printedOn') }}: {{ printedAt }}</p>
+      <p v-if="filters.dateFrom || filters.dateTo" class="print-meta">
+        {{ $t('filters.dateFrom') }}: {{ filters.dateFrom || '—' }} — {{ $t('filters.dateTo') }}: {{ filters.dateTo || '—' }}
+      </p>
+    </div>
 
     <div class="tabs">
       <button 
@@ -565,7 +592,8 @@ async function handleLogout() {
     </div>
 
     <!-- Expenses Tab -->
-    <div v-if="activeTab === 'expenses'" class="content">
+    <div v-if="activeTab === 'expenses' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.expenses') }}</h2>
       <!-- Expenses List -->
       <section class="expenses-section">
         <div class="section-header">
@@ -840,7 +868,8 @@ async function handleLogout() {
     </div>
 
     <!-- Report Tab -->
-    <div v-else-if="activeTab === 'report'" class="content">
+    <div v-if="activeTab === 'report' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.report') }}</h2>
       <div v-if="loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}</div>
 
       <div v-else-if="report.length === 0" class="empty-state">
@@ -909,7 +938,8 @@ async function handleLogout() {
     </div>
 
     <!-- Members Tab -->
-    <div v-else-if="activeTab === 'members'" class="content">
+    <div v-if="activeTab === 'members' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.members') }}</h2>
       <section class="expenses-section">
         <div class="section-header">
           <div class="section-actions">
@@ -1029,7 +1059,8 @@ async function handleLogout() {
     </div>
 
     <!-- Logs Tab -->
-    <div v-else-if="activeTab === 'logs'" class="content">
+    <div v-if="activeTab === 'logs' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.logs') }}</h2>
       <section class="expenses-section">
         <div class="section-header">
           <div class="section-actions">

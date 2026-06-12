@@ -4,6 +4,8 @@
     "health": "Loading...",
     "logout": "Logout",
     "language": "Language",
+    "print": "Print",
+    "printedOn": "Generated on",
     "confirmLogout": "Are you sure you want to logout?"
   },
   "login": {
