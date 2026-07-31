@@ -121,11 +121,12 @@ model Repertoire {
 }
 
 model RepertoireSong {
-  id           Int    @id @default(autoincrement())
-  repertoireId Int    @map("repertoire_id")
-  songId       Int?   @map("song_id")
-  type         String @default("song") @db.VarChar(20)
-  position     Int    @default(0)
+  id           Int     @id @default(autoincrement())
+  repertoireId Int     @map("repertoire_id")
+  songId       Int?    @map("song_id")
+  type         String  @default("song") @db.VarChar(20)
+  label        String? @db.VarChar(255)
+  position     Int     @default(0)
 
   repertoire Repertoire @relation(fields: [repertoireId], references: [id], onDelete: Cascade)
   song       Song?      @relation(fields: [songId], references: [id], onDelete: Cascade)

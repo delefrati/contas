@@ -172,6 +172,7 @@
     "pause": "Pause",
     "addPause": "Pause",
     "addPauseHint": "Add a pause (-----) to the list",
+    "pauseLabelPlaceholder": "Pause (e.g. ENCORE)",
     "printSettings": "Print settings",
     "printColumns": "Columns",
     "printFontSize": "Font",

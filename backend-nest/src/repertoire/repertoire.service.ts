@@ -7,6 +7,7 @@ export type RepertoireItemType = 'song' | 'pause';
 export class RepertoireItemInput {
   type!: RepertoireItemType;
   songId?: number;
+  label?: string;
 }
 
 export class RepertoireSongDto {
@@ -16,6 +17,7 @@ export class RepertoireSongDto {
   title!: string | null;
   artist!: string | null;
   notes!: string | null;
+  label!: string | null;
   position!: number;
 }
 
@@ -58,7 +60,9 @@ export class RepertoireService {
   private async normalizeItems(
     songIds?: number[],
     items?: RepertoireItemInput[],
-  ): Promise<{ type: RepertoireItemType; songId: number | null }[]> {
+  ): Promise<
+    { type: RepertoireItemType; songId: number | null; label: string | null }[]
+  > {
     // Prefer the richer `items` payload; fall back to legacy `songIds`.
     const rawItems: RepertoireItemInput[] = Array.isArray(items)
       ? items
@@ -83,12 +87,18 @@ export class RepertoireService {
       validIds = new Set(existing.map((s) => s.id));
     }
 
-    const ordered: { type: RepertoireItemType; songId: number | null }[] = [];
+    const ordered: {
+      type: RepertoireItemType;
+      songId: number | null;
+      label: string | null;
+    }[] = [];
     const seenSongs = new Set<number>();
 
     for (const item of rawItems) {
       if (item?.type === 'pause') {
-        ordered.push({ type: 'pause', songId: null });
+        const label =
+          typeof item.label === 'string' ? item.label.trim().slice(0, 255) : '';
+        ordered.push({ type: 'pause', songId: null, label: label || null });
         continue;
       }
 
@@ -100,7 +110,7 @@ export class RepertoireService {
         continue;
       }
       seenSongs.add(songId);
-      ordered.push({ type: 'song', songId });
+      ordered.push({ type: 'song', songId, label: null });
     }
 
     return ordered;
@@ -152,6 +162,7 @@ export class RepertoireService {
         title: entry.song?.title ?? null,
         artist: entry.song?.artist ?? null,
         notes: entry.song?.notes ?? null,
+        label: entry.label ?? null,
         position: entry.position,
       })),
     };
@@ -228,6 +239,7 @@ export class RepertoireService {
           repertoireId,
           songId: item.songId,
           type: item.type,
+          label: item.label,
           position: index,
         })),
       });

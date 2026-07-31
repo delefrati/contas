@@ -95,6 +95,10 @@ function songNumber(index) {
   return n
 }
 
+function pauseText(item) {
+  return item.label ? `-- ${item.label} --` : '-----'
+}
+
 function showSuccess(message) {
   successMessage.value = '✓ ' + message
   setTimeout(() => { successMessage.value = '' }, 3000)
@@ -344,7 +348,9 @@ async function persistOrder() {
   error.value = ''
   try {
     const items = currentRepertoire.value.songs.map((it) =>
-      it.type === 'pause' ? { type: 'pause' } : { type: 'song', songId: it.songId },
+      it.type === 'pause'
+        ? { type: 'pause', label: (it.label || '').trim() }
+        : { type: 'song', songId: it.songId },
     )
     const response = await fetch(`${apiBaseUrl}/api/repertoires/${currentRepertoire.value.id}`, {
       method: 'PATCH',
@@ -389,6 +395,7 @@ function addPause() {
     title: null,
     artist: null,
     notes: null,
+    label: '',
     position: currentRepertoire.value.songs.length,
   })
   persistOrder()
@@ -451,7 +458,7 @@ function buildRepertoireText(repertoire) {
 
   repertoire.songs.forEach((item, index) => {
     if (item.type === 'pause') {
-      lines.push('-----')
+      lines.push(pauseText(item))
     } else {
       const artist = item.artist ? ` — ${item.artist}` : ''
       lines.push(`${songNumber(index)}. ${item.title}${artist}`)
@@ -555,7 +562,7 @@ onMounted(async () => {
             <span v-if="item.artist" class="print-song-artist"> — {{ item.artist }}</span>
           </li>
           <li v-else class="print-pause">
-            <span class="print-pause-line">-----</span>
+            <span class="print-pause-line">{{ pauseText(item) }}</span>
           </li>
         </template>
       </ol>
@@ -746,7 +753,14 @@ onMounted(async () => {
               >
                 <span class="drag-handle" :title="$t('repertoires.drag')"><i class="fa-solid fa-grip-vertical"></i></span>
                 <template v-if="song.type === 'pause'">
-                  <span class="pause-label"><i class="fa-solid fa-grip-lines"></i> {{ $t('repertoires.pause') }}</span>
+                  <span class="pause-icon" :title="$t('repertoires.pause')"><i class="fa-solid fa-grip-lines"></i></span>
+                  <input
+                    type="text"
+                    v-model="song.label"
+                    @change="persistOrder"
+                    :placeholder="$t('repertoires.pauseLabelPlaceholder')"
+                    class="pause-label-input"
+                  />
                 </template>
                 <template v-else>
                   <span class="song-position">{{ songNumber(index) }}</span>
@@ -1023,16 +1037,33 @@ onMounted(async () => {
   );
   border-style: dashed;
 }
-.pause-label {
+.pause-icon {
+  opacity: 0.6;
+  color: var(--text-light, #718096);
+}
+.pause-label-input {
   flex: 1;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-h, #1a202c);
+  font-family: inherit;
+}
+.pause-label-input::placeholder {
   text-transform: uppercase;
-  font-size: 0.8rem;
   opacity: 0.6;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.pause-label-input:hover,
+.pause-label-input:focus {
+  border-color: var(--border-color, #e2e8f0);
+  background: var(--bg-white, #fff);
+  outline: none;
 }
 .drag-handle {
   opacity: 0.7;

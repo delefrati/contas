@@ -172,6 +172,7 @@
     "pause": "Pausa",
     "addPause": "Pausa",
     "addPauseHint": "Adicionar uma pausa (-----) na lista",
+    "pauseLabelPlaceholder": "Pausa (ex.: BIS)",
     "printSettings": "Configurações de impressão",
     "printColumns": "Colunas",
     "printFontSize": "Fonte",
