@@ -174,7 +174,10 @@
     "addPauseHint": "Add a pause (-----) to the list",
     "printSettings": "Print settings",
     "printColumns": "Columns",
-    "printFontSize": "Font"
+    "printFontSize": "Font",
+    "shareText": "Share",
+    "shareSuccess": "Setlist copied to clipboard!",
+    "shareFallbackHint": "Copy the text below:"
   },
   "language": {
     "select": "Language"

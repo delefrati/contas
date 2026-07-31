@@ -174,7 +174,10 @@
     "addPauseHint": "Agregar una pausa (-----) a la lista",
     "printSettings": "Configuración de impresión",
     "printColumns": "Columnas",
-    "printFontSize": "Fuente"
+    "printFontSize": "Fuente",
+    "shareText": "Compartir",
+    "shareSuccess": "¡Repertorio copiado al portapapeles!",
+    "shareFallbackHint": "Copia el texto a continuación:"
   },
   "language": {
     "select": "Idioma"

@@ -443,6 +443,39 @@ function formatDate(dateStr) {
 
 let originalTitle = ''
 
+function buildRepertoireText(repertoire) {
+  const lines = [repertoire.name]
+  const dateLabel = formatDate(repertoire.date)
+  if (dateLabel && dateLabel !== '—') lines.push(dateLabel)
+  lines.push('')
+
+  repertoire.songs.forEach((item, index) => {
+    if (item.type === 'pause') {
+      lines.push('-----')
+    } else {
+      const artist = item.artist ? ` — ${item.artist}` : ''
+      lines.push(`${songNumber(index)}. ${item.title}${artist}`)
+    }
+  })
+
+  return lines.join('\n')
+}
+
+async function shareRepertoire() {
+  if (!currentRepertoire.value) return
+  const text = buildRepertoireText(currentRepertoire.value)
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      throw new Error('clipboard unavailable')
+    }
+    showSuccess(t('repertoires.shareSuccess'))
+  } catch {
+    window.prompt(t('repertoires.shareFallbackHint'), text)
+  }
+}
+
 async function printRepertoire() {
   printing.value = true
   originalTitle = document.title
@@ -680,6 +713,9 @@ onMounted(async () => {
             </div>
             <button @click="openEditRepertoire(currentRepertoire)" class="btn-secondary" :title="$t('actions.edit')">
               <i class="fa-solid fa-pencil"></i>
+            </button>
+            <button @click="shareRepertoire" class="btn-secondary" :title="$t('repertoires.shareText')">
+              <i class="fa-solid fa-share-nodes"></i> {{ $t('repertoires.shareText') }}
             </button>
             <button @click="printRepertoire" class="btn-primary" :title="$t('app.print')">
               <i class="fa-solid fa-print"></i> {{ $t('app.print') }}
