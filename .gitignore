@@ -5,3 +5,4 @@ doc/
 !.env.example
 !.env.prod.example
 coverage/
+backup-prod-*.sql
