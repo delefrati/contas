@@ -441,8 +441,14 @@ function formatDate(dateStr) {
   }
 }
 
+let originalTitle = ''
+
 async function printRepertoire() {
   printing.value = true
+  originalTitle = document.title
+  if (currentRepertoire.value) {
+    document.title = currentRepertoire.value.name
+  }
   await nextTick()
   window.print()
 }
@@ -467,7 +473,10 @@ onMounted(async () => {
 
   loadData()
   window.addEventListener('beforeprint', setPrintedAt)
-  window.addEventListener('afterprint', () => { printing.value = false })
+  window.addEventListener('afterprint', () => {
+    printing.value = false
+    if (originalTitle) document.title = originalTitle
+  })
 })
 </script>
 
@@ -501,6 +510,11 @@ onMounted(async () => {
       :class="{ 'is-two-columns': printColumns === 2 }"
       :style="printStyle"
     >
+      <div class="print-header">
+        <h1>{{ currentRepertoire.name }}</h1>
+        <p class="print-meta">{{ formatDate(currentRepertoire.date) }}</p>
+        <p class="print-meta">{{ $t('app.printedOn') }}: {{ printedAt }}</p>
+      </div>
       <ol class="print-song-list">
         <template v-for="(item, index) in currentRepertoire.songs" :key="item.id">
           <li v-if="item.type !== 'pause'" :value="songNumber(index)">
@@ -515,7 +529,7 @@ onMounted(async () => {
       <p v-if="currentRepertoire.songs.length === 0" class="empty-state">{{ $t('repertoires.noSongs') }}</p>
     </div>
 
-    <div v-if="!printing" class="no-print">
+    <div class="no-print">
 
     <div class="tabs">
       <button @click="activeTab = 'songs'" :class="{ active: activeTab === 'songs' }" class="tab-button">
