@@ -8,7 +8,7 @@ import Modal from '../components/Modal.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { logout, getAuthHeader, member } = useAuth()
+const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 
 const health = ref('loading...')
@@ -137,6 +137,13 @@ async function loadData() {
       fetch(`${apiBaseUrl}/api/expense-types?includeDeleted=true`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/logs?limit=100`, { headers: authHeader }),
     ])
+
+    const responses = [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse, logsResponse]
+    if (responses.some((response) => response.status === 401)) {
+      await logout()
+      await router.push({ path: '/login', query: { reason: 'expired' } })
+      return
+    }
 
     if (!healthResponse.ok || !expensesResponse.ok || !typesResponse.ok) {
       throw new Error(t('expenses.loadingError'))
@@ -508,7 +515,13 @@ function setPrintedAt() {
   printedAt.value = new Date().toLocaleString(locale.value === 'pt' ? 'pt-BR' : locale.value)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) {
+    await router.push('/login')
+    return
+  }
+
   loadData()
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.actions-mobile')) {
@@ -535,6 +548,9 @@ async function handleLogout() {
       <div class="header-top">
         <h1><i class="fa-solid fa-coins"></i> {{ $t('app.title') }}</h1>
         <div class="header-controls">
+          <button @click="router.push('/repertorio')" class="btn-secondary" :title="$t('repertoire.title')">
+            <i class="fa-solid fa-music"></i>
+          </button>
           <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">
             <i class="fa-solid fa-globe"></i>
           </button>

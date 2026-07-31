@@ -26,6 +26,7 @@ global.fetch = mockFetch
 vi.mock('../composables/useAuth', () => ({
   useAuth: () => ({
     logout: vi.fn(),
+    getCurrentUser: vi.fn().mockResolvedValue({ memberId: 1, name: 'Test User' }),
     getAuthHeader: () => ({ Authorization: 'Bearer fake-token' }),
     member: { value: { id: 1, name: 'Test User' } },
     isLoggedIn: { value: true },

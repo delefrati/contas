@@ -119,6 +119,63 @@
   "errors": {
     "genericError": "Ocurrió un error. Por favor intente de nuevo."
   },
+  "repertoire": {
+    "title": "Repertorio",
+    "tabSongs": "Canciones",
+    "tabRepertoires": "Repertorios"
+  },
+  "songs": {
+    "addSong": "Agregar Canción",
+    "editSong": "Editar Canción",
+    "songTitle": "Canción",
+    "artist": "Artista",
+    "notes": "Notas",
+    "noSongs": "No hay canciones",
+    "filterPlaceholder": "Buscar canción o artista...",
+    "titleRequired": "El título de la canción es obligatorio",
+    "loadingError": "No se pudieron cargar las canciones.",
+    "successCreate": "¡Canción agregada con éxito!",
+    "successUpdate": "¡Canción actualizada con éxito!",
+    "successDelete": "¡Canción eliminada con éxito!",
+    "confirmDelete": "¿Eliminar la canción \"{title}\"?",
+    "import": "Importar",
+    "importHint": "Pega una canción por línea. Usa \"Título - Artista\" para incluir el artista.",
+    "importPlaceholder": "Exagerado - Cazuza\nPais e Filhos\nMalandragem",
+    "importEmpty": "Pega al menos una canción.",
+    "importSuccess": "{created} canción(es) importada(s), {skipped} omitida(s).",
+    "importResult": "{created} agregada(s), {skipped} ya existían."
+  },
+  "repertoires": {
+    "addRepertoire": "Nuevo Repertorio",
+    "editRepertoire": "Editar Repertorio",
+    "name": "Nombre",
+    "date": "Fecha",
+    "songCount": "Canciones",
+    "open": "Abrir",
+    "back": "Volver",
+    "noRepertoires": "No hay repertorios creados",
+    "nameRequired": "El nombre del repertorio es obligatorio",
+    "successCreate": "¡Repertorio creado con éxito!",
+    "successUpdate": "¡Repertorio actualizado con éxito!",
+    "successDelete": "¡Repertorio eliminado con éxito!",
+    "confirmDelete": "¿Eliminar el repertorio \"{name}\"?",
+    "songsInList": "Canciones del repertorio",
+    "availableSongs": "Canciones disponibles",
+    "noSongs": "Aún no hay canciones en este repertorio",
+    "allAdded": "Todas las canciones han sido agregadas",
+    "reorderHint": "Arrastra o usa las flechas para reordenar.",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "remove": "Eliminar",
+    "add": "Agregar",
+    "drag": "Arrastrar para reordenar",
+    "pause": "Pausa",
+    "addPause": "Pausa",
+    "addPauseHint": "Agregar una pausa (-----) a la lista",
+    "printSettings": "Configuración de impresión",
+    "printColumns": "Columnas",
+    "printFontSize": "Fuente"
+  },
   "language": {
     "select": "Idioma"
   }

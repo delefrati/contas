@@ -10,6 +10,9 @@ vi.mock('../composables/useAuth', () => ({
     isLoggedIn: mockIsLoggedIn,
     token: ref(mockIsLoggedIn.value ? 'token' : ''),
     member: ref(mockIsLoggedIn.value ? { id: 1, name: 'Test' } : null),
+    getCurrentUser: vi.fn().mockResolvedValue(
+      mockIsLoggedIn.value ? { memberId: 1, name: 'Test' } : null,
+    ),
   }),
 }))
 

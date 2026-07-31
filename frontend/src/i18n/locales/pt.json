@@ -119,6 +119,63 @@
   "errors": {
     "genericError": "Ocorreu um erro. Por favor, tente novamente."
   },
+  "repertoire": {
+    "title": "Repertório",
+    "tabSongs": "Músicas",
+    "tabRepertoires": "Repertórios"
+  },
+  "songs": {
+    "addSong": "Adicionar Música",
+    "editSong": "Editar Música",
+    "songTitle": "Música",
+    "artist": "Artista",
+    "notes": "Observações",
+    "noSongs": "Nenhuma música cadastrada",
+    "filterPlaceholder": "Buscar música ou artista...",
+    "titleRequired": "O nome da música é obrigatório",
+    "loadingError": "Não foi possível carregar as músicas.",
+    "successCreate": "Música adicionada com sucesso!",
+    "successUpdate": "Música atualizada com sucesso!",
+    "successDelete": "Música removida com sucesso!",
+    "confirmDelete": "Remover a música \"{title}\"?",
+    "import": "Importar",
+    "importHint": "Cole uma música por linha. Use \"Título - Artista\" para incluir o artista.",
+    "importPlaceholder": "Exagerado - Cazuza\nPais e Filhos\nMalandragem",
+    "importEmpty": "Cole ao menos uma música.",
+    "importSuccess": "{created} música(s) importada(s), {skipped} ignorada(s).",
+    "importResult": "{created} adicionada(s), {skipped} já existiam."
+  },
+  "repertoires": {
+    "addRepertoire": "Novo Repertório",
+    "editRepertoire": "Editar Repertório",
+    "name": "Nome",
+    "date": "Data",
+    "songCount": "Músicas",
+    "open": "Abrir",
+    "back": "Voltar",
+    "noRepertoires": "Nenhum repertório criado",
+    "nameRequired": "O nome do repertório é obrigatório",
+    "successCreate": "Repertório criado com sucesso!",
+    "successUpdate": "Repertório atualizado com sucesso!",
+    "successDelete": "Repertório removido com sucesso!",
+    "confirmDelete": "Remover o repertório \"{name}\"?",
+    "songsInList": "Músicas do repertório",
+    "availableSongs": "Músicas disponíveis",
+    "noSongs": "Nenhuma música neste repertório ainda",
+    "allAdded": "Todas as músicas já foram adicionadas",
+    "reorderHint": "Arraste ou use as setas para reordenar.",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "remove": "Remover",
+    "add": "Adicionar",
+    "drag": "Arrastar para reordenar",
+    "pause": "Pausa",
+    "addPause": "Pausa",
+    "addPauseHint": "Adicionar uma pausa (-----) na lista",
+    "printSettings": "Configurações de impressão",
+    "printColumns": "Colunas",
+    "printFontSize": "Fonte"
+  },
   "language": {
     "select": "Idioma"
   }

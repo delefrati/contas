@@ -94,3 +94,43 @@ model Session {
   @@index([oidcSub])
   @@map("sessions")
 }
+
+model Song {
+  id        Int       @id @default(autoincrement())
+  title     String    @db.VarChar(255)
+  artist    String?   @db.VarChar(255)
+  notes     String?   @db.Text
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  repertoires RepertoireSong[]
+
+  @@map("songs")
+}
+
+model Repertoire {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  date      String    @default("") @db.VarChar(10)
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  songs RepertoireSong[]
+
+  @@map("repertoires")
+}
+
+model RepertoireSong {
+  id           Int    @id @default(autoincrement())
+  repertoireId Int    @map("repertoire_id")
+  songId       Int?   @map("song_id")
+  type         String @default("song") @db.VarChar(20)
+  position     Int    @default(0)
+
+  repertoire Repertoire @relation(fields: [repertoireId], references: [id], onDelete: Cascade)
+  song       Song?      @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([repertoireId])
+  @@index([songId])
+  @@map("repertoire_songs")
+}

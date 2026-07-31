@@ -119,6 +119,63 @@
   "errors": {
     "genericError": "An error occurred. Please try again."
   },
+  "repertoire": {
+    "title": "Repertoire",
+    "tabSongs": "Songs",
+    "tabRepertoires": "Setlists"
+  },
+  "songs": {
+    "addSong": "Add Song",
+    "editSong": "Edit Song",
+    "songTitle": "Song",
+    "artist": "Artist",
+    "notes": "Notes",
+    "noSongs": "No songs yet",
+    "filterPlaceholder": "Search song or artist...",
+    "titleRequired": "Song title is required",
+    "loadingError": "Could not load songs.",
+    "successCreate": "Song added successfully!",
+    "successUpdate": "Song updated successfully!",
+    "successDelete": "Song removed successfully!",
+    "confirmDelete": "Remove the song \"{title}\"?",
+    "import": "Import",
+    "importHint": "Paste one song per line. Use \"Title - Artist\" to include the artist.",
+    "importPlaceholder": "Exagerado - Cazuza\nPais e Filhos\nMalandragem",
+    "importEmpty": "Paste at least one song.",
+    "importSuccess": "{created} song(s) imported, {skipped} skipped.",
+    "importResult": "{created} added, {skipped} already existed."
+  },
+  "repertoires": {
+    "addRepertoire": "New Setlist",
+    "editRepertoire": "Edit Setlist",
+    "name": "Name",
+    "date": "Date",
+    "songCount": "Songs",
+    "open": "Open",
+    "back": "Back",
+    "noRepertoires": "No setlists created",
+    "nameRequired": "Setlist name is required",
+    "successCreate": "Setlist created successfully!",
+    "successUpdate": "Setlist updated successfully!",
+    "successDelete": "Setlist removed successfully!",
+    "confirmDelete": "Remove the setlist \"{name}\"?",
+    "songsInList": "Songs in setlist",
+    "availableSongs": "Available songs",
+    "noSongs": "No songs in this setlist yet",
+    "allAdded": "All songs have been added",
+    "reorderHint": "Drag or use the arrows to reorder.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove",
+    "add": "Add",
+    "drag": "Drag to reorder",
+    "pause": "Pause",
+    "addPause": "Pause",
+    "addPauseHint": "Add a pause (-----) to the list",
+    "printSettings": "Print settings",
+    "printColumns": "Columns",
+    "printFontSize": "Font"
+  },
   "language": {
     "select": "Language"
   }

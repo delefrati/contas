@@ -10,6 +10,13 @@ const member = ref(JSON.parse(localStorage.getItem(MEMBER_KEY) || 'null'))
 const loading = ref(false)
 const error = ref('')
 
+function clearSession() {
+  token.value = ''
+  member.value = null
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(MEMBER_KEY)
+}
+
 export function useAuth() {
   const isLoggedIn = computed(() => !!token.value && !!member.value)
 
@@ -65,10 +72,7 @@ export function useAuth() {
       console.error('Logout error:', err)
     } finally {
       // Clear local state regardless of API response
-      token.value = ''
-      member.value = null
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(MEMBER_KEY)
+      clearSession()
       loading.value = false
     }
   }
@@ -90,10 +94,7 @@ export function useAuth() {
     } catch (err) {
       console.error('Logout all error:', err)
     } finally {
-      token.value = ''
-      member.value = null
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(MEMBER_KEY)
+      clearSession()
       loading.value = false
     }
   }
@@ -115,15 +116,20 @@ export function useAuth() {
       if (!response.ok) {
         if (response.status === 401) {
           // Token is invalid, clear it
-          token.value = ''
-          member.value = null
-          localStorage.removeItem(TOKEN_KEY)
-          localStorage.removeItem(MEMBER_KEY)
+          clearSession()
         }
         return null
       }
 
       const data = await response.json()
+      if (data?.data) {
+        member.value = {
+          id: data.data.memberId,
+          name: data.data.name,
+          email: data.data.email,
+        }
+        localStorage.setItem(MEMBER_KEY, JSON.stringify(member.value))
+      }
       return data.data
     } catch (err) {
       console.error('Error getting current user:', err)
@@ -141,6 +147,7 @@ export function useAuth() {
     isLoggedIn,
     loading,
     error,
+    clearSession,
     loginWithGoogle,
     logout,
     logoutAll,

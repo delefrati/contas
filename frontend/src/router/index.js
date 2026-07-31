@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import Login from '../pages/Login.vue'
 import Dashboard from '../pages/Dashboard.vue'
+import Songs from '../pages/Songs.vue'
 
 const routes = [
   {
@@ -17,6 +18,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/repertorio',
+    name: 'Songs',
+    component: Songs,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/',
     redirect: '/dashboard',
   },
@@ -28,24 +35,36 @@ const router = createRouter({
 })
 
 // Navigation guard to check authentication
-router.beforeEach((to, from, next) => {
-  const { isLoggedIn } = useAuth()
+router.beforeEach(async (to, from, next) => {
+  const { isLoggedIn, token, getCurrentUser } = useAuth()
 
-  // If route requires auth and user is not logged in
-  if (to.meta.requiresAuth && !isLoggedIn.value) {
-    next({
-      name: 'Login',
-      query: { redirect: to.fullPath },
-    })
+  if (to.meta.requiresAuth) {
+    if (!isLoggedIn.value) {
+      next({
+        name: 'Login',
+        query: { redirect: to.fullPath },
+      })
+      return
+    }
+
+    // Revalidate persisted session; if token was cleared by 401, force login.
+    const hadToken = !!token.value
+    const currentUser = await getCurrentUser()
+    if (!currentUser && hadToken && !token.value) {
+      next({
+        name: 'Login',
+        query: { redirect: to.fullPath, reason: 'expired' },
+      })
+      return
+    }
   }
-  // If user is logged in and trying to access login page
-  else if (to.name === 'Login' && isLoggedIn.value) {
+
+  if (to.name === 'Login' && isLoggedIn.value) {
     next('/dashboard')
+    return
   }
-  // Otherwise, proceed
-  else {
-    next()
-  }
+
+  next()
 })
 
 export default router
