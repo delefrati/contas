@@ -30,6 +30,7 @@ export class LogService {
     const resolvedUserId = userId ?? this.requestContext.getMemberId();
     const log = await this.prisma.log.create({
       data: {
+        bandId: this.requestContext.requireBandId(),
         action,
         resource,
         resourceId,
@@ -51,6 +52,7 @@ export class LogService {
 
   async findAll(limit: number = 100): Promise<LogDto[]> {
     const logs = await this.prisma.log.findMany({
+      where: { bandId: this.requestContext.requireBandId() },
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: { user: { select: { name: true } } },
@@ -75,6 +77,7 @@ export class LogService {
   ): Promise<LogDto[]> {
     const logs = await this.prisma.log.findMany({
       where: {
+        bandId: this.requestContext.requireBandId(),
         resource,
         ...(resourceId && { resourceId }),
       },
@@ -100,7 +103,7 @@ export class LogService {
     limit: number = 50,
   ): Promise<LogDto[]> {
     const logs = await this.prisma.log.findMany({
-      where: { action },
+      where: { bandId: this.requestContext.requireBandId(), action },
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: { user: { select: { name: true } } },

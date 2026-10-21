@@ -1,5 +1,6 @@
 {
   "app": {
+    "name": "minhabanda.com",
     "title": "Rendición de Cuentas",
     "health": "Cargando...",
     "logout": "Cerrar sesión",

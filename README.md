@@ -1,6 +1,6 @@
-# contas
+# minhabanda.com
 
-Expense tracking system with:
+Band management app ([minhabanda.com](https://minhabanda.com)) — expenses, members, songs and repertoires — with:
 
 - NestJS backend API with Prisma ORM
 - MySQL database
@@ -80,14 +80,24 @@ npm run migrate:status
 npm run migrate:deploy
 ```
 
-### Creating the First Admin User
+### Bands
 
-After the first deployment, create the initial admin member:
+Each band is served on its own subdomain (`<slug>.minhabanda.com`) and only sees its own
+members, expenses, songs and repertoires. The backend picks the band from the request host
+(`BASE_DOMAIN`); locally, requests to `localhost` use `DEFAULT_BAND` (`maverick`).
+
+Create a band and its first admin member:
 
 ```bash
 # Local
-./scripts/create-admin.sh 'Alice' 'alice@example.com'
+./scripts/create-band.sh maverick 'Maverick' 'Alice' 'alice@example.com'
 
 # Production
-COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-admin.sh 'Alice' 'alice@example.com'
+COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-band.sh maverick 'Maverick' 'Alice' 'alice@example.com'
+```
+
+Add another admin to an existing band:
+
+```bash
+./scripts/create-admin.sh maverick 'Bob' 'bob@example.com'
 ```

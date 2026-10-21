@@ -37,7 +37,7 @@ services:
       NODE_OPTIONS: "--max-old-space-size=128"
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      CORS_ORIGIN: https://${APP_DOMAIN}
+      BASE_DOMAIN: ${BASE_DOMAIN}
     deploy:
       resources:
         limits:
@@ -53,7 +53,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     expose:
       - "80"
@@ -66,8 +65,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      APP_DOMAIN: ${APP_DOMAIN}
-      API_DOMAIN: ${API_DOMAIN}
+      BASE_DOMAIN: ${BASE_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

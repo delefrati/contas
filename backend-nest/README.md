@@ -1,4 +1,4 @@
-# Contas API - Backend
+# minhabanda.com API - Backend
 
 A NestJS-based REST API for expense tracking with JWT-based authentication.
 

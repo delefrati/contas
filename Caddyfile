@@ -1,5 +1,11 @@
 {
 	email {$ACME_EMAIL}
+
+	# Each band lives on its own subdomain (<slug>.{$BASE_DOMAIN}). Certificates are
+	# issued on first visit, and only for slugs that exist in the bands table.
+	on_demand_tls {
+		ask http://backend:3000/api/band/tls-check
+	}
 }
 
 (security_headers) {
@@ -14,36 +20,20 @@
 	}
 }
 
-# Explicit HTTP -> HTTPS redirect
-http://{$APP_DOMAIN} {
-	redir https://{$APP_DOMAIN}{uri} permanent
-}
-
-http://{$API_DOMAIN} {
-	redir https://{$API_DOMAIN}{uri} permanent
-}
-
-{$APP_DOMAIN} {
-	import security_headers
-	encode zstd gzip
-	reverse_proxy frontend:80
-}
-
-{$API_DOMAIN} {
-	import security_headers
-	encode zstd gzip
-
-	# CORS preflight handled by Caddy (NestJS won't see OPTIONS due to respond)
-	@cors_preflight method OPTIONS
-	handle @cors_preflight {
-		header Access-Control-Allow-Origin "https://{$APP_DOMAIN}"
-		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-		header Access-Control-Allow-Headers "Authorization, Content-Type"
-		header Access-Control-Allow-Credentials "true"
-		header Access-Control-Max-Age "86400"
-		respond "" 204
+*.{$BASE_DOMAIN} {
+	tls {
+		on_demand
 	}
 
-	# Non-preflight: let NestJS handle CORS headers (no duplicates)
-	reverse_proxy backend:3000
+	import security_headers
+	encode zstd gzip
+
+	# API is served on the band's own host, so no CORS is needed
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
 }

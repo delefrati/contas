@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export class SongDto {
   id!: number;
@@ -43,6 +44,7 @@ export class SongService {
   constructor(
     private prisma: PrismaService,
     private logService: LogService,
+    private requestContext: RequestContextService,
   ) {}
 
   private mapToDto(song: {
@@ -63,7 +65,7 @@ export class SongService {
 
   async findAll(): Promise<SongDto[]> {
     const songs = await this.prisma.song.findMany({
-      where: { deletedAt: null },
+      where: { bandId: this.requestContext.requireBandId(), deletedAt: null },
       orderBy: { title: 'asc' },
     });
 
@@ -78,6 +80,7 @@ export class SongService {
 
     const song = await this.prisma.song.create({
       data: {
+        bandId: this.requestContext.requireBandId(),
         title,
         artist: dto.artist?.trim() || null,
         notes: dto.notes?.trim() || null,
@@ -127,8 +130,9 @@ export class SongService {
       throw new BadRequestException('No songs to import.');
     }
 
+    const bandId = this.requestContext.requireBandId();
     const existing = await this.prisma.song.findMany({
-      where: { deletedAt: null },
+      where: { bandId, deletedAt: null },
       select: { title: true },
     });
     const existingTitles = new Set(existing.map((s) => s.title.toLowerCase()));
@@ -146,7 +150,7 @@ export class SongService {
       seenInBatch.add(key);
 
       const song = await this.prisma.song.create({
-        data: { title: item.title, artist: item.artist },
+        data: { bandId, title: item.title, artist: item.artist },
       });
       created.push(this.mapToDto(song));
     }
@@ -162,7 +166,9 @@ export class SongService {
   }
 
   async update(id: number, dto: UpdateSongDto): Promise<SongDto> {
-    const existing = await this.prisma.song.findUnique({ where: { id } });
+    const existing = await this.prisma.song.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+    });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Song not found.');
     }
@@ -191,7 +197,9 @@ export class SongService {
   }
 
   async delete(id: number): Promise<void> {
-    const song = await this.prisma.song.findUnique({ where: { id } });
+    const song = await this.prisma.song.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+    });
     if (!song || song.deletedAt) {
       return;
     }

@@ -1,12 +1,16 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { RequestContextService } from '../common/request-context.service';
+import { BandService } from '../band/band.service';
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
-  constructor(private requestContext: RequestContextService) {}
+  constructor(
+    private requestContext: RequestContextService,
+    private bandService: BandService,
+  ) {}
 
-  use(req: Request, res: Response, next: NextFunction): void {
+  async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     let memberId: number | undefined;
 
     const authHeader = req.headers.authorization;
@@ -25,6 +29,15 @@ export class RequestContextMiddleware implements NestMiddleware {
       }
     }
 
-    this.requestContext.run({ memberId }, () => next());
+    let bandId: number | undefined;
+    try {
+      const slug = this.bandService.resolveSlug(req.headers.host);
+      bandId = slug ? (await this.bandService.findBySlug(slug))?.id : undefined;
+    } catch (error) {
+      next(error);
+      return;
+    }
+
+    this.requestContext.run({ memberId, bandId }, () => next());
   }
 }

@@ -25,6 +25,9 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # localhost isn't a band subdomain, so local requests use this band
+      DEFAULT_BAND: ${DEFAULT_BAND:-maverick}
+      CORS_ORIGIN: http://localhost:51731,http://localhost:5173
     ports:
       - "8001:3000"
     depends_on:

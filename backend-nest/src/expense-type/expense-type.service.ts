@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export class ExpenseTypeDto {
   id!: number;
@@ -17,11 +18,15 @@ export class ExpenseTypeService {
   constructor(
     private prisma: PrismaService,
     private logService: LogService,
+    private requestContext: RequestContextService,
   ) {}
 
   async findAll(includeDeleted = false): Promise<ExpenseTypeDto[]> {
     const types = await this.prisma.expenseType.findMany({
-      where: includeDeleted ? undefined : { deletedAt: null },
+      where: {
+        bandId: this.requestContext.requireBandId(),
+        ...(includeDeleted ? {} : { deletedAt: null }),
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -38,8 +43,11 @@ export class ExpenseTypeService {
       throw new BadRequestException('Expense type name is required.');
     }
 
+    const bandId = this.requestContext.requireBandId();
+
     const activeType = await this.prisma.expenseType.findFirst({
       where: {
+        bandId,
         name: trimmedName,
         deletedAt: null,
       },
@@ -51,6 +59,7 @@ export class ExpenseTypeService {
 
     const deletedType = await this.prisma.expenseType.findFirst({
       where: {
+        bandId,
         name: trimmedName,
         deletedAt: { not: null },
       },
@@ -62,7 +71,7 @@ export class ExpenseTypeService {
           data: { deletedAt: null },
         })
       : await this.prisma.expenseType.create({
-          data: { name: trimmedName },
+          data: { bandId, name: trimmedName },
         });
 
     await this.logService.log(
@@ -80,8 +89,8 @@ export class ExpenseTypeService {
   }
 
   async softDelete(id: number): Promise<void> {
-    const type = await this.prisma.expenseType.findUnique({
-      where: { id },
+    const type = await this.prisma.expenseType.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
       select: { id: true, deletedAt: true, name: true },
     });
 

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { MemberService } from '../member/member.service';
+import { RequestContextService } from '../common/request-context.service';
 
 // Mock google-auth-library
 jest.mock('google-auth-library', () => {
@@ -41,6 +42,14 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: LogService, useValue: logService },
         { provide: MemberService, useValue: memberService },
+        {
+          provide: RequestContextService,
+          useValue: {
+            requireBandId: jest.fn().mockReturnValue(1),
+            getBandId: jest.fn().mockReturnValue(1),
+            getMemberId: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -67,7 +76,7 @@ describe('AuthService', () => {
       const result = await service.createToken(1, 'test@test.com', 'Test User');
 
       expect(jwtService.sign).toHaveBeenCalledWith(
-        { memberId: 1, email: 'test@test.com', name: 'Test User' },
+        { memberId: 1, bandId: 1, email: 'test@test.com', name: 'Test User' },
         { expiresIn: '24h' },
       );
       expect(prisma.session.create).toHaveBeenCalledWith({
@@ -83,7 +92,7 @@ describe('AuthService', () => {
       await service.createToken(1, 'test@test.com');
 
       expect(jwtService.sign).toHaveBeenCalledWith(
-        { memberId: 1, email: 'test@test.com', name: '' },
+        { memberId: 1, bandId: 1, email: 'test@test.com', name: '' },
         { expiresIn: '24h' },
       );
     });

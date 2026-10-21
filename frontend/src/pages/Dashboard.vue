@@ -9,7 +9,7 @@ import Modal from '../components/Modal.vue'
 const { t, locale } = useI18n()
 const router = useRouter()
 const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
-const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const health = ref('loading...')
 const expenses = ref([])

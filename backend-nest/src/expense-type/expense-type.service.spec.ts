@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { ExpenseTypeService } from './expense-type.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 describe('ExpenseTypeService', () => {
   let service: ExpenseTypeService;
@@ -26,6 +27,14 @@ describe('ExpenseTypeService', () => {
         ExpenseTypeService,
         { provide: PrismaService, useValue: prisma },
         { provide: LogService, useValue: logService },
+        {
+          provide: RequestContextService,
+          useValue: {
+            requireBandId: jest.fn().mockReturnValue(1),
+            getBandId: jest.fn().mockReturnValue(1),
+            getMemberId: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -43,7 +52,7 @@ describe('ExpenseTypeService', () => {
       const result = await service.findAll();
 
       expect(prisma.expenseType.findMany).toHaveBeenCalledWith({
-        where: { deletedAt: null },
+        where: { bandId: 1, deletedAt: null },
         orderBy: { name: 'asc' },
       });
       expect(result).toHaveLength(2);
@@ -60,7 +69,7 @@ describe('ExpenseTypeService', () => {
       const result = await service.findAll(true);
 
       expect(prisma.expenseType.findMany).toHaveBeenCalledWith({
-        where: undefined,
+        where: { bandId: 1 },
         orderBy: { name: 'asc' },
       });
       expect(result).toHaveLength(2);
@@ -77,7 +86,13 @@ describe('ExpenseTypeService', () => {
 
       const result = await service.create({ name: 'Utilities' });
 
-      expect(prisma.expenseType.create).toHaveBeenCalledWith({ data: { name: 'Utilities' } });
+      expect(prisma.expenseType.findFirst).toHaveBeenNthCalledWith(1, {
+        where: { bandId: 1, name: 'Utilities', deletedAt: null },
+      });
+      expect(prisma.expenseType.findFirst).toHaveBeenNthCalledWith(2, {
+        where: { bandId: 1, name: 'Utilities', deletedAt: { not: null } },
+      });
+      expect(prisma.expenseType.create).toHaveBeenCalledWith({ data: { bandId: 1, name: 'Utilities' } });
       expect(logService.log).toHaveBeenCalledWith('CREATE', 'expenseType', 3, { name: 'Utilities' });
       expect(result).toEqual({ id: 3, name: 'Utilities', deletedAt: null });
     });
@@ -109,11 +124,15 @@ describe('ExpenseTypeService', () => {
 
   describe('softDelete', () => {
     it('should soft delete an existing active type', async () => {
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 1, name: 'Food', deletedAt: null });
+      prisma.expenseType.findFirst.mockResolvedValue({ id: 1, name: 'Food', deletedAt: null });
       prisma.expenseType.update.mockResolvedValue({ id: 1, name: 'Food', deletedAt: new Date() });
 
       await service.softDelete(1);
 
+      expect(prisma.expenseType.findFirst).toHaveBeenCalledWith({
+        where: { id: 1, bandId: 1 },
+        select: { id: true, deletedAt: true, name: true },
+      });
       expect(prisma.expenseType.update).toHaveBeenCalledWith({
         where: { id: 1 }, data: { deletedAt: expect.any(Date) },
       });
@@ -121,7 +140,7 @@ describe('ExpenseTypeService', () => {
     });
 
     it('should do nothing if type is already deleted', async () => {
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 1, name: 'Food', deletedAt: new Date() });
+      prisma.expenseType.findFirst.mockResolvedValue({ id: 1, name: 'Food', deletedAt: new Date() });
 
       await service.softDelete(1);
 
@@ -130,9 +149,17 @@ describe('ExpenseTypeService', () => {
     });
 
     it('should throw NotFoundException when type does not exist', async () => {
-      prisma.expenseType.findUnique.mockResolvedValue(null);
+      prisma.expenseType.findFirst.mockResolvedValue(null);
 
       await expect(service.softDelete(999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException for a type that belongs to another band', async () => {
+      // the bandId-scoped findFirst finds nothing for another band's type
+      prisma.expenseType.findFirst.mockResolvedValue(null);
+
+      await expect(service.softDelete(7)).rejects.toThrow(NotFoundException);
+      expect(prisma.expenseType.update).not.toHaveBeenCalled();
     });
   });
 });

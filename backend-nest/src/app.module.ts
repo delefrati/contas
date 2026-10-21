@@ -9,10 +9,11 @@ import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
 import { SongModule } from './song/song.module';
 import { RepertoireModule } from './repertoire/repertoire.module';
+import { BandModule } from './band/band.module';
 import { RequestContextMiddleware } from './common/request-context.middleware';
 
 @Module({
-  imports: [PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, RepertoireModule],
+  imports: [PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, RepertoireModule, BandModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

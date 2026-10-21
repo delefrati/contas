@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export class ExpenseDto {
   id!: number;
@@ -51,12 +52,25 @@ export class ExpenseService {
   constructor(
     private prisma: PrismaService,
     private logService: LogService,
+    private requestContext: RequestContextService,
   ) {}
+
+  // Members referenced by an expense must belong to the current band.
+  private async assertBandMembers(memberIds: number[], bandId: number): Promise<void> {
+    if (memberIds.length === 0) return;
+    const count = await this.prisma.member.count({
+      where: { id: { in: memberIds }, bandId },
+    });
+    if (count !== memberIds.length) {
+      throw new BadRequestException('Invalid member in the list sent.');
+    }
+  }
 
   async create(createExpenseDto: CreateExpenseDto): Promise<ExpenseDto> {
     const { description, typeId, amount, date, paid = false, memberIds = [] } = createExpenseDto;
     const numericAmount = Number(amount);
     const normalizedAmount = Math.round(numericAmount * 100) / 100;
+    const bandId = this.requestContext.requireBandId();
 
     // Validation
     const trimmedDescription = description?.trim() || '';
@@ -76,7 +90,7 @@ export class ExpenseService {
 
     if (typeId === undefined || typeId === null) {
       const firstActiveType = await this.prisma.expenseType.findFirst({
-        where: { deletedAt: null },
+        where: { bandId, deletedAt: null },
         orderBy: { id: 'asc' },
         select: { id: true },
       });
@@ -93,8 +107,8 @@ export class ExpenseService {
       }
     }
 
-    const expenseType = await this.prisma.expenseType.findUnique({
-      where: { id: normalizedTypeId },
+    const expenseType = await this.prisma.expenseType.findFirst({
+      where: { id: normalizedTypeId, bandId },
       select: { id: true, deletedAt: true },
     });
 
@@ -113,11 +127,12 @@ export class ExpenseService {
         throw new BadRequestException('Invalid member in the list sent.');
       }
     }
+    await this.assertBandMembers(normalizedMemberIds, bandId);
 
     // If no members specified, apply to all active members
     if (normalizedMemberIds.length === 0) {
       const activeMembers = await this.prisma.member.findMany({
-        where: { active: true },
+        where: { bandId, active: true },
         select: { id: true },
       });
       normalizedMemberIds = activeMembers.map((m) => m.id);
@@ -131,6 +146,7 @@ export class ExpenseService {
     // Create expense with members
     const expense = await this.prisma.expense.create({
       data: {
+        bandId,
         description: trimmedDescription,
         fkType: normalizedTypeId,
         amount: normalizedAmount,
@@ -171,7 +187,7 @@ export class ExpenseService {
 
   async findAll(): Promise<ExpenseDto[]> {
     const expenses = await this.prisma.expense.findMany({
-      where: { deletedAt: null },
+      where: { bandId: this.requestContext.requireBandId(), deletedAt: null },
       include: {
         type: true,
         members: {
@@ -187,7 +203,8 @@ export class ExpenseService {
   }
 
   async update(id: number, dto: UpdateExpenseDto): Promise<ExpenseDto> {
-    const existing = await this.prisma.expense.findUnique({ where: { id } });
+    const bandId = this.requestContext.requireBandId();
+    const existing = await this.prisma.expense.findFirst({ where: { id, bandId } });
     if (!existing || existing.deletedAt) {
       throw new BadRequestException('Expense not found.');
     }
@@ -217,23 +234,31 @@ export class ExpenseService {
 
     if (dto.typeId !== undefined) {
       const typeId = parseInt(String(dto.typeId));
-      const expenseType = await this.prisma.expenseType.findUnique({ where: { id: typeId } });
+      const expenseType = await this.prisma.expenseType.findFirst({ where: { id: typeId, bandId } });
       if (!expenseType || expenseType.deletedAt) throw new BadRequestException('Invalid expense type.');
       data.fkType = typeId;
+    }
+
+    // Validate members before writing anything
+    let normalizedMemberIds: number[] | undefined;
+    if (dto.memberIds !== undefined) {
+      normalizedMemberIds = Array.from(
+        new Set(dto.memberIds.map((mid) => parseInt(String(mid))))
+      );
+      if (normalizedMemberIds.some((mid) => !(mid > 0))) {
+        throw new BadRequestException('Invalid member in the list sent.');
+      }
+      await this.assertBandMembers(normalizedMemberIds, bandId);
     }
 
     // Update expense fields
     await this.prisma.expense.update({ where: { id }, data });
 
     // Update members if provided
-    if (dto.memberIds !== undefined) {
-      let normalizedMemberIds = Array.from(
-        new Set(dto.memberIds.map((mid) => parseInt(String(mid))))
-      );
-
+    if (normalizedMemberIds !== undefined) {
       if (normalizedMemberIds.length === 0) {
         const activeMembers = await this.prisma.member.findMany({
-          where: { active: true },
+          where: { bandId, active: true },
           select: { id: true },
         });
         normalizedMemberIds = activeMembers.map((m) => m.id);
@@ -262,9 +287,12 @@ export class ExpenseService {
   }
 
   async delete(id: number): Promise<void> {
-    const expense = await this.prisma.expense.findUnique({
-      where: { id },
+    const expense = await this.prisma.expense.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
     });
+    if (!expense) {
+      throw new BadRequestException('Expense not found.');
+    }
 
     await this.prisma.expense.update({
       where: { id },
@@ -289,9 +317,10 @@ export class ExpenseService {
     }
 
     const normalizedPaid = Boolean(paid);
+    const bandId = this.requestContext.requireBandId();
 
     await this.prisma.expense.updateMany({
-      where: { id: { in: normalizedIds }, deletedAt: null },
+      where: { id: { in: normalizedIds }, bandId, deletedAt: null },
       data: { paid: normalizedPaid },
     });
 
@@ -302,7 +331,7 @@ export class ExpenseService {
     });
 
     const expenses = await this.prisma.expense.findMany({
-      where: { id: { in: normalizedIds }, deletedAt: null },
+      where: { id: { in: normalizedIds }, bandId, deletedAt: null },
       include: {
         type: true,
         members: { include: { member: true } },
@@ -314,6 +343,7 @@ export class ExpenseService {
 
   async reportByMember(): Promise<ReportByMemberDto[]> {
     const members = await this.prisma.member.findMany({
+      where: { bandId: this.requestContext.requireBandId() },
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
 

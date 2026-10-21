@@ -4,9 +4,11 @@ import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { MemberService } from '../member/member.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export interface AuthPayload {
   memberId: number;
+  bandId: number;
   email?: string;
   name: string;
   oidcSub?: string;
@@ -28,6 +30,7 @@ export class AuthService {
     private prisma: PrismaService,
     private logService: LogService,
     private memberService: MemberService,
+    private requestContext: RequestContextService,
   ) {}
 
   async loginWithGoogle(idToken: string): Promise<LoginResponse> {
@@ -94,6 +97,7 @@ export class AuthService {
     const expiresIn = '24h';
     const payload: AuthPayload = {
       memberId,
+      bandId: this.requestContext.requireBandId(),
       email,
       name: name || '',
     };

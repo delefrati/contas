@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export class MemberDto {
   id!: number;
@@ -15,10 +16,20 @@ export class MemberService {
   constructor(
     private prisma: PrismaService,
     private logService: LogService,
+    private requestContext: RequestContextService,
   ) {}
+
+  private async findOwned(id: number) {
+    const member = await this.prisma.member.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+    });
+    if (!member) throw new NotFoundException(`Member ${id} not found`);
+    return member;
+  }
 
   async findAll(): Promise<MemberDto[]> {
     const members = await this.prisma.member.findMany({
+      where: { bandId: this.requestContext.requireBandId() },
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
 
@@ -33,7 +44,7 @@ export class MemberService {
 
   async findByEmail(email: string): Promise<MemberDto | null> {
     const member = await this.prisma.member.findUnique({
-      where: { email },
+      where: { bandId_email: { bandId: this.requestContext.requireBandId(), email } },
     });
 
     if (!member) return null;
@@ -49,7 +60,7 @@ export class MemberService {
 
   async findByOidcSub(oidcSub: string): Promise<MemberDto | null> {
     const member = await this.prisma.member.findUnique({
-      where: { oidcSub },
+      where: { bandId_oidcSub: { bandId: this.requestContext.requireBandId(), oidcSub } },
     });
 
     if (!member) return null;
@@ -66,7 +77,7 @@ export class MemberService {
   async create(name: string, email?: string, oidcSub?: string): Promise<MemberDto> {
     if (email) {
       const existing = await this.prisma.member.findUnique({
-        where: { email },
+        where: { bandId_email: { bandId: this.requestContext.requireBandId(), email } },
       });
       if (existing) {
         throw new BadRequestException(`Email ${email} is already in use`);
@@ -75,7 +86,7 @@ export class MemberService {
 
     if (oidcSub) {
       const existing = await this.prisma.member.findUnique({
-        where: { oidcSub },
+        where: { bandId_oidcSub: { bandId: this.requestContext.requireBandId(), oidcSub } },
       });
       if (existing) {
         throw new BadRequestException(`OIDC Subject is already in use`);
@@ -84,6 +95,7 @@ export class MemberService {
 
     const member = await this.prisma.member.create({
       data: {
+        bandId: this.requestContext.requireBandId(),
         name,
         email: email || null,
         oidcSub: oidcSub || null,
@@ -111,12 +123,11 @@ export class MemberService {
     name?: string,
     email?: string,
   ): Promise<MemberDto> {
-    const existing = await this.prisma.member.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException(`Member ${id} not found`);
+    const existing = await this.findOwned(id);
 
     if (email && email !== existing.email) {
       const emailExists = await this.prisma.member.findUnique({
-        where: { email },
+        where: { bandId_email: { bandId: this.requestContext.requireBandId(), email } },
       });
       if (emailExists) {
         throw new BadRequestException(`Email ${email} is already in use`);
@@ -148,8 +159,7 @@ export class MemberService {
   }
 
   async toggleActive(id: number): Promise<MemberDto> {
-    const existing = await this.prisma.member.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException(`Member ${id} not found`);
+    const existing = await this.findOwned(id);
 
     const updated = await this.prisma.member.update({
       where: { id },
@@ -173,11 +183,10 @@ export class MemberService {
   }
 
   async linkOidcSub(id: number, oidcSub: string): Promise<MemberDto> {
-    const existing = await this.prisma.member.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException(`Member ${id} not found`);
+    const existing = await this.findOwned(id);
 
     const oidcExists = await this.prisma.member.findUnique({
-      where: { oidcSub },
+      where: { bandId_oidcSub: { bandId: this.requestContext.requireBandId(), oidcSub } },
     });
     if (oidcExists && oidcExists.id !== id) {
       throw new BadRequestException('OIDC Subject is already linked to another member');

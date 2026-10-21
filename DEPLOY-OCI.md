@@ -7,8 +7,11 @@ This guide deploys the app on a single Oracle Cloud Always Free VM using Docker 
 1. Create an Ubuntu VM (Always Free shape).
 2. Assign a static public IP.
 3. Create DNS records:
-  - `app.yourdomain.com` -> VM public IP
-  - `api.yourdomain.com` -> VM public IP
+  - `*.minhabanda.com` (wildcard A record) -> VM public IP
+
+  Every band is served at `<slug>.minhabanda.com`, with the API under `/api` on the same host.
+  Caddy issues each band's HTTPS certificate on its first visit (on-demand TLS), after checking
+  with the backend that the band exists.
 
 Open inbound ports in OCI and OS firewall:
 - TCP 22
@@ -41,15 +44,15 @@ cp .env.prod.example .env
 Edit `.env` and set all `CHANGE_ME...` values.
 
 Important values:
-- `VITE_API_URL=https://api.yourdomain.com`
+- `BASE_DOMAIN=minhabanda.com`
 - `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` must match the same Google OAuth client
-- `APP_DOMAIN` and `API_DOMAIN` must match DNS
+- `BASE_DOMAIN` must match the wildcard DNS record
 
 ## 4) Configure Google OAuth
 
 In Google Cloud Console for your OAuth client:
 - Add Authorized JavaScript origins:
-  - `https://app.yourdomain.com`
+  - `https://<slug>.minhabanda.com` for every band (Google does not accept wildcards here)
 
 No redirect URI is required for the Google Identity token flow used here.
 
@@ -78,12 +81,12 @@ docker compose -f docker-compose.prod.yml logs -f caddy
 ```
 
 Health check:
-- `https://api.yourdomain.com/api/health`
+- `https://maverick.minhabanda.com/api/health`
 
-After the first deploy, create the initial admin user:
+To add a band (and its first admin member):
 
 ```bash
-COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-admin.sh 'YourName' 'you@example.com'
+COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-band.sh <slug> 'Band Name' 'YourName' 'you@example.com'
 ```
 
 ## 6) Update deployment

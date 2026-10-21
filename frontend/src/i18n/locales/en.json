@@ -1,5 +1,6 @@
 {
   "app": {
+    "name": "minhabanda.com",
     "title": "Expense Report",
     "health": "Loading...",
     "logout": "Logout",

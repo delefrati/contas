@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 export type RepertoireItemType = 'song' | 'pause';
 
@@ -49,6 +50,7 @@ export class RepertoireService {
   constructor(
     private prisma: PrismaService,
     private logService: LogService,
+    private requestContext: RequestContextService,
   ) {}
 
   private normalizeDate(date?: string): string {
@@ -81,7 +83,11 @@ export class RepertoireService {
     let validIds = new Set<number>();
     if (songIdCandidates.length > 0) {
       const existing = await this.prisma.song.findMany({
-        where: { id: { in: songIdCandidates }, deletedAt: null },
+        where: {
+          id: { in: songIdCandidates },
+          bandId: this.requestContext.requireBandId(),
+          deletedAt: null,
+        },
         select: { id: true },
       });
       validIds = new Set(existing.map((s) => s.id));
@@ -118,7 +124,7 @@ export class RepertoireService {
 
   async findAll(): Promise<RepertoireDto[]> {
     const repertoires = await this.prisma.repertoire.findMany({
-      where: { deletedAt: null },
+      where: { bandId: this.requestContext.requireBandId(), deletedAt: null },
       include: {
         _count: { select: { songs: { where: { type: 'song' } } } },
       },
@@ -135,8 +141,8 @@ export class RepertoireService {
   }
 
   async findOne(id: number): Promise<RepertoireDto> {
-    const repertoire = await this.prisma.repertoire.findUnique({
-      where: { id },
+    const repertoire = await this.prisma.repertoire.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
       include: {
         songs: {
           include: { song: true },
@@ -176,6 +182,7 @@ export class RepertoireService {
 
     const repertoire = await this.prisma.repertoire.create({
       data: {
+        bandId: this.requestContext.requireBandId(),
         name,
         date: this.normalizeDate(dto.date),
       },
@@ -191,7 +198,9 @@ export class RepertoireService {
   }
 
   async update(id: number, dto: UpdateRepertoireDto): Promise<RepertoireDto> {
-    const existing = await this.prisma.repertoire.findUnique({ where: { id } });
+    const existing = await this.prisma.repertoire.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+    });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Repertoire not found.');
     }
@@ -247,7 +256,9 @@ export class RepertoireService {
   }
 
   async delete(id: number): Promise<void> {
-    const repertoire = await this.prisma.repertoire.findUnique({ where: { id } });
+    const repertoire = await this.prisma.repertoire.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+    });
     if (!repertoire || repertoire.deletedAt) {
       return;
     }

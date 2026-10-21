@@ -1,6 +1,6 @@
-# API Examples - Contas Backend
+# API Examples - minhabanda.com Backend
 
-This document provides practical examples of how to use the Contas API endpoints.
+This document provides practical examples of how to use the minhabanda.com API endpoints.
 
 ## Authentication Flow
 

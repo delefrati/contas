@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
+import { RequestContextService } from '../common/request-context.service';
 
 describe('ExpenseService', () => {
   let service: ExpenseService;
@@ -15,7 +16,9 @@ describe('ExpenseService', () => {
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
       expenseType: {
         findFirst: jest.fn(),
@@ -29,6 +32,7 @@ describe('ExpenseService', () => {
       },
       member: {
         findMany: jest.fn(),
+        count: jest.fn(),
       },
     };
     logService = { log: jest.fn().mockResolvedValue({}) };
@@ -38,6 +42,14 @@ describe('ExpenseService', () => {
         ExpenseService,
         { provide: PrismaService, useValue: prisma },
         { provide: LogService, useValue: logService },
+        {
+          provide: RequestContextService,
+          useValue: {
+            requireBandId: jest.fn().mockReturnValue(1),
+            getBandId: jest.fn().mockReturnValue(1),
+            getMemberId: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -48,7 +60,8 @@ describe('ExpenseService', () => {
     const validDto = { description: 'Groceries', typeId: 1, amount: 50.5, date: '2024-01-15', memberIds: [1, 2] };
 
     beforeEach(() => {
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 1, deletedAt: null });
+      prisma.expenseType.findFirst.mockResolvedValue({ id: 1, deletedAt: null });
+      prisma.member.count.mockResolvedValue(2);
       prisma.expense.create.mockResolvedValue({
         id: 1, description: 'Groceries', fkType: 1, amount: 50.5, date: '2024-01-15',
         fkMember: 1, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null,
@@ -68,7 +81,38 @@ describe('ExpenseService', () => {
       expect(result.amount).toBe(50.5);
       expect(result.memberIds).toEqual([1, 2]);
       expect(result.members).toEqual(['Alice', 'Bob']);
+      expect(prisma.expenseType.findFirst).toHaveBeenCalledWith({
+        where: { id: 1, bandId: 1 },
+        select: { id: true, deletedAt: true },
+      });
+      expect(prisma.member.count).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] }, bandId: 1 },
+      });
+      expect(prisma.expense.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ bandId: 1 }),
+        }),
+      );
       expect(logService.log).toHaveBeenCalledWith('CREATE', 'expense', 1, expect.any(Object));
+    });
+
+    it('should reject a member that belongs to another band', async () => {
+      // only member 1 is in the current band; member 2 is from another band
+      prisma.member.count.mockResolvedValue(1);
+
+      await expect(service.create(validDto)).rejects.toThrow('Invalid member in the list sent.');
+      expect(prisma.member.count).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] }, bandId: 1 },
+      });
+      expect(prisma.expense.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject an expense type from another band', async () => {
+      // the bandId-scoped lookup finds nothing for another band's type
+      prisma.expenseType.findFirst.mockResolvedValue(null);
+
+      await expect(service.create(validDto)).rejects.toThrow('Invalid expense type.');
+      expect(prisma.expense.create).not.toHaveBeenCalled();
     });
 
     it('should throw for empty description', async () => {
@@ -89,8 +133,9 @@ describe('ExpenseService', () => {
     });
 
     it('should use first active type when typeId is not provided', async () => {
-      prisma.expenseType.findFirst.mockResolvedValue({ id: 2 });
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 2, deletedAt: null });
+      prisma.expenseType.findFirst
+        .mockResolvedValueOnce({ id: 2 }) // first active type
+        .mockResolvedValueOnce({ id: 2, deletedAt: null }); // type validation
       prisma.expense.create.mockResolvedValue({
         id: 2, description: 'Test', fkType: 2, amount: 10, date: '2024-01-15',
         fkMember: null, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null,
@@ -101,8 +146,10 @@ describe('ExpenseService', () => {
       await service.create({ description: 'Test', amount: 10 });
 
       expect(prisma.expenseType.findFirst).toHaveBeenCalledWith({
-        where: { deletedAt: null }, orderBy: { id: 'asc' }, select: { id: true },
+        where: { bandId: 1, deletedAt: null }, orderBy: { id: 'asc' }, select: { id: true },
       });
+      expect(prisma.member.count).not.toHaveBeenCalled();
+      expect(prisma.member.findMany).toHaveBeenCalledWith({ where: { bandId: 1, active: true }, select: { id: true } });
     });
 
     it('should throw when no active type available and typeId not provided', async () => {
@@ -113,7 +160,7 @@ describe('ExpenseService', () => {
     });
 
     it('should throw for deleted expense type', async () => {
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 1, deletedAt: new Date() });
+      prisma.expenseType.findFirst.mockResolvedValue({ id: 1, deletedAt: new Date() });
 
       await expect(service.create(validDto)).rejects.toThrow('Invalid expense type.');
     });
@@ -133,7 +180,8 @@ describe('ExpenseService', () => {
 
       await service.create({ ...validDto, memberIds: [] });
 
-      expect(prisma.member.findMany).toHaveBeenCalledWith({ where: { active: true }, select: { id: true } });
+      expect(prisma.member.count).not.toHaveBeenCalled();
+      expect(prisma.member.findMany).toHaveBeenCalledWith({ where: { bandId: 1, active: true }, select: { id: true } });
     });
 
     it('should throw for invalid member id', async () => {
@@ -172,7 +220,7 @@ describe('ExpenseService', () => {
       const result = await service.findAll();
 
       expect(prisma.expense.findMany).toHaveBeenCalledWith({
-        where: { deletedAt: null },
+        where: { bandId: 1, deletedAt: null },
         include: { type: true, members: { include: { member: true } } },
         orderBy: { createdAt: 'desc' },
       });
@@ -183,17 +231,19 @@ describe('ExpenseService', () => {
 
   describe('update', () => {
     beforeEach(() => {
-      prisma.expense.findUnique.mockResolvedValue({ id: 1, deletedAt: null });
+      prisma.expense.findFirst.mockResolvedValue({ id: 1, deletedAt: null });
       prisma.expense.update.mockResolvedValue({});
     });
 
     it('should throw when expense not found', async () => {
-      prisma.expense.findUnique.mockResolvedValue(null);
+      prisma.expense.findFirst.mockResolvedValue(null);
       await expect(service.update(999, { description: 'New' })).rejects.toThrow('Expense not found.');
+      expect(prisma.expense.findFirst).toHaveBeenCalledWith({ where: { id: 999, bandId: 1 } });
+      expect(prisma.expense.update).not.toHaveBeenCalled();
     });
 
     it('should throw when expense is deleted', async () => {
-      prisma.expense.findUnique.mockResolvedValue({ id: 1, deletedAt: new Date() });
+      prisma.expense.findFirst.mockResolvedValue({ id: 1, deletedAt: new Date() });
       await expect(service.update(1, { description: 'New' })).rejects.toThrow('Expense not found.');
     });
 
@@ -210,39 +260,79 @@ describe('ExpenseService', () => {
     });
 
     it('should throw for deleted expense type', async () => {
-      prisma.expenseType.findUnique.mockResolvedValue({ id: 2, deletedAt: new Date() });
+      prisma.expenseType.findFirst.mockResolvedValue({ id: 2, deletedAt: new Date() });
       await expect(service.update(1, { typeId: 2 })).rejects.toThrow('Invalid expense type.');
+      expect(prisma.expenseType.findFirst).toHaveBeenCalledWith({ where: { id: 2, bandId: 1 } });
     });
 
     it('should update memberIds when provided', async () => {
-      prisma.expense.findUnique
-        .mockResolvedValueOnce({ id: 1, deletedAt: null })
-        .mockResolvedValueOnce({
-          id: 1, description: 'Test', fkType: 1, amount: 10, date: '2024-01-15',
-          fkMember: 3, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null,
-          type: { id: 1, name: 'Food' }, members: [{ memberId: 3, member: { name: 'Charlie' } }],
-        });
+      prisma.member.count.mockResolvedValue(1);
+      prisma.expense.findUnique.mockResolvedValueOnce({
+        id: 1, description: 'Test', fkType: 1, amount: 10, date: '2024-01-15',
+        fkMember: 3, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null,
+        type: { id: 1, name: 'Food' }, members: [{ memberId: 3, member: { name: 'Charlie' } }],
+      });
 
       await service.update(1, { memberIds: [3] });
 
+      expect(prisma.member.count).toHaveBeenCalledWith({ where: { id: { in: [3] }, bandId: 1 } });
       expect(prisma.expenseMember.deleteMany).toHaveBeenCalledWith({ where: { expenseId: 1 } });
       expect(prisma.expenseMember.createMany).toHaveBeenCalledWith({
         data: [{ expenseId: 1, memberId: 3 }],
       });
     });
+
+    it('should reject memberIds from another band', async () => {
+      prisma.member.count.mockResolvedValue(0);
+
+      await expect(service.update(1, { memberIds: [99] })).rejects.toThrow('Invalid member in the list sent.');
+      expect(prisma.expenseMember.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.expenseMember.createMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
     it('should soft delete an expense', async () => {
-      prisma.expense.findUnique.mockResolvedValue({ id: 1, description: 'Test', amount: 50 });
+      prisma.expense.findFirst.mockResolvedValue({ id: 1, description: 'Test', amount: 50 });
       prisma.expense.update.mockResolvedValue({});
 
       await service.delete(1);
 
+      expect(prisma.expense.findFirst).toHaveBeenCalledWith({ where: { id: 1, bandId: 1 } });
       expect(prisma.expense.update).toHaveBeenCalledWith({
         where: { id: 1 }, data: { deletedAt: expect.any(Date) },
       });
       expect(logService.log).toHaveBeenCalledWith('DELETE', 'expense', 1, { description: 'Test', amount: 50 });
+    });
+
+    it('should throw when expense is not found in the current band', async () => {
+      prisma.expense.findFirst.mockResolvedValue(null);
+
+      await expect(service.delete(999)).rejects.toThrow('Expense not found.');
+      expect(prisma.expense.update).not.toHaveBeenCalled();
+      expect(logService.log).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('markPaid', () => {
+    it('should update and return only expenses of the current band', async () => {
+      prisma.expense.updateMany.mockResolvedValue({ count: 2 });
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      await service.markPaid([1, 2, 2], true);
+
+      expect(prisma.expense.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] }, bandId: 1, deletedAt: null },
+        data: { paid: true },
+      });
+      expect(prisma.expense.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] }, bandId: 1, deletedAt: null },
+        include: { type: true, members: { include: { member: true } } },
+      });
+    });
+
+    it('should throw when no valid ids are given', async () => {
+      await expect(service.markPaid([], true)).rejects.toThrow('No expenses selected.');
     });
   });
 
@@ -261,6 +351,10 @@ describe('ExpenseService', () => {
 
       const result = await service.reportByMember();
 
+      expect(prisma.member.findMany).toHaveBeenCalledWith({
+        where: { bandId: 1 },
+        orderBy: [{ active: 'desc' }, { name: 'asc' }],
+      });
       expect(result).toHaveLength(2);
       expect(result[0].total).toBe(50); // 100 / 2 members
       expect(result[1].total).toBe(50);

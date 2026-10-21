@@ -10,32 +10,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Member {
-  id        Int       @id @default(autoincrement())
-  name      String    @db.VarChar(255)
-  email     String?   @unique @db.VarChar(255)
-  oidcSub   String?   @unique @map("oidc_sub") @db.VarChar(255)
-  active    Boolean   @default(true)
+model Band {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique @db.VarChar(63)
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
 
+  members      Member[]
+  expenseTypes ExpenseType[]
+  expenses     Expense[]
+  songs        Song[]
+  repertoires  Repertoire[]
+  logs         Log[]
+
+  @@map("bands")
+}
+
+model Member {
+  id      Int     @id @default(autoincrement())
+  bandId  Int     @map("band_id")
+  name    String  @db.VarChar(255)
+  email   String? @db.VarChar(255)
+  oidcSub String? @map("oidc_sub") @db.VarChar(255)
+  active  Boolean @default(true)
+
+  band           Band            @relation(fields: [bandId], references: [id])
   expenseMembers ExpenseMember[]
   sessions       Session[]
   logs           Log[]
 
+  @@unique([bandId, email])
+  @@unique([bandId, oidcSub])
   @@map("members")
 }
 
 model ExpenseType {
   id        Int       @id @default(autoincrement())
+  bandId    Int       @map("band_id")
   name      String    @db.VarChar(255)
   deletedAt DateTime? @map("deleted_at")
 
-  expenses  Expense[]
+  band     Band      @relation(fields: [bandId], references: [id])
+  expenses Expense[]
 
+  @@index([bandId])
   @@map("expense_types")
 }
 
 model Expense {
   id          Int       @id @default(autoincrement())
+  bandId      Int       @map("band_id")
   description String    @db.VarChar(255)
   amount      Decimal   @db.Decimal(12, 2)
   fkType      Int?      @map("fk_type")
@@ -45,10 +69,12 @@ model Expense {
   createdAt   String    @map("created_at") @db.VarChar(40)
   deletedAt   DateTime? @map("deleted_at")
 
-  type     ExpenseType? @relation(fields: [fkType], references: [id])
+  band Band         @relation(fields: [bandId], references: [id])
+  type ExpenseType? @relation(fields: [fkType], references: [id])
 
-  members  ExpenseMember[]
+  members ExpenseMember[]
 
+  @@index([bandId])
   @@map("expenses")
 }
 
@@ -64,31 +90,34 @@ model ExpenseMember {
 }
 
 model Log {
-  id        Int       @id @default(autoincrement())
-  action    String    @db.VarChar(50)
-  resource  String    @db.VarChar(100)
+  id         Int      @id @default(autoincrement())
+  bandId     Int      @map("band_id")
+  action     String   @db.VarChar(50)
+  resource   String   @db.VarChar(100)
   resourceId Int?     @map("resource_id")
-  details   String?   @db.LongText
-  createdAt DateTime  @default(now()) @map("created_at")
-  userId    Int?      @map("user_id")
+  details    String?  @db.LongText
+  createdAt  DateTime @default(now()) @map("created_at")
+  userId     Int?     @map("user_id")
 
-  user      Member?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  band Band    @relation(fields: [bandId], references: [id])
+  user Member? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([action])
   @@index([resource])
   @@index([createdAt])
+  @@index([bandId])
   @@map("logs")
 }
 
 model Session {
-  id        Int       @id @default(autoincrement())
-  memberId  Int       @map("member_id")
-  token     String    @unique @db.VarChar(500)
-  oidcSub   String?   @map("oidc_sub") @db.VarChar(255)
-  expiresAt DateTime  @map("expires_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  memberId  Int      @map("member_id")
+  token     String   @unique @db.VarChar(500)
+  oidcSub   String?  @map("oidc_sub") @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
   @@index([expiresAt])
@@ -98,26 +127,32 @@ model Session {
 
 model Song {
   id        Int       @id @default(autoincrement())
+  bandId    Int       @map("band_id")
   title     String    @db.VarChar(255)
   artist    String?   @db.VarChar(255)
   notes     String?   @db.Text
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
+  band        Band             @relation(fields: [bandId], references: [id])
   repertoires RepertoireSong[]
 
+  @@index([bandId])
   @@map("songs")
 }
 
 model Repertoire {
   id        Int       @id @default(autoincrement())
+  bandId    Int       @map("band_id")
   name      String    @db.VarChar(255)
   date      String    @default("") @db.VarChar(10)
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
+  band  Band             @relation(fields: [bandId], references: [id])
   songs RepertoireSong[]
 
+  @@index([bandId])
   @@map("repertoires")
 }
 

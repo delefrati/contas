@@ -3,9 +3,10 @@ import { MemberService } from './member.service';
 import { MemberController } from './member.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { LogModule } from '../log/log.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [PrismaModule, LogModule],
+  imports: [PrismaModule, LogModule, CommonModule],
   controllers: [MemberController],
   providers: [MemberService],
   exports: [MemberService],

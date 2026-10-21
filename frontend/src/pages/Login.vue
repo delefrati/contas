@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
+      <p v-if="band" class="band-name">{{ band.name }}</p>
       <h1>{{ t('login.title') }}</h1>
       <p class="subtitle">{{ t('login.subtitle') }}</p>
 
@@ -26,11 +27,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
+import { useBand } from '../composables/useBand'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { loginWithGoogle, loading } = useAuth()
+const { band } = useBand()
 
 const error = ref('')
 
@@ -87,6 +90,15 @@ onMounted(() => {
   width: 100%;
   max-width: 400px;
   text-align: center;
+}
+
+.band-name {
+  margin: 0 0 8px 0;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 h1 {

@@ -6,7 +6,7 @@ import { RequestContextService } from '../common/request-context.service';
 describe('LogService', () => {
   let service: LogService;
   let prisma: { log: { create: jest.Mock; findMany: jest.Mock } };
-  let requestContext: { getMemberId: jest.Mock };
+  let requestContext: { getMemberId: jest.Mock; getBandId: jest.Mock; requireBandId: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -15,7 +15,11 @@ describe('LogService', () => {
         findMany: jest.fn(),
       },
     };
-    requestContext = { getMemberId: jest.fn() };
+    requestContext = {
+      getMemberId: jest.fn(),
+      getBandId: jest.fn().mockReturnValue(1),
+      requireBandId: jest.fn().mockReturnValue(1),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -40,7 +44,7 @@ describe('LogService', () => {
 
       expect(prisma.log.create).toHaveBeenCalledWith({
         data: {
-          action: 'CREATE', resource: 'expense', resourceId: 5,
+          bandId: 1, action: 'CREATE', resource: 'expense', resourceId: 5,
           details: '{"amount":100}', userId: 10,
         },
       });
@@ -60,7 +64,7 @@ describe('LogService', () => {
 
       expect(prisma.log.create).toHaveBeenCalledWith({
         data: {
-          action: 'UPDATE', resource: 'member', resourceId: 3,
+          bandId: 1, action: 'UPDATE', resource: 'member', resourceId: 3,
           details: null, userId: 7,
         },
       });
@@ -93,6 +97,7 @@ describe('LogService', () => {
       const result = await service.findAll();
 
       expect(prisma.log.findMany).toHaveBeenCalledWith({
+        where: { bandId: 1 },
         orderBy: { createdAt: 'desc' }, take: 100,
         include: { user: { select: { name: true } } },
       });
@@ -115,7 +120,7 @@ describe('LogService', () => {
       await service.findByResource('expense');
 
       expect(prisma.log.findMany).toHaveBeenCalledWith({
-        where: { resource: 'expense' },
+        where: { bandId: 1, resource: 'expense' },
         orderBy: { createdAt: 'desc' }, take: 50,
         include: { user: { select: { name: true } } },
       });
@@ -126,7 +131,7 @@ describe('LogService', () => {
       await service.findByResource('expense', 5, 25);
 
       expect(prisma.log.findMany).toHaveBeenCalledWith({
-        where: { resource: 'expense', resourceId: 5 },
+        where: { bandId: 1, resource: 'expense', resourceId: 5 },
         orderBy: { createdAt: 'desc' }, take: 25,
         include: { user: { select: { name: true } } },
       });
@@ -139,7 +144,7 @@ describe('LogService', () => {
       await service.findByAction('LOGIN', 20);
 
       expect(prisma.log.findMany).toHaveBeenCalledWith({
-        where: { action: 'LOGIN' },
+        where: { bandId: 1, action: 'LOGIN' },
         orderBy: { createdAt: 'desc' }, take: 20,
         include: { user: { select: { name: true } } },
       });
