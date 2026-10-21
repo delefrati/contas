@@ -183,7 +183,7 @@ export class MemberService {
   }
 
   async linkOidcSub(id: number, oidcSub: string): Promise<MemberDto> {
-    const existing = await this.findOwned(id);
+    await this.findOwned(id);
 
     const oidcExists = await this.prisma.member.findUnique({
       where: { bandId_oidcSub: { bandId: this.requestContext.requireBandId(), oidcSub } },
