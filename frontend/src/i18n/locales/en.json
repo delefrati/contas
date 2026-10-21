@@ -33,7 +33,14 @@
     "actions": "Actions",
     "total": "Total:",
     "edit": "Edit Expense",
-    "successUpdate": "Expense updated successfully!"
+    "successUpdate": "Expense updated successfully!",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "markAsPaid": "Mark as paid",
+    "markAsUnpaid": "Mark as unpaid",
+    "selectAll": "Select all",
+    "selectedCount": "{count} selected",
+    "successMarkPaid": "Payment status updated successfully!"
   },
   "form": {
     "addExpense": "Add Expense",
@@ -45,6 +52,7 @@
     "typeRequired": "Type is required",
     "typeNameRequired": "Type name is required",
     "amount": "Amount (R$)",
+    "paid": "Paid",
     "members": "Members",
     "membersHint": "Hold Ctrl (or Cmd on Mac) to select multiple.",
     "notes": "Notes",
@@ -87,6 +95,9 @@
     "dateFrom": "From",
     "dateTo": "To",
     "allTypes": "All types",
+    "allPaid": "All",
+    "onlyPaid": "Paid",
+    "onlyUnpaid": "Unpaid",
     "clear": "Clear filters",
     "toggle": "Filters"
   },

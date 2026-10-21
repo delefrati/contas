@@ -33,11 +33,14 @@ const editFormData = ref({
   typeId: '',
   amount: '',
   date: '',
+  paid: false,
   memberIds: [],
 })
 const updating = ref(false)
 const openActionMenuId = ref(null)
 const expandedLogId = ref(null)
+const selectedExpenseIds = ref([])
+const markingPaid = ref(false)
 const isAddMemberModalOpen = ref(false)
 const newMemberName = ref('')
 const newMemberEmail = ref('')
@@ -57,6 +60,7 @@ const filters = ref({
   dateTo: '',
   typeId: '',
   memberIds: [],
+  paid: '',
 })
 
 // Form
@@ -65,6 +69,7 @@ const formData = ref({
   typeId: '',
   amount: '',
   date: new Date().toISOString().slice(0, 10),
+  paid: false,
   memberIds: [],
   notes: '',
 })
@@ -101,6 +106,9 @@ const filteredExpenses = computed(() => {
       const hasMatch = filters.value.memberIds.some(id => expMemberIds.includes(String(id)))
       if (!hasMatch) return false
     }
+    // Paid status
+    if (filters.value.paid === 'paid' && !exp.paid) return false
+    if (filters.value.paid === 'unpaid' && exp.paid) return false
     return true
   })
 })
@@ -110,8 +118,60 @@ function toggleActionMenu(id) {
 }
 
 function clearFilters() {
-  filters.value = { text: '', dateFrom: '', dateTo: '', typeId: '', memberIds: [] }
+  filters.value = { text: '', dateFrom: '', dateTo: '', typeId: '', memberIds: [], paid: '' }
 }
+
+function toggleExpenseSelection(id) {
+  const index = selectedExpenseIds.value.indexOf(id)
+  if (index === -1) {
+    selectedExpenseIds.value.push(id)
+  } else {
+    selectedExpenseIds.value.splice(index, 1)
+  }
+}
+
+const allFilteredSelected = computed(() =>
+  filteredExpenses.value.length > 0 &&
+  filteredExpenses.value.every(exp => selectedExpenseIds.value.includes(exp.id))
+)
+
+function toggleSelectAll() {
+  if (allFilteredSelected.value) {
+    selectedExpenseIds.value = []
+  } else {
+    selectedExpenseIds.value = filteredExpenses.value.map(exp => exp.id)
+  }
+}
+
+async function markSelectedPaid(paid) {
+  if (selectedExpenseIds.value.length === 0) return
+
+  markingPaid.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/expenses/mark-paid`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ ids: selectedExpenseIds.value, paid }),
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || t('errors.genericError'))
+    }
+
+    successMessage.value = '✓ ' + t('expenses.successMarkPaid')
+    selectedExpenseIds.value = []
+    await loadData()
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    markingPaid.value = false
+  }
+}
+
 
 function syncSelectedType() {
   const hasCurrentType = activeTypes.value.some(
@@ -187,6 +247,7 @@ async function submitForm() {
       typeId: selectedTypeId,
       amount: parseFloat(formData.value.amount),
       date: formData.value.date,
+      paid: formData.value.paid,
     }
 
     if (formData.value.memberIds.length > 0) {
@@ -210,6 +271,7 @@ async function submitForm() {
       typeId: activeTypes.value[0] ? String(activeTypes.value[0].id) : '',
       amount: '',
       date: new Date().toISOString().slice(0, 10),
+      paid: false,
       memberIds: [],
       notes: '',
     }
@@ -305,6 +367,7 @@ function openEditModal(expense) {
     typeId: String(expense.typeId),
     amount: String(expense.amount),
     date: expense.date || (expense.createdAt ? expense.createdAt.slice(0, 10) : ''),
+    paid: Boolean(expense.paid),
     memberIds: expense.memberIds ? expense.memberIds.map(String) : [],
   }
   isEditExpenseModalOpen.value = true
@@ -320,6 +383,7 @@ async function updateExpense() {
       typeId: parseInt(editFormData.value.typeId),
       amount: parseFloat(editFormData.value.amount),
       date: editFormData.value.date,
+      paid: editFormData.value.paid,
     }
 
     if (editFormData.value.memberIds.length > 0) {
@@ -660,6 +724,14 @@ async function handleLogout() {
               </option>
             </select>
           </div>
+          <div class="filter-group">
+            <label>{{ $t('form.paid') }}</label>
+            <select v-model="filters.paid">
+              <option value="">{{ $t('filters.allPaid') }}</option>
+              <option value="paid">{{ $t('filters.onlyPaid') }}</option>
+              <option value="unpaid">{{ $t('filters.onlyUnpaid') }}</option>
+            </select>
+          </div>
           <div class="filter-group filter-actions">
             <button @click="clearFilters" class="btn-secondary">{{ $t('filters.clear') }}</button>
           </div>
@@ -673,57 +745,84 @@ async function handleLogout() {
           <p>{{ $t('expenses.noExpenses') }}</p>
         </div>
 
-        <table v-else class="expenses-table">
-          <thead>
-            <tr>
-              <th class="id">#</th>
-              <th class="description">{{ $t('form.description') }}</th>
-              <th class="type">{{ $t('form.type') }}</th>
-              <th class="member">{{ $t('form.members') }}</th>
-              <th class="amount">{{ $t('form.amount') }}</th>
-              <th class="date">{{ $t('expenses.date') }}</th>
-              <th class="actions"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row">
-              <td class="id">{{ expense.id }}</td>
-              <td class="description">{{ expense.description }}</td>
-              <td class="type">
-                <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
-                  <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
-                  <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
-                </span>
-              </td>
-              <td class="member">{{ getMemberNames(expense) }}</td>
-              <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
-              <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
-              <td class="actions">
-                <div class="actions-desktop">
-                  <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
-                <div class="actions-mobile">
-                  <button @click="toggleActionMenu(expense.id)" class="btn-dots">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                  </button>
-                  <div v-if="openActionMenuId === expense.id" class="action-dropdown">
-                    <button @click="openEditModal(expense); openActionMenuId = null">
-                      <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+        <template v-else>
+          <div v-if="selectedExpenseIds.length > 0" class="bulk-actions no-print">
+            <span class="bulk-count">{{ $t('expenses.selectedCount', { count: selectedExpenseIds.length }) }}</span>
+            <button @click="markSelectedPaid(true)" :disabled="markingPaid" class="btn-primary">
+              <i class="fa-solid fa-check"></i> {{ $t('expenses.markAsPaid') }}
+            </button>
+            <button @click="markSelectedPaid(false)" :disabled="markingPaid" class="btn-secondary">
+              {{ $t('expenses.markAsUnpaid') }}
+            </button>
+            <button @click="selectedExpenseIds = []" class="btn-secondary">
+              {{ $t('actions.cancel') }}
+            </button>
+          </div>
+
+          <table class="expenses-table">
+            <thead>
+              <tr>
+                <th class="select-col no-print">
+                  <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAll" :title="$t('expenses.selectAll')" />
+                </th>
+                <th class="id">#</th>
+                <th class="description">{{ $t('form.description') }}</th>
+                <th class="type">{{ $t('form.type') }}</th>
+                <th class="member">{{ $t('form.members') }}</th>
+                <th class="amount">{{ $t('form.amount') }}</th>
+                <th class="paid">{{ $t('form.paid') }}</th>
+                <th class="date">{{ $t('expenses.date') }}</th>
+                <th class="actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row" :class="{ 'is-selected': selectedExpenseIds.includes(expense.id) }">
+                <td class="select-col no-print">
+                  <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
+                </td>
+                <td class="id">{{ expense.id }}</td>
+                <td class="description">{{ expense.description }}</td>
+                <td class="type">
+                  <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
+                    <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
+                    <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
+                  </span>
+                </td>
+                <td class="member">{{ getMemberNames(expense) }}</td>
+                <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
+                <td class="paid">
+                  <span class="status-badge" :class="expense.paid ? 'is-active' : 'is-inactive'">
+                    {{ expense.paid ? $t('expenses.paid') : $t('expenses.unpaid') }}
+                  </span>
+                </td>
+                <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
+                <td class="actions">
+                  <div class="actions-desktop">
+                    <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
+                      <i class="fa-solid fa-pencil"></i>
                     </button>
-                    <button @click="deleteExpense(expense.id); openActionMenuId = null">
-                      <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                    <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
+                      <i class="fa-solid fa-xmark"></i>
                     </button>
                   </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  <div class="actions-mobile">
+                    <button @click="toggleActionMenu(expense.id)" class="btn-dots">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <div v-if="openActionMenuId === expense.id" class="action-dropdown">
+                      <button @click="openEditModal(expense); openActionMenuId = null">
+                        <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+                      </button>
+                      <button @click="deleteExpense(expense.id); openActionMenuId = null">
+                        <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
 
         <div class="summary" v-if="filteredExpenses.length > 0">
           <strong>{{ $t('expenses.total') }}</strong> R$ {{ calculateTotal().toFixed(2) }}
@@ -791,6 +890,13 @@ async function handleLogout() {
               type="date"
               required
             />
+          </div>
+
+          <div class="form-group form-group-checkbox">
+            <label for="paid">
+              <input id="paid" v-model="formData.paid" type="checkbox" />
+              {{ $t('form.paid') }}
+            </label>
           </div>
 
           <div class="form-group">
@@ -864,6 +970,13 @@ async function handleLogout() {
               type="date"
               required
             />
+          </div>
+
+          <div class="form-group form-group-checkbox">
+            <label for="edit-paid">
+              <input id="edit-paid" v-model="editFormData.paid" type="checkbox" />
+              {{ $t('form.paid') }}
+            </label>
           </div>
 
           <div class="form-group">

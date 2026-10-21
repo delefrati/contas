@@ -33,7 +33,14 @@
     "actions": "Acciones",
     "total": "Total:",
     "edit": "Editar Gasto",
-    "successUpdate": "¡Gasto actualizado con éxito!"
+    "successUpdate": "¡Gasto actualizado con éxito!",
+    "paid": "Pagado",
+    "unpaid": "No pagado",
+    "markAsPaid": "Marcar como pagado",
+    "markAsUnpaid": "Marcar como no pagado",
+    "selectAll": "Seleccionar todos",
+    "selectedCount": "{count} seleccionado(s)",
+    "successMarkPaid": "¡Estado de pago actualizado con éxito!"
   },
   "form": {
     "addExpense": "Agregar Gasto",
@@ -45,6 +52,7 @@
     "typeRequired": "El tipo es obligatorio",
     "typeNameRequired": "El nombre del tipo es obligatorio",
     "amount": "Monto (R$)",
+    "paid": "Pagado",
     "members": "Miembros",
     "membersHint": "Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples.",
     "notes": "Nota",
@@ -87,6 +95,9 @@
     "dateFrom": "Desde",
     "dateTo": "Hasta",
     "allTypes": "Todos los tipos",
+    "allPaid": "Todos",
+    "onlyPaid": "Pagado",
+    "onlyUnpaid": "No pagado",
     "clear": "Limpiar filtros",
     "toggle": "Filtros"
   },

@@ -1205,6 +1205,55 @@ code {
 }
 
 // ============================================================================
+// BULK ACTIONS & SELECTION
+// ============================================================================
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: $space-12;
+  flex-wrap: wrap;
+  padding: $space-12;
+  margin-bottom: $space-12;
+  background: var(--bg);
+  border: $border-width-md solid var(--border);
+  border-radius: $border-radius-md;
+
+  .bulk-count {
+    font-weight: 600;
+    color: var(--text-h);
+  }
+}
+
+.expenses-table {
+  .select-col {
+    width: 36px;
+    text-align: center;
+
+    input[type='checkbox'] {
+      cursor: pointer;
+    }
+  }
+
+  .expense-row.is-selected {
+    background: rgba(72, 187, 120, $opacity-success-bg);
+  }
+}
+
+.form-group-checkbox {
+  label {
+    display: flex;
+    align-items: center;
+    gap: $space-8;
+    cursor: pointer;
+  }
+
+  input[type='checkbox'] {
+    width: auto;
+    cursor: pointer;
+  }
+}
+
+// ============================================================================
 // PRINT
 // ============================================================================
 .print-only {

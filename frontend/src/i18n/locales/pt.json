@@ -33,7 +33,14 @@
     "actions": "Ações",
     "total": "Total:",
     "edit": "Editar Despesa",
-    "successUpdate": "Despesa atualizada com sucesso!"
+    "successUpdate": "Despesa atualizada com sucesso!",
+    "paid": "Pago",
+    "unpaid": "Não pago",
+    "markAsPaid": "Marcar como pago",
+    "markAsUnpaid": "Marcar como não pago",
+    "selectAll": "Selecionar todos",
+    "selectedCount": "{count} selecionado(s)",
+    "successMarkPaid": "Status de pagamento atualizado com sucesso!"
   },
   "form": {
     "addExpense": "Adicionar Despesa",
@@ -45,6 +52,7 @@
     "typeRequired": "Tipo é obrigatório",
     "typeNameRequired": "Nome do tipo é obrigatório",
     "amount": "Valor (R$)",
+    "paid": "Pago",
     "members": "Integrantes",
     "membersHint": "Segure Ctrl (ou Cmd no Mac) para selecionar mais de um.",
     "notes": "Observação",
@@ -87,6 +95,9 @@
     "dateFrom": "De",
     "dateTo": "Até",
     "allTypes": "Todos os tipos",
+    "allPaid": "Todos",
+    "onlyPaid": "Pago",
+    "onlyUnpaid": "Não pago",
     "clear": "Limpar filtros",
     "toggle": "Filtros"
   },

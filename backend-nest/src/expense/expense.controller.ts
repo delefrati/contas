@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { ExpenseService, ExpenseDto, CreateExpenseDto, UpdateExpenseDto, ReportByMemberDto } from './expense.service';
+import { ExpenseService, ExpenseDto, CreateExpenseDto, UpdateExpenseDto, MarkPaidDto, ReportByMemberDto } from './expense.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/expenses')
@@ -32,6 +32,12 @@ export class ExpenseController {
   @Get('report/by-member')
   async reportByMember(): Promise<{ data: ReportByMemberDto[] }> {
     const data = await this.expenseService.reportByMember();
+    return { data };
+  }
+
+  @Patch('mark-paid')
+  async markPaid(@Body() markPaidDto: MarkPaidDto): Promise<{ data: ExpenseDto[] }> {
+    const data = await this.expenseService.markPaid(markPaidDto.ids, markPaidDto.paid);
     return { data };
   }
 

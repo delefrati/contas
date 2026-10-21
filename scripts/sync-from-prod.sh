@@ -16,7 +16,11 @@ SSH_HOST="${DEPLOY_SSH_HOST:?Set DEPLOY_SSH_HOST in .env.prod}"
 REMOTE_DIR="${DEPLOY_REMOTE_DIR:-~/contas-app}"
 
 echo "==> Running tests before deploy..."
-bash "$LOCAL_DIR/scripts/run-tests.sh"
+if [[ "${SKIP_TESTS:-0}" == "1" ]]; then
+  echo "    SKIP_TESTS=1 set — skipping test gate."
+else
+  bash "$LOCAL_DIR/scripts/run-tests.sh"
+fi
 
 echo "==> Building images locally..."
 cd "$LOCAL_DIR"

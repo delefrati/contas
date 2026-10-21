@@ -550,11 +550,6 @@ onMounted(async () => {
       :class="{ 'is-two-columns': printColumns === 2 }"
       :style="printStyle"
     >
-      <div class="print-header">
-        <h1>{{ currentRepertoire.name }}</h1>
-        <p class="print-meta">{{ formatDate(currentRepertoire.date) }}</p>
-        <p class="print-meta">{{ $t('app.printedOn') }}: {{ printedAt }}</p>
-      </div>
       <ol class="print-song-list">
         <template v-for="(item, index) in currentRepertoire.songs" :key="item.id">
           <li v-if="item.type !== 'pause'" :value="songNumber(index)">

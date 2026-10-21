@@ -26,7 +26,7 @@ cd "$(dirname "$0")/.."
 echo "==> Creating admin member: $NAME <$EMAIL>"
 
 docker compose -f "$COMPOSE_FILE" exec -T db mysql \
-  -u"${MYSQL_USER:-root}" -p"${MYSQL_ROOT_PASSWORD:-root}" "${MYSQL_DATABASE:-contas}" \
+  -uroot -p"${MYSQL_ROOT_PASSWORD:-root}" "${MYSQL_DATABASE:-contas}" \
   -e "INSERT INTO members (name, email, active) VALUES ('${NAME//\'/\'\'}', '${EMAIL//\'/\'\'}', true) ON DUPLICATE KEY UPDATE name = VALUES(name);"
 
 echo "==> Done."

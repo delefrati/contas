@@ -9,6 +9,7 @@ export class ExpenseDto {
   typeName?: string;
   amount!: number;
   date!: string;
+  paid!: boolean;
   createdAt!: string;
   memberId!: number | null;
   memberIds!: number[];
@@ -20,6 +21,7 @@ export class CreateExpenseDto {
   typeId?: number;
   amount!: number;
   date?: string;
+  paid?: boolean;
   memberIds?: number[];
 }
 
@@ -28,7 +30,13 @@ export class UpdateExpenseDto {
   typeId?: number;
   amount?: number;
   date?: string;
+  paid?: boolean;
   memberIds?: number[];
+}
+
+export class MarkPaidDto {
+  ids!: number[];
+  paid!: boolean;
 }
 
 export class ReportByMemberDto {
@@ -46,7 +54,7 @@ export class ExpenseService {
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto): Promise<ExpenseDto> {
-    const { description, typeId, amount, date, memberIds = [] } = createExpenseDto;
+    const { description, typeId, amount, date, paid = false, memberIds = [] } = createExpenseDto;
     const numericAmount = Number(amount);
     const normalizedAmount = Math.round(numericAmount * 100) / 100;
 
@@ -128,6 +136,7 @@ export class ExpenseService {
         amount: normalizedAmount,
         fkMember: normalizedMemberIds[0] || null,
         date: normalizedDate,
+        paid: Boolean(paid),
         createdAt: new Date().toISOString(),
         members: {
           create: normalizedMemberIds.map((memberId) => ({
@@ -202,6 +211,10 @@ export class ExpenseService {
       data.date = dto.date;
     }
 
+    if (dto.paid !== undefined) {
+      data.paid = Boolean(dto.paid);
+    }
+
     if (dto.typeId !== undefined) {
       const typeId = parseInt(String(dto.typeId));
       const expenseType = await this.prisma.expenseType.findUnique({ where: { id: typeId } });
@@ -266,6 +279,39 @@ export class ExpenseService {
     );
   }
 
+  async markPaid(ids: number[], paid: boolean): Promise<ExpenseDto[]> {
+    const normalizedIds = Array.from(
+      new Set((ids || []).map((id) => parseInt(String(id)))),
+    ).filter((id) => Number.isFinite(id) && id > 0);
+
+    if (normalizedIds.length === 0) {
+      throw new BadRequestException('No expenses selected.');
+    }
+
+    const normalizedPaid = Boolean(paid);
+
+    await this.prisma.expense.updateMany({
+      where: { id: { in: normalizedIds }, deletedAt: null },
+      data: { paid: normalizedPaid },
+    });
+
+    await this.logService.log('UPDATE', 'expense', undefined, {
+      action: 'markPaid',
+      ids: normalizedIds,
+      paid: normalizedPaid,
+    });
+
+    const expenses = await this.prisma.expense.findMany({
+      where: { id: { in: normalizedIds }, deletedAt: null },
+      include: {
+        type: true,
+        members: { include: { member: true } },
+      },
+    });
+
+    return expenses.map((expense) => this.mapExpenseToDto(expense));
+  }
+
   async reportByMember(): Promise<ReportByMemberDto[]> {
     const members = await this.prisma.member.findMany({
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
@@ -326,6 +372,7 @@ export class ExpenseService {
       typeName: expense.type?.name,
       amount: parseFloat(expense.amount.toString()),
       date: expense.date || createdAt.slice(0, 10),
+      paid: Boolean(expense.paid),
       createdAt,
       memberId: expense.fkMember,
       memberIds,
