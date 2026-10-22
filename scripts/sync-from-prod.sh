@@ -47,7 +47,8 @@ ssh -i "$SSH_KEY" "$SSH_HOST" \
   "docker load < /tmp/contas-images.tar.gz && \
    rm /tmp/contas-images.tar.gz && \
    cd $REMOTE_DIR && \
-   docker compose -f docker-compose.prod.yml up -d"
+   docker compose -f docker-compose.prod.yml up -d && \
+   docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps caddy"
 
 echo "==> Cleaning up..."
 rm -f /tmp/contas-images.tar.gz

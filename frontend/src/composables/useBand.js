@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { isCentralHost } from '../hosts'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
@@ -19,6 +20,7 @@ async function fetchBand() {
 }
 
 export function useBand() {
-  if (!request) request = fetchBand()
+  // The central login host isn't a band
+  if (!request && !isCentralHost()) request = fetchBand()
   return { band }
 }
