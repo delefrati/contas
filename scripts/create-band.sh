@@ -41,7 +41,10 @@ echo "==> Creating band '$SLUG': $BAND_NAME"
 
 docker compose -f "$COMPOSE_FILE" exec -T db mysql \
   -uroot -p"${MYSQL_ROOT_PASSWORD:-root}" "${MYSQL_DATABASE:-contas}" \
-  -e "INSERT INTO bands (slug, name) VALUES ('$SLUG', '${BAND_NAME//\'/\'\'}');"
+  -e "INSERT INTO bands (slug, name) VALUES ('$SLUG', '${BAND_NAME//\'/\'\'}');
+      INSERT INTO event_types (band_id, name, color)
+        SELECT id, 'Show', '#667eea' FROM bands WHERE slug = '$SLUG'
+        UNION ALL SELECT id, 'Ensaio', '#48bb78' FROM bands WHERE slug = '$SLUG';"
 
 COMPOSE_FILE="$COMPOSE_FILE" scripts/create-admin.sh "$SLUG" "$ADMIN_NAME" "$ADMIN_EMAIL"
 

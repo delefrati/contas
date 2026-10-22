@@ -20,7 +20,8 @@ model Band {
   expenseTypes ExpenseType[]
   expenses     Expense[]
   songs        Song[]
-  repertoires  Repertoire[]
+  eventTypes   EventType[]
+  events       Event[]
   logs         Log[]
 
   @@map("bands")
@@ -135,39 +136,60 @@ model Song {
   createdAt DateTime  @default(now()) @map("created_at")
 
   band        Band             @relation(fields: [bandId], references: [id])
-  repertoires RepertoireSong[]
+  events      EventSong[]
 
   @@index([bandId])
   @@map("songs")
 }
 
-model Repertoire {
+model EventType {
   id        Int       @id @default(autoincrement())
   bandId    Int       @map("band_id")
   name      String    @db.VarChar(255)
-  date      String    @default("") @db.VarChar(10)
+  color     String    @default("#667eea") @db.VarChar(7)
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
-  band  Band             @relation(fields: [bandId], references: [id])
-  songs RepertoireSong[]
+  band   Band    @relation(fields: [bandId], references: [id])
+  events Event[]
 
   @@index([bandId])
-  @@map("repertoires")
+  @@map("event_types")
 }
 
-model RepertoireSong {
-  id           Int     @id @default(autoincrement())
-  repertoireId Int     @map("repertoire_id")
-  songId       Int?    @map("song_id")
-  type         String  @default("song") @db.VarChar(20)
-  label        String? @db.VarChar(255)
-  position     Int     @default(0)
+model Event {
+  id        Int       @id @default(autoincrement())
+  bandId    Int       @map("band_id")
+  typeId    Int       @map("type_id")
+  title     String    @default("") @db.VarChar(255)
+  date      String    @db.VarChar(10)
+  time      String    @default("") @db.VarChar(5)
+  location  String?   @db.VarChar(255)
+  notes     String?   @db.Text
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  repertoire Repertoire @relation(fields: [repertoireId], references: [id], onDelete: Cascade)
-  song       Song?      @relation(fields: [songId], references: [id], onDelete: Cascade)
+  band    Band        @relation(fields: [bandId], references: [id])
+  type    EventType   @relation(fields: [typeId], references: [id])
+  setlist EventSong[]
 
-  @@index([repertoireId])
+  @@index([bandId, date])
+  @@index([typeId])
+  @@map("events")
+}
+
+model EventSong {
+  id       Int     @id @default(autoincrement())
+  eventId  Int     @map("event_id")
+  songId   Int?    @map("song_id")
+  type     String  @default("song") @db.VarChar(20)
+  label    String? @db.VarChar(255)
+  position Int     @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  song  Song? @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
   @@index([songId])
-  @@map("repertoire_songs")
+  @@map("event_songs")
 }

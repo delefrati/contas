@@ -18,7 +18,8 @@ const showLanguageSelector = ref(false)
 
 const sections = [
   { path: '/dashboard', icon: 'fa-house', titleKey: 'home.title' },
-  { path: '/repertorio', icon: 'fa-music', titleKey: 'repertoire.title' },
+  { path: '/agenda', icon: 'fa-calendar-days', titleKey: 'agenda.title' },
+  { path: '/musicas', icon: 'fa-music', titleKey: 'songs.title' },
   { path: '/financeiro', icon: 'fa-coins', titleKey: 'finance.title' },
   { path: '/integrantes', icon: 'fa-users', titleKey: 'members.title' },
   { path: '/registros', icon: 'fa-clock-rotate-left', titleKey: 'logs.title' },

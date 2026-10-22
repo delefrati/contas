@@ -10,7 +10,8 @@ A NestJS-based REST API for band management (members, finances, songs and setlis
 - 📝 Comprehensive activity logging
 - 🗂️ Expense types and categorization
 - 🔄 Multi-member expense tracking
-- 🎵 Songs and setlists (repertoires)
+- 🗓️ Calendar of shows and rehearsals, each with its own setlist
+- 🎵 Song catalog
 
 ## Prerequisites
 

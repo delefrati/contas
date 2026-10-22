@@ -6,6 +6,8 @@ import Finance from '../pages/Finance.vue'
 import Members from '../pages/Members.vue'
 import Logs from '../pages/Logs.vue'
 import Songs from '../pages/Songs.vue'
+import Agenda from '../pages/Agenda.vue'
+import EventDetail from '../pages/EventDetail.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
 import { centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
 
@@ -53,10 +55,27 @@ const routes = [
     meta: { requiresAuth: true, titleKey: 'logs.title' },
   },
   {
-    path: '/repertorio',
+    path: '/agenda',
+    name: 'Agenda',
+    component: Agenda,
+    meta: { requiresAuth: true, titleKey: 'agenda.title' },
+  },
+  {
+    path: '/agenda/:id(\\d+)',
+    name: 'Event',
+    component: EventDetail,
+    meta: { requiresAuth: true, titleKey: 'agenda.title' },
+  },
+  {
+    path: '/musicas',
     name: 'Songs',
     component: Songs,
-    meta: { requiresAuth: true, titleKey: 'repertoire.title' },
+    meta: { requiresAuth: true, titleKey: 'songs.title' },
+  },
+  {
+    // Former address of the songs and setlists page
+    path: '/repertorio',
+    redirect: '/musicas',
   },
   {
     path: '/',

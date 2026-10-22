@@ -1,6 +1,6 @@
 # minhabanda.com
 
-Band management app ([minhabanda.com](https://minhabanda.com)) — expenses, members, songs and repertoires — with:
+Band management app ([minhabanda.com](https://minhabanda.com)) — calendar of shows and rehearsals with their setlists, songs, members and expenses — with:
 
 - NestJS backend API with Prisma ORM
 - MySQL database
@@ -83,7 +83,7 @@ npm run migrate:deploy
 ### Bands
 
 Each band is served on its own subdomain (`<slug>.minhabanda.com`) and only sees its own
-members, expenses, songs and repertoires. The backend picks the band from the request host
+members, expenses, songs and events. The backend picks the band from the request host
 (`BASE_DOMAIN`); locally, requests to `localhost` use `DEFAULT_BAND` (`maverick`).
 
 Create a band and its first admin member:

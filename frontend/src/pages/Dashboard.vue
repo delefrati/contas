@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useBand } from '../composables/useBand'
 import AppHeader from '../components/AppHeader.vue'
-import { formatDate as formatLocalDate } from '../utils/date'
+import { formatDate as formatLocalDate, todayISO } from '../utils/date'
+import { eventName } from '../utils/events'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -16,7 +17,7 @@ const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 const health = ref('loading...')
 const members = ref([])
 const songs = ref([])
-const repertoires = ref([])
+const upcomingEvents = ref([])
 const expenses = ref([])
 const logs = ref([])
 const loading = ref(false)
@@ -26,8 +27,15 @@ const activeMembers = computed(() => members.value.filter(m => m.active))
 
 const unpaidCount = computed(() => expenses.value.filter(e => !e.paid).length)
 
-// Repertoires come from the API sorted by date, newest first
-const lastRepertoire = computed(() => repertoires.value[0] || null)
+// Upcoming events come from the API in chronological order
+const nextEvent = computed(() => upcomingEvents.value[0] || null)
+const eventsThisMonth = computed(() =>
+  upcomingEvents.value.filter(e => e.date.startsWith(todayISO().slice(0, 7))).length,
+)
+
+const lastSong = computed(() =>
+  songs.value.reduce((latest, s) => (!latest || s.createdAt > latest.createdAt ? s : latest), null),
+)
 
 const lastExpense = computed(() => {
   const entryDate = (e) => e.date || (e.createdAt ? e.createdAt.slice(0, 10) : '')
@@ -47,7 +55,7 @@ async function loadData() {
       fetch(`${apiBaseUrl}/api/health`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/members`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/songs`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/repertoires`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/events?from=${todayISO()}`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/expenses`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/logs?limit=5`, { headers: authHeader }),
     ])
@@ -66,7 +74,7 @@ async function loadData() {
     // A failing section shouldn't take the whole summary down
     const readData = async (response) => (response.ok ? (await response.json()).data || [] : [])
     health.value = (await healthResponse.json()).status
-    ;[members.value, songs.value, repertoires.value, expenses.value, logs.value] =
+    ;[members.value, songs.value, upcomingEvents.value, expenses.value, logs.value] =
       await Promise.all(dataResponses.map(readData))
   } catch (exception) {
     health.value = 'erro'
@@ -78,6 +86,11 @@ async function loadData() {
 
 function formatDate(dateStr) {
   return formatLocalDate(dateStr, locale.value)
+}
+
+function formatEvent(event) {
+  const when = [formatDate(event.date), event.time].filter(Boolean).join(' ')
+  return `${eventName(event)} · ${when}`
 }
 
 onMounted(async () => {
@@ -115,9 +128,9 @@ onMounted(async () => {
           <span class="stat-label">{{ $t('home.songs') }}</span>
         </div>
         <div class="stat">
-          <i class="fa-solid fa-list-ol"></i>
-          <span class="stat-value">{{ loading ? '…' : repertoires.length }}</span>
-          <span class="stat-label">{{ $t('home.repertoires') }}</span>
+          <i class="fa-solid fa-calendar-days"></i>
+          <span class="stat-value">{{ loading ? '…' : upcomingEvents.length }}</span>
+          <span class="stat-label">{{ $t('home.upcomingEvents') }}</span>
         </div>
         <div class="stat">
           <i class="fa-solid fa-hourglass-half"></i>
@@ -127,20 +140,40 @@ onMounted(async () => {
       </div>
 
       <div class="modules">
-        <router-link to="/repertorio" class="module-card">
+        <router-link to="/agenda" class="module-card">
+          <div class="module-title">
+            <i class="fa-solid fa-calendar-days"></i>
+            <h2>{{ $t('agenda.title') }}</h2>
+          </div>
+          <p class="module-description">{{ $t('home.agendaDescription') }}</p>
+          <dl class="module-facts">
+            <div>
+              <dt>{{ $t('home.nextEvent') }}</dt>
+              <dd v-if="nextEvent">{{ formatEvent(nextEvent) }}</dd>
+              <dd v-else>{{ $t('home.none') }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('home.eventsThisMonth') }}</dt>
+              <dd>{{ eventsThisMonth }}</dd>
+            </div>
+          </dl>
+          <span class="module-link">{{ $t('home.open') }} <i class="fa-solid fa-arrow-right"></i></span>
+        </router-link>
+
+        <router-link to="/musicas" class="module-card">
           <div class="module-title">
             <i class="fa-solid fa-music"></i>
-            <h2>{{ $t('repertoire.title') }}</h2>
+            <h2>{{ $t('songs.title') }}</h2>
           </div>
-          <p class="module-description">{{ $t('home.repertoireDescription') }}</p>
+          <p class="module-description">{{ $t('home.songsDescription') }}</p>
           <dl class="module-facts">
             <div>
               <dt>{{ $t('home.songs') }}</dt>
               <dd>{{ songs.length }}</dd>
             </div>
             <div>
-              <dt>{{ $t('home.lastRepertoire') }}</dt>
-              <dd v-if="lastRepertoire">{{ lastRepertoire.name }} · {{ formatDate(lastRepertoire.date) }}</dd>
+              <dt>{{ $t('home.lastSong') }}</dt>
+              <dd v-if="lastSong">{{ lastSong.title }}</dd>
               <dd v-else>{{ $t('home.none') }}</dd>
             </div>
           </dl>
@@ -247,6 +280,9 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+}
+.modules {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 .module-card {
   display: flex;

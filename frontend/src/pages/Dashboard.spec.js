@@ -30,14 +30,16 @@ const messages = {
     app: { title: 'Band Management', logout: 'Logout', confirmLogout: 'Are you sure?' },
     home: {
       title: 'Home', welcome: 'Hi, {name}!', subtitle: 'Overview',
-      activeMembers: 'Active members', songs: 'Songs', repertoires: 'Setlists',
+      activeMembers: 'Active members', songs: 'Songs', upcomingEvents: 'Upcoming events',
       pendingEntries: 'Unpaid entries', none: 'None', open: 'Open',
-      lastRepertoire: 'Latest setlist', entries: 'Entries', lastEntry: 'Latest entry',
+      nextEvent: 'Next event', eventsThisMonth: 'Events this month', lastSong: 'Latest added',
+      entries: 'Entries', lastEntry: 'Latest entry',
       members: 'Members', noMembers: 'No active members',
       recentActivity: 'Recent activity', noActivity: 'No activity',
     },
     finance: { title: 'Finances' },
-    repertoire: { title: 'Repertoire' },
+    agenda: { title: 'Calendar' },
+    songs: { title: 'Songs' },
     expenses: { loadingError: 'Error loading' },
     errors: { genericError: 'An error occurred' },
   },
@@ -48,8 +50,14 @@ const apiData = {
     { id: 1, name: 'Ana', active: true },
     { id: 2, name: 'Bruno', active: false },
   ],
-  '/api/songs': [{ id: 1, title: 'Exagerado' }, { id: 2, title: 'Malandragem' }],
-  '/api/repertoires': [{ id: 7, name: 'Show de sábado', date: '2026-10-18', songCount: 2 }],
+  '/api/songs': [
+    { id: 1, title: 'Exagerado', createdAt: '2026-09-01T10:00:00.000Z' },
+    { id: 2, title: 'Malandragem', createdAt: '2026-09-15T10:00:00.000Z' },
+  ],
+  '/api/events': [
+    { id: 8, typeId: 2, type: { id: 2, name: 'Rehearsal' }, title: '', date: '2026-10-23', time: '19:00', songCount: 0 },
+    { id: 7, typeId: 1, type: { id: 1, name: 'Show' }, title: 'Bar do Zé', date: '2026-10-24', time: '', songCount: 2 },
+  ],
   '/api/expenses': [
     { id: 1, description: 'Cachê', amount: '500', paid: true, date: '2026-10-01' },
     { id: 2, description: 'Cordas', amount: '-80', paid: false, date: '2026-10-10' },
@@ -64,7 +72,8 @@ function createWrapper() {
     history: createMemoryHistory(),
     routes: [
       { path: '/dashboard', name: 'Dashboard', component: Dashboard },
-      { path: '/repertorio', name: 'Songs', component: { template: '<div />' } },
+      { path: '/agenda', name: 'Agenda', component: { template: '<div />' } },
+      { path: '/musicas', name: 'Songs', component: { template: '<div />' } },
       { path: '/financeiro', name: 'Finance', component: { template: '<div />' } },
       { path: '/login', name: 'Login', component: { template: '<div>Login</div>' } },
     ],
@@ -96,25 +105,34 @@ describe('Dashboard', () => {
     expect(wrapper.find('h1').text()).toContain('Maverick')
   })
 
-  it('should summarize members, songs, setlists and unpaid entries', async () => {
+  it('should summarize members, songs, upcoming events and unpaid entries', async () => {
     const wrapper = createWrapper()
     await flushPromises()
     const values = wrapper.findAll('.stat-value').map((v) => v.text())
-    expect(values).toEqual(['1', '2', '1', '1'])
+    expect(values).toEqual(['1', '2', '2', '1'])
   })
 
-  it('should link to the repertoire and finance pages', async () => {
+  it('should only ask for events from today on', async () => {
+    createWrapper()
+    await flushPromises()
+    const eventsUrl = mockFetch.mock.calls.map(([url]) => url).find((url) => url.includes('/api/events'))
+    expect(eventsUrl).toMatch(/\/api\/events\?from=\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('should link to the calendar, songs and finance pages', async () => {
     const wrapper = createWrapper()
     await flushPromises()
     const links = wrapper.findAll('a.module-card').map((a) => a.attributes('href'))
-    expect(links).toEqual(['/repertorio', '/financeiro'])
+    expect(links).toEqual(['/agenda', '/musicas', '/financeiro'])
   })
 
-  it('should show the latest setlist and entry', async () => {
+  it('should show the next event, latest song and entry', async () => {
     const wrapper = createWrapper()
     await flushPromises()
     const text = wrapper.find('.modules').text()
-    expect(text).toContain('Show de sábado')
+    expect(text).toContain('Rehearsal · 10/23/2026 19:00')
+    expect(text).not.toContain('Bar do Zé')
+    expect(text).toContain('Malandragem')
     expect(text).toContain('Cordas')
   })
 

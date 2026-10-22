@@ -23,7 +23,8 @@ const messages = {
   en: {
     app: { logout: 'Logout', language: 'Language', confirmLogout: 'Are you sure?' },
     home: { title: 'Home' },
-    repertoire: { title: 'Repertoire' },
+    agenda: { title: 'Calendar' },
+    songs: { title: 'Songs' },
     finance: { title: 'Finances' },
     logs: { title: 'Logs' },
     members: {
@@ -94,7 +95,7 @@ describe('Members', () => {
     const wrapper = await createWrapper()
     await flushPromises()
     const links = wrapper.findAll('.nav-link').map((a) => a.attributes('href'))
-    expect(links).toEqual(['/dashboard', '/repertorio', '/financeiro', '/registros'])
+    expect(links).toEqual(['/dashboard', '/agenda', '/musicas', '/financeiro', '/registros'])
   })
 
   it('should toggle a member', async () => {

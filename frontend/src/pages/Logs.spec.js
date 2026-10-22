@@ -23,7 +23,8 @@ const messages = {
   en: {
     app: { logout: 'Logout', language: 'Language', confirmLogout: 'Are you sure?' },
     home: { title: 'Home' },
-    repertoire: { title: 'Repertoire' },
+    agenda: { title: 'Calendar' },
+    songs: { title: 'Songs' },
     finance: { title: 'Finances' },
     members: { title: 'Members' },
     logs: {
