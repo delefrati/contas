@@ -2,17 +2,11 @@ describe('Members', () => {
   beforeEach(() => {
     cy.login()
     cy.setupApiIntercepts()
-    cy.visit('/dashboard')
-    cy.wait(['@health', '@expenses', '@members', '@report', '@types', '@logs'])
-  })
-
-  it('should switch to members tab', () => {
-    cy.contains('.tab-button', 'Members').click()
-    cy.contains('.tab-button.active', 'Members').should('exist')
+    cy.visit('/integrantes')
+    cy.wait('@members')
   })
 
   it('should display member list', () => {
-    cy.contains('.tab-button', 'Members').click()
     cy.contains('Alice').should('exist')
     cy.contains('Bob').should('exist')
   })
@@ -23,7 +17,6 @@ describe('Members', () => {
       body: { data: { id: 4, name: 'David', email: 'david@test.com', active: true } },
     }).as('createMember')
 
-    cy.contains('.tab-button', 'Members').click()
     cy.contains('button', 'Add').click()
 
     // Fill the modal form
@@ -39,8 +32,6 @@ describe('Members', () => {
       body: { data: { id: 1, name: 'Alice', active: false } },
     }).as('toggleActive')
 
-    cy.contains('.tab-button', 'Members').click()
-
     // Find toggle button for first member and click
     cy.get('[class*="toggle"], button[title*="toggle"], button[title*="ativ"]').first().click({ force: true })
   })
@@ -50,8 +41,6 @@ describe('Members', () => {
       statusCode: 200,
       body: { data: { id: 1, name: 'Alice Updated', email: 'alice-new@test.com', active: true } },
     }).as('updateMember')
-
-    cy.contains('.tab-button', 'Members').click()
 
     // Click the edit button (pencil icon) for the first member
     cy.get('.expenses-table tbody tr').first().find('button[title]').first().click()
@@ -70,8 +59,6 @@ describe('Members', () => {
   })
 
   it('should show validation error when editing with empty name', () => {
-    cy.contains('.tab-button', 'Members').click()
-
     // Click the edit button for the first member
     cy.get('.expenses-table tbody tr').first().find('button[title]').first().click()
 

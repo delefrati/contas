@@ -1,14 +1,15 @@
 <script setup>
-import { onMounted, ref, computed, nextTick } from 'vue'
+import { onMounted, ref, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
-import LanguageSelector from '../components/LanguageSelector.vue'
+import AppHeader from '../components/AppHeader.vue'
 import Modal from '../components/Modal.vue'
+import { formatDate as formatLocalDate, localeTag, todayISO } from '../utils/date'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
+const { logout, getAuthHeader, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const songs = ref([])
@@ -19,7 +20,6 @@ const loading = ref(false)
 const error = ref('')
 const successMessage = ref('')
 const activeTab = ref('songs')
-const showLanguageSelector = ref(false)
 const printing = ref(false)
 const printedAt = ref('')
 const printColumns = ref(1)
@@ -41,7 +41,7 @@ const importResult = ref(null)
 // Repertoire creation
 const isRepertoireModalOpen = ref(false)
 const editingRepertoire = ref(null)
-const repertoireForm = ref({ name: '', date: new Date().toISOString().slice(0, 10) })
+const repertoireForm = ref({ name: '', date: todayISO() })
 const savingRepertoire = ref(false)
 
 // Builder
@@ -64,6 +64,27 @@ const availableSongs = computed(() => {
       .map((s) => s.songId),
   )
   return filteredSongs.value.filter((s) => !usedIds.has(s.id))
+})
+
+// Remembered per browser: artists get in the way when the text is pasted into a formatted doc
+const SHOW_ARTISTS_KEY = 'repertoire_show_artists'
+
+function readShowArtists() {
+  try {
+    return localStorage.getItem(SHOW_ARTISTS_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+const showArtists = ref(readShowArtists())
+
+watch(showArtists, (value) => {
+  try {
+    localStorage.setItem(SHOW_ARTISTS_KEY, String(value))
+  } catch {
+    // Not persisting the preference is fine
+  }
 })
 
 const printStyle = computed(() => ({
@@ -251,13 +272,13 @@ async function submitImport() {
 // ---- Repertoire CRUD ----
 function openCreateRepertoire() {
   editingRepertoire.value = null
-  repertoireForm.value = { name: '', date: new Date().toISOString().slice(0, 10) }
+  repertoireForm.value = { name: '', date: todayISO() }
   isRepertoireModalOpen.value = true
 }
 
 function openEditRepertoire(repertoire) {
   editingRepertoire.value = repertoire
-  repertoireForm.value = { name: repertoire.name, date: repertoire.date || new Date().toISOString().slice(0, 10) }
+  repertoireForm.value = { name: repertoire.name, date: repertoire.date || todayISO() }
   isRepertoireModalOpen.value = true
 }
 
@@ -437,15 +458,7 @@ function onDrop(index) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  try {
-    const date = new Date(dateStr + 'T00:00:00')
-    return date.toLocaleDateString(locale.value === 'pt' ? 'pt-BR' : locale.value, {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-    })
-  } catch {
-    return dateStr
-  }
+  return formatLocalDate(dateStr, locale.value, '—')
 }
 
 let originalTitle = ''
@@ -460,7 +473,7 @@ function buildRepertoireText(repertoire) {
     if (item.type === 'pause') {
       lines.push(pauseText(item))
     } else {
-      const artist = item.artist ? ` — ${item.artist}` : ''
+      const artist = showArtists.value && item.artist ? ` — ${item.artist}` : ''
       lines.push(`${songNumber(index)}. ${item.title}${artist}`)
     }
   })
@@ -494,14 +507,7 @@ async function printRepertoire() {
 }
 
 function setPrintedAt() {
-  printedAt.value = new Date().toLocaleString(locale.value === 'pt' ? 'pt-BR' : locale.value)
-}
-
-async function handleLogout() {
-  if (confirm(t('app.confirmLogout'))) {
-    await logout()
-    router.push('/login')
-  }
+  printedAt.value = new Date().toLocaleString(localeTag(locale.value))
 }
 
 onMounted(async () => {
@@ -522,26 +528,7 @@ onMounted(async () => {
 
 <template>
   <div class="container">
-    <header class="header no-print">
-      <div class="header-top">
-        <h1><i class="fa-solid fa-music"></i> {{ $t('repertoire.title') }}</h1>
-        <div class="header-controls">
-          <button @click="router.push('/dashboard')" class="btn-secondary" :title="$t('app.title')">
-            <i class="fa-solid fa-coins"></i>
-          </button>
-          <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">
-            <i class="fa-solid fa-globe"></i>
-          </button>
-          <LanguageSelector v-if="showLanguageSelector" />
-          <div v-if="member" class="user-info">
-            <span class="user-name">{{ member.name }}</span>
-          </div>
-          <button @click="handleLogout" class="btn-logout" :title="$t('app.logout')">
-            <i class="fa-solid fa-right-from-bracket"></i>
-          </button>
-        </div>
-      </div>
-    </header>
+    <AppHeader icon="fa-music" :title="$t('repertoire.title')" class="no-print" />
 
     <!-- Printable repertoire page -->
     <div
@@ -554,7 +541,7 @@ onMounted(async () => {
         <template v-for="(item, index) in currentRepertoire.songs" :key="item.id">
           <li v-if="item.type !== 'pause'" :value="songNumber(index)">
             <span class="print-song-title">{{ item.title }}</span>
-            <span v-if="item.artist" class="print-song-artist"> — {{ item.artist }}</span>
+            <span v-if="showArtists && item.artist" class="print-song-artist"> — {{ item.artist }}</span>
           </li>
           <li v-else class="print-pause">
             <span class="print-pause-line">{{ pauseText(item) }}</span>
@@ -702,6 +689,13 @@ onMounted(async () => {
                 <select v-model.number="printColumns">
                   <option :value="1">1</option>
                   <option :value="2">2</option>
+                </select>
+              </label>
+              <label class="print-control">
+                <span>{{ $t('repertoires.printArtists') }}</span>
+                <select v-model="showArtists">
+                  <option :value="true">{{ $t('repertoires.showArtists') }}</option>
+                  <option :value="false">{{ $t('repertoires.hideArtists') }}</option>
                 </select>
               </label>
               <div class="print-control">

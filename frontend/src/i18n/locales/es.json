@@ -1,13 +1,37 @@
 {
   "app": {
     "name": "minhabanda.com",
-    "title": "Rendición de Cuentas",
+    "title": "Gestión de la Banda",
     "health": "Cargando...",
     "logout": "Cerrar sesión",
     "language": "Idioma",
     "print": "Imprimir",
     "printedOn": "Generado el",
     "confirmLogout": "¿Estás seguro de que deseas cerrar sesión?"
+  },
+  "home": {
+    "title": "Inicio",
+    "welcome": "¡Hola, {name}!",
+    "subtitle": "Un resumen de lo que está pasando en la banda.",
+    "activeMembers": "Miembros activos",
+    "songs": "Canciones",
+    "repertoires": "Repertorios",
+    "pendingEntries": "Movimientos no pagados",
+    "repertoireDescription": "Registra canciones y arma los repertorios de los shows.",
+    "financeDescription": "Gastos, cachés y liquidación entre miembros.",
+    "lastRepertoire": "Último repertorio",
+    "entries": "Movimientos",
+    "lastEntry": "Último movimiento",
+    "none": "Ninguno",
+    "open": "Acceder",
+    "members": "Miembros",
+    "noMembers": "Ningún miembro activo",
+    "recentActivity": "Actividad reciente",
+    "noActivity": "Ninguna actividad registrada",
+    "viewAll": "Ver todos"
+  },
+  "finance": {
+    "title": "Finanzas"
   },
   "login": {
     "title": "Iniciar sesión",
@@ -22,9 +46,7 @@
   },
   "tabs": {
     "expenses": "Gastos",
-    "report": "Informe",
-    "members": "Miembros",
-    "logs": "Registros"
+    "report": "Informe"
   },
   "expenses": {
     "title": "Gastos",
@@ -121,16 +143,19 @@
     "successCreate": "¡Miembro agregado con éxito!",
     "successUpdate": "¡Miembro actualizado con éxito!",
     "editMember": "Editar Miembro",
-    "nameRequired": "El nombre es obligatorio"
+    "nameRequired": "El nombre es obligatorio",
+    "loadingError": "No se pudieron cargar los miembros."
   },
   "logs": {
+    "title": "Registros",
     "action": "Acción",
     "resource": "Recurso",
     "resourceId": "ID del Recurso",
     "user": "Usuario",
     "details": "Detalles",
     "createdAt": "Creado en",
-    "noLogs": "No se encontraron registros"
+    "noLogs": "No se encontraron registros",
+    "loadingError": "No se pudieron cargar los registros."
   },
   "errors": {
     "genericError": "Ocurrió un error. Por favor intente de nuevo."
@@ -192,6 +217,9 @@
     "printSettings": "Configuración de impresión",
     "printColumns": "Columnas",
     "printFontSize": "Fuente",
+    "printArtists": "Artistas",
+    "showArtists": "Mostrar",
+    "hideArtists": "Ocultar",
     "shareText": "Compartir",
     "shareSuccess": "¡Repertorio copiado al portapapeles!",
     "shareFallbackHint": "Copia el texto a continuación:"

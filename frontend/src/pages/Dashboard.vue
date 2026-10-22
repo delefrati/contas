@@ -1,187 +1,41 @@
 <script setup>
-import { onMounted, ref, computed, nextTick } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
-import LanguageSelector from '../components/LanguageSelector.vue'
-import Modal from '../components/Modal.vue'
+import { useBand } from '../composables/useBand'
+import AppHeader from '../components/AppHeader.vue'
+import { formatDate as formatLocalDate } from '../utils/date'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
+const { band } = useBand()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const health = ref('loading...')
-const expenses = ref([])
 const members = ref([])
-const report = ref([])
-const types = ref([])
+const songs = ref([])
+const repertoires = ref([])
+const expenses = ref([])
 const logs = ref([])
 const loading = ref(false)
-const submitting = ref(false)
-const creatingType = ref(false)
 const error = ref('')
-const successMessage = ref('')
-const activeTab = ref('expenses')
-const showLanguageSelector = ref(false)
-const filtersVisible = ref(false)
-const isAddExpenseModalOpen = ref(false)
-const isEditExpenseModalOpen = ref(false)
-const editingExpense = ref(null)
-const editFormData = ref({
-  description: '',
-  typeId: '',
-  amount: '',
-  date: '',
-  paid: false,
-  memberIds: [],
-})
-const updating = ref(false)
-const openActionMenuId = ref(null)
-const expandedLogId = ref(null)
-const selectedExpenseIds = ref([])
-const markingPaid = ref(false)
-const isAddMemberModalOpen = ref(false)
-const newMemberName = ref('')
-const newMemberEmail = ref('')
-const creatingMember = ref(false)
-const isEditMemberModalOpen = ref(false)
-const editingMember = ref(null)
-const editMemberFormData = ref({ name: '', email: '' })
-const updatingMember = ref(false)
-const newTypeName = ref('')
-const printing = ref(false)
-const printedAt = ref('')
 
-// Filters
-const filters = ref({
-  text: '',
-  dateFrom: '',
-  dateTo: '',
-  typeId: '',
-  memberIds: [],
-  paid: '',
-})
+const activeMembers = computed(() => members.value.filter(m => m.active))
 
-// Form
-const formData = ref({
-  description: '',
-  typeId: '',
-  amount: '',
-  date: new Date().toISOString().slice(0, 10),
-  paid: false,
-  memberIds: [],
-  notes: '',
-})
+const unpaidCount = computed(() => expenses.value.filter(e => !e.paid).length)
 
-const activeTypes = computed(() =>
-  types.value.filter(type => !type.deletedAt)
-)
+// Repertoires come from the API sorted by date, newest first
+const lastRepertoire = computed(() => repertoires.value[0] || null)
 
-const filteredExpenses = computed(() => {
-  return expenses.value.filter(exp => {
-    // Text search
-    if (filters.value.text) {
-      const search = filters.value.text.toLowerCase()
-      const desc = (exp.description || '').toLowerCase()
-      if (!desc.includes(search)) return false
-    }
-    // Date from
-    if (filters.value.dateFrom) {
-      const expDate = exp.date || (exp.createdAt ? exp.createdAt.slice(0, 10) : '')
-      if (expDate < filters.value.dateFrom) return false
-    }
-    // Date to
-    if (filters.value.dateTo) {
-      const expDate = exp.date || (exp.createdAt ? exp.createdAt.slice(0, 10) : '')
-      if (expDate > filters.value.dateTo) return false
-    }
-    // Type
-    if (filters.value.typeId) {
-      if (String(exp.typeId) !== String(filters.value.typeId)) return false
-    }
-    // Members
-    if (filters.value.memberIds.length > 0) {
-      const expMemberIds = (exp.memberIds || []).map(String)
-      const hasMatch = filters.value.memberIds.some(id => expMemberIds.includes(String(id)))
-      if (!hasMatch) return false
-    }
-    // Paid status
-    if (filters.value.paid === 'paid' && !exp.paid) return false
-    if (filters.value.paid === 'unpaid' && exp.paid) return false
-    return true
-  })
-})
-
-function toggleActionMenu(id) {
-  openActionMenuId.value = openActionMenuId.value === id ? null : id
-}
-
-function clearFilters() {
-  filters.value = { text: '', dateFrom: '', dateTo: '', typeId: '', memberIds: [], paid: '' }
-}
-
-function toggleExpenseSelection(id) {
-  const index = selectedExpenseIds.value.indexOf(id)
-  if (index === -1) {
-    selectedExpenseIds.value.push(id)
-  } else {
-    selectedExpenseIds.value.splice(index, 1)
-  }
-}
-
-const allFilteredSelected = computed(() =>
-  filteredExpenses.value.length > 0 &&
-  filteredExpenses.value.every(exp => selectedExpenseIds.value.includes(exp.id))
-)
-
-function toggleSelectAll() {
-  if (allFilteredSelected.value) {
-    selectedExpenseIds.value = []
-  } else {
-    selectedExpenseIds.value = filteredExpenses.value.map(exp => exp.id)
-  }
-}
-
-async function markSelectedPaid(paid) {
-  if (selectedExpenseIds.value.length === 0) return
-
-  markingPaid.value = true
-  error.value = ''
-
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/expenses/mark-paid`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ ids: selectedExpenseIds.value, paid }),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    successMessage.value = '✓ ' + t('expenses.successMarkPaid')
-    selectedExpenseIds.value = []
-    await loadData()
-    setTimeout(() => { successMessage.value = '' }, 3000)
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    markingPaid.value = false
-  }
-}
-
-
-function syncSelectedType() {
-  const hasCurrentType = activeTypes.value.some(
-    type => String(type.id) === String(formData.value.typeId)
+const lastExpense = computed(() => {
+  const entryDate = (e) => e.date || (e.createdAt ? e.createdAt.slice(0, 10) : '')
+  return expenses.value.reduce(
+    (latest, e) => (!latest || entryDate(e) >= entryDate(latest) ? e : latest),
+    null,
   )
-
-  if (!hasCurrentType) {
-    formData.value.typeId = activeTypes.value[0] ? String(activeTypes.value[0].id) : ''
-  }
-}
+})
 
 async function loadData() {
   loading.value = true
@@ -189,40 +43,31 @@ async function loadData() {
 
   try {
     const authHeader = getAuthHeader()
-    const [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse, logsResponse] = await Promise.all([
+    const responses = await Promise.all([
       fetch(`${apiBaseUrl}/api/health`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/expenses`, { headers: authHeader }),
       fetch(`${apiBaseUrl}/api/members`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/expenses/report/by-member`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/expense-types?includeDeleted=true`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/logs?limit=100`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/songs`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/repertoires`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/expenses`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/logs?limit=5`, { headers: authHeader }),
     ])
 
-    const responses = [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse, logsResponse]
     if (responses.some((response) => response.status === 401)) {
       await logout()
       await router.push({ path: '/login', query: { reason: 'expired' } })
       return
     }
 
-    if (!healthResponse.ok || !expensesResponse.ok || !typesResponse.ok) {
+    const [healthResponse, ...dataResponses] = responses
+    if (!healthResponse.ok) {
       throw new Error(t('expenses.loadingError'))
     }
 
-    const healthPayload = await healthResponse.json()
-    const expensesPayload = await expensesResponse.json()
-    const membersPayload = membersResponse.ok ? await membersResponse.json() : { data: [] }
-    const reportPayload = reportResponse.ok ? await reportResponse.json() : { data: [] }
-    const typesPayload = await typesResponse.json()
-    const logsPayload = logsResponse.ok ? await logsResponse.json() : { data: [] }
-
-    health.value = healthPayload.status
-    expenses.value = expensesPayload.data || []
-    members.value = membersPayload.data || []
-    report.value = reportPayload.data || []
-    types.value = typesPayload.data || []
-    logs.value = logsPayload.data || []
-    syncSelectedType()
+    // A failing section shouldn't take the whole summary down
+    const readData = async (response) => (response.ok ? (await response.json()).data || [] : [])
+    health.value = (await healthResponse.json()).status
+    ;[members.value, songs.value, repertoires.value, expenses.value, logs.value] =
+      await Promise.all(dataResponses.map(readData))
   } catch (exception) {
     health.value = 'erro'
     error.value = exception instanceof Error ? exception.message : t('errors.genericError')
@@ -231,352 +76,8 @@ async function loadData() {
   }
 }
 
-async function submitForm() {
-  submitting.value = true
-  error.value = ''
-  successMessage.value = ''
-
-  try {
-    const selectedTypeId = parseInt(String(formData.value.typeId))
-    if (!selectedTypeId) {
-      throw new Error(t('form.typeRequired'))
-    }
-
-    const payload = {
-      description: formData.value.description,
-      typeId: selectedTypeId,
-      amount: parseFloat(formData.value.amount),
-      date: formData.value.date,
-      paid: formData.value.paid,
-    }
-
-    if (formData.value.memberIds.length > 0) {
-      payload.memberIds = formData.value.memberIds.map((id) => parseInt(id))
-    }
-
-    const response = await fetch(`${apiBaseUrl}/api/expenses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    successMessage.value = '✓ ' + t('expenses.successCreate')
-    formData.value = {
-      description: '',
-      typeId: activeTypes.value[0] ? String(activeTypes.value[0].id) : '',
-      amount: '',
-      date: new Date().toISOString().slice(0, 10),
-      paid: false,
-      memberIds: [],
-      notes: '',
-    }
-    isAddExpenseModalOpen.value = false
-
-    // Recarregar lista
-    await loadData()
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    submitting.value = false
-  }
-}
-
-async function createExpenseType() {
-  const trimmedTypeName = newTypeName.value.trim()
-  if (!trimmedTypeName) {
-    error.value = t('form.typeNameRequired')
-    return
-  }
-
-  creatingType.value = true
-  error.value = ''
-
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/expense-types`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ name: trimmedTypeName }),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    const payload = await response.json()
-    const createdType = payload?.data
-
-    await loadData()
-
-    if (createdType?.id) {
-      formData.value.typeId = String(createdType.id)
-    } else {
-      syncSelectedType()
-    }
-
-    newTypeName.value = ''
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    creatingType.value = false
-  }
-}
-
-async function deleteExpense(id) {
-  if (!confirm(t('expenses.successDelete'))) {
-    return
-  }
-
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/expenses/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeader(),
-    })
-
-    if (!response.ok) {
-      throw new Error(t('expenses.successDelete'))
-    }
-
-    successMessage.value = '✓ ' + t('expenses.successDelete')
-    error.value = ''
-    
-    // Recarregar lista
-    await loadData()
-    
-    // Limpar mensagem após 3 segundos
-    setTimeout(() => { successMessage.value = '' }, 3000)
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  }
-}
-
-function getTypeName(typeId) {
-  const normalizedTypeId = parseInt(String(typeId))
-  return types.value.find(t => t.id === normalizedTypeId)?.name || 'Unknown'
-}
-
-function openEditModal(expense) {
-  editingExpense.value = expense
-  editFormData.value = {
-    description: expense.description,
-    typeId: String(expense.typeId),
-    amount: String(expense.amount),
-    date: expense.date || (expense.createdAt ? expense.createdAt.slice(0, 10) : ''),
-    paid: Boolean(expense.paid),
-    memberIds: expense.memberIds ? expense.memberIds.map(String) : [],
-  }
-  isEditExpenseModalOpen.value = true
-}
-
-async function updateExpense() {
-  updating.value = true
-  error.value = ''
-
-  try {
-    const payload = {
-      description: editFormData.value.description,
-      typeId: parseInt(editFormData.value.typeId),
-      amount: parseFloat(editFormData.value.amount),
-      date: editFormData.value.date,
-      paid: editFormData.value.paid,
-    }
-
-    if (editFormData.value.memberIds.length > 0) {
-      payload.memberIds = editFormData.value.memberIds.map((id) => parseInt(id))
-    }
-
-    const response = await fetch(`${apiBaseUrl}/api/expenses/${editingExpense.value.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    successMessage.value = '✓ ' + t('expenses.successUpdate')
-    isEditExpenseModalOpen.value = false
-    editingExpense.value = null
-    await loadData()
-    setTimeout(() => { successMessage.value = '' }, 3000)
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    updating.value = false
-  }
-}
-
-function getMemberNames(expense) {
-  if (Array.isArray(expense.members) && expense.members.length > 0) {
-    return expense.members.join(', ')
-  }
-
-  if (Array.isArray(expense.memberIds) && expense.memberIds.length > 0) {
-    return expense.memberIds
-      .map((id) => members.value.find((i) => i.id === id)?.name || `#${id}`)
-      .join(', ')
-  }
-
-  if (expense.memberId) {
-    return members.value.find((i) => i.id === expense.memberId)?.name || 'Unknown'
-  }
-
-  return '—'
-}
-
 function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString(locale.value === 'pt' ? 'pt-BR' : locale.value, { year: 'numeric', month: '2-digit', day: '2-digit' })
-  } catch {
-    return dateStr
-  }
-}
-
-function calculateTotal() {
-  return filteredExpenses.value.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0)
-}
-
-const totalInflows = computed(() =>
-  filteredExpenses.value
-    .filter(e => parseFloat(e.amount) > 0)
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
-)
-
-const totalOutflows = computed(() =>
-  filteredExpenses.value
-    .filter(e => parseFloat(e.amount) < 0)
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
-)
-
-const netBalance = computed(() => totalInflows.value + totalOutflows.value)
-
-function calculateReportTotal() {
-  return report.value.reduce((sum, item) => sum + parseFloat(item.total || 0), 0)
-}
-
-async function createMember() {
-  const trimmedName = newMemberName.value.trim()
-  const trimmedEmail = newMemberEmail.value.trim()
-  
-  if (!trimmedName) {
-    error.value = t('members.nameRequired')
-    return
-  }
-
-  creatingMember.value = true
-  error.value = ''
-
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/members`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({
-        name: trimmedName,
-        email: trimmedEmail || undefined,
-      }),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    successMessage.value = '✓ ' + t('members.successCreate')
-    newMemberName.value = ''
-    newMemberEmail.value = ''
-    isAddMemberModalOpen.value = false
-    await loadData()
-    setTimeout(() => { successMessage.value = '' }, 3000)
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    creatingMember.value = false
-  }
-}
-
-function openEditMemberModal(m) {
-  editingMember.value = m
-  editMemberFormData.value = {
-    name: m.name,
-    email: m.email || '',
-  }
-  isEditMemberModalOpen.value = true
-}
-
-async function updateMember() {
-  const trimmedName = editMemberFormData.value.name.trim()
-  if (!trimmedName) {
-    error.value = t('members.nameRequired')
-    return
-  }
-
-  updatingMember.value = true
-  error.value = ''
-
-  try {
-    const payload = {
-      name: trimmedName,
-      email: editMemberFormData.value.email.trim() || undefined,
-    }
-
-    const response = await fetch(`${apiBaseUrl}/api/members/${editingMember.value.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    successMessage.value = '✓ ' + t('members.successUpdate')
-    isEditMemberModalOpen.value = false
-    editingMember.value = null
-    await loadData()
-    setTimeout(() => { successMessage.value = '' }, 3000)
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
-    updatingMember.value = false
-  }
-}
-
-async function toggleMemberActive(id) {
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/members/${id}/toggle-active`, {
-      method: 'PATCH',
-      headers: getAuthHeader(),
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
-    }
-
-    await loadData()
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  }
-}
-
-async function printPage() {
-  printing.value = true
-  await nextTick()
-  window.print()
-}
-
-function setPrintedAt() {
-  printedAt.value = new Date().toLocaleString(locale.value === 'pt' ? 'pt-BR' : locale.value)
+  return formatLocalDate(dateStr, locale.value)
 }
 
 onMounted(async () => {
@@ -587,675 +88,112 @@ onMounted(async () => {
   }
 
   loadData()
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.actions-mobile')) {
-      openActionMenuId.value = null
-    }
-  })
-  window.addEventListener('beforeprint', setPrintedAt)
-  window.addEventListener('afterprint', () => {
-    printing.value = false
-  })
 })
-
-async function handleLogout() {
-  if (confirm(t('app.confirmLogout'))) {
-    await logout()
-    router.push('/login')
-  }
-}
 </script>
 
 <template>
   <div class="container">
-    <header class="header">
-      <div class="header-top">
-        <h1><i class="fa-solid fa-coins"></i> {{ $t('app.title') }}</h1>
-        <div class="header-controls">
-          <button @click="router.push('/repertorio')" class="btn-secondary" :title="$t('repertoire.title')">
+    <AppHeader icon="fa-guitar" :title="band?.name || $t('app.title')" />
+
+    <div class="content">
+      <div class="welcome">
+        <h2 v-if="member">{{ $t('home.welcome', { name: member.name }) }}</h2>
+        <p>{{ $t('home.subtitle') }}</p>
+      </div>
+
+      <div v-if="error" class="alert alert-error">{{ error }}</div>
+
+      <div class="stats">
+        <div class="stat">
+          <i class="fa-solid fa-users"></i>
+          <span class="stat-value">{{ loading ? '…' : activeMembers.length }}</span>
+          <span class="stat-label">{{ $t('home.activeMembers') }}</span>
+        </div>
+        <div class="stat">
+          <i class="fa-solid fa-music"></i>
+          <span class="stat-value">{{ loading ? '…' : songs.length }}</span>
+          <span class="stat-label">{{ $t('home.songs') }}</span>
+        </div>
+        <div class="stat">
+          <i class="fa-solid fa-list-ol"></i>
+          <span class="stat-value">{{ loading ? '…' : repertoires.length }}</span>
+          <span class="stat-label">{{ $t('home.repertoires') }}</span>
+        </div>
+        <div class="stat">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <span class="stat-value">{{ loading ? '…' : unpaidCount }}</span>
+          <span class="stat-label">{{ $t('home.pendingEntries') }}</span>
+        </div>
+      </div>
+
+      <div class="modules">
+        <router-link to="/repertorio" class="module-card">
+          <div class="module-title">
             <i class="fa-solid fa-music"></i>
-          </button>
-          <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">
-            <i class="fa-solid fa-globe"></i>
-          </button>
-          <LanguageSelector v-if="showLanguageSelector" />
-          <button @click="printPage" class="btn-secondary btn-print" :title="$t('app.print')">
-            <i class="fa-solid fa-print"></i>
-          </button>
-          <div v-if="member" class="user-info">
-            <span class="user-name">{{ member.name }}</span>
+            <h2>{{ $t('repertoire.title') }}</h2>
           </div>
-          <button @click="handleLogout" class="btn-logout" :title="$t('app.logout')">
-            <i class="fa-solid fa-right-from-bracket"></i>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <div class="print-header print-only">
-      <h1>{{ $t('app.title') }}</h1>
-      <p class="print-meta">{{ $t('app.printedOn') }}: {{ printedAt }}</p>
-      <p v-if="filters.dateFrom || filters.dateTo" class="print-meta">
-        {{ $t('filters.dateFrom') }}: {{ filters.dateFrom || '—' }} — {{ $t('filters.dateTo') }}: {{ filters.dateTo || '—' }}
-      </p>
-    </div>
-
-    <div class="tabs">
-      <button 
-        @click="activeTab = 'expenses'" 
-        :class="{ active: activeTab === 'expenses' }"
-        class="tab-button"
-      >
-        <i class="fa-solid fa-list"></i> {{ $t('tabs.expenses') }}
-      </button>
-      <button 
-        @click="activeTab = 'report'" 
-        :class="{ active: activeTab === 'report' }"
-        class="tab-button"
-      >
-        <i class="fa-solid fa-chart-bar"></i> {{ $t('tabs.report') }}
-      </button>
-      <button 
-        @click="activeTab = 'members'" 
-        :class="{ active: activeTab === 'members' }"
-        class="tab-button"
-      >
-        <i class="fa-solid fa-users"></i> {{ $t('tabs.members') }}
-      </button>
-      <button 
-        @click="activeTab = 'logs'" 
-        :class="{ active: activeTab === 'logs' }"
-        class="tab-button"
-      >
-        <i class="fa-solid fa-pen-to-square"></i> {{ $t('tabs.logs') }}
-      </button>
-    </div>
-
-    <!-- Expenses Tab -->
-    <div v-if="activeTab === 'expenses' || printing" class="content">
-      <h2 class="print-only print-tab-title">{{ $t('tabs.expenses') }}</h2>
-      <!-- Expenses List -->
-      <section class="expenses-section">
-        <div class="section-header">
-          <div class="section-actions">
-            <button @click="filtersVisible = !filtersVisible" class="btn-secondary" :title="$t('filters.toggle')">
-              <i class="fa-solid fa-filter"></i>
-            </button>
-            <button @click="isAddExpenseModalOpen = true" class="btn-primary">
-              + {{ $t('form.addExpense') }}
-            </button>
-            <button @click="loadData" :disabled="loading" class="btn-secondary">
-              <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
-        <div v-if="error" class="alert alert-error">{{ error }}</div>
-
-        <!-- Filters -->
-        <div v-show="filtersVisible" class="filters">
-          <div class="filter-group">
-            <label>{{ $t('filters.text') }}</label>
-            <input type="text" v-model="filters.text" :placeholder="$t('filters.textPlaceholder')" />
-          </div>
-          <div class="filter-group">
-            <label>{{ $t('filters.dateFrom') }}</label>
-            <input type="date" v-model="filters.dateFrom" />
-          </div>
-          <div class="filter-group">
-            <label>{{ $t('filters.dateTo') }}</label>
-            <input type="date" v-model="filters.dateTo" />
-          </div>
-          <div class="filter-group">
-            <label>{{ $t('form.type') }}</label>
-            <select v-model="filters.typeId">
-              <option value="">{{ $t('filters.allTypes') }}</option>
-              <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
-                {{ type.name }}
-              </option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>{{ $t('form.members') }}</label>
-            <select v-model="filters.memberIds" multiple size="3">
-              <option v-for="mem in members" :key="mem.id" :value="String(mem.id)">
-                {{ mem.name }}
-              </option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>{{ $t('form.paid') }}</label>
-            <select v-model="filters.paid">
-              <option value="">{{ $t('filters.allPaid') }}</option>
-              <option value="paid">{{ $t('filters.onlyPaid') }}</option>
-              <option value="unpaid">{{ $t('filters.onlyUnpaid') }}</option>
-            </select>
-          </div>
-          <div class="filter-group filter-actions">
-            <button @click="clearFilters" class="btn-secondary">{{ $t('filters.clear') }}</button>
-          </div>
-        </div>
-
-        <div v-if="loading && expenses.length === 0" class="loading">
-          <i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}
-        </div>
-
-        <div v-else-if="filteredExpenses.length === 0" class="empty-state">
-          <p>{{ $t('expenses.noExpenses') }}</p>
-        </div>
-
-        <template v-else>
-          <div v-if="selectedExpenseIds.length > 0" class="bulk-actions no-print">
-            <span class="bulk-count">{{ $t('expenses.selectedCount', { count: selectedExpenseIds.length }) }}</span>
-            <button @click="markSelectedPaid(true)" :disabled="markingPaid" class="btn-primary">
-              <i class="fa-solid fa-check"></i> {{ $t('expenses.markAsPaid') }}
-            </button>
-            <button @click="markSelectedPaid(false)" :disabled="markingPaid" class="btn-secondary">
-              {{ $t('expenses.markAsUnpaid') }}
-            </button>
-            <button @click="selectedExpenseIds = []" class="btn-secondary">
-              {{ $t('actions.cancel') }}
-            </button>
-          </div>
-
-          <table class="expenses-table">
-            <thead>
-              <tr>
-                <th class="select-col no-print">
-                  <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAll" :title="$t('expenses.selectAll')" />
-                </th>
-                <th class="id">#</th>
-                <th class="description">{{ $t('form.description') }}</th>
-                <th class="type">{{ $t('form.type') }}</th>
-                <th class="member">{{ $t('form.members') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-                <th class="paid">{{ $t('form.paid') }}</th>
-                <th class="date">{{ $t('expenses.date') }}</th>
-                <th class="actions"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row" :class="{ 'is-selected': selectedExpenseIds.includes(expense.id) }">
-                <td class="select-col no-print">
-                  <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
-                </td>
-                <td class="id">{{ expense.id }}</td>
-                <td class="description">{{ expense.description }}</td>
-                <td class="type">
-                  <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
-                    <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
-                    <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
-                  </span>
-                </td>
-                <td class="member">{{ getMemberNames(expense) }}</td>
-                <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
-                <td class="paid">
-                  <span class="status-badge" :class="expense.paid ? 'is-active' : 'is-inactive'">
-                    {{ expense.paid ? $t('expenses.paid') : $t('expenses.unpaid') }}
-                  </span>
-                </td>
-                <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
-                <td class="actions">
-                  <div class="actions-desktop">
-                    <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
-                      <i class="fa-solid fa-xmark"></i>
-                    </button>
-                  </div>
-                  <div class="actions-mobile">
-                    <button @click="toggleActionMenu(expense.id)" class="btn-dots">
-                      <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <div v-if="openActionMenuId === expense.id" class="action-dropdown">
-                      <button @click="openEditModal(expense); openActionMenuId = null">
-                        <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
-                      </button>
-                      <button @click="deleteExpense(expense.id); openActionMenuId = null">
-                        <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
-                      </button>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </template>
-
-        <div class="summary" v-if="filteredExpenses.length > 0">
-          <strong>{{ $t('expenses.total') }}</strong> R$ {{ calculateTotal().toFixed(2) }}
-        </div>
-      </section>
-
-      <Modal v-model="isAddExpenseModalOpen" :title="$t('form.addExpense')">
-        <form @submit.prevent="submitForm" class="form">
-          <div class="form-group">
-            <label for="description">{{ $t('form.description') }} *</label>
-            <input
-              id="description"
-              v-model="formData.description"
-              type="text"
-              :placeholder="$t('form.description')"
-              required
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="type">{{ $t('form.type') }} *</label>
-              <select id="type" v-model="formData.typeId" required>
-                <option value="" disabled>{{ $t('form.selectType') }}</option>
-                <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
-                  {{ type.name }}
-                </option>
-              </select>
-              <div class="type-quick-add">
-                <input
-                  v-model="newTypeName"
-                  type="text"
-                  :placeholder="$t('form.newTypePlaceholder')"
-                  :disabled="creatingType"
-                />
-                <button
-                  type="button"
-                  @click="createExpenseType"
-                  :disabled="creatingType"
-                  class="btn-secondary"
-                >
-                  {{ creatingType ? $t('actions.loading') : '+ ' + $t('form.addType') }}
-                </button>
-              </div>
+          <p class="module-description">{{ $t('home.repertoireDescription') }}</p>
+          <dl class="module-facts">
+            <div>
+              <dt>{{ $t('home.songs') }}</dt>
+              <dd>{{ songs.length }}</dd>
             </div>
-
-            <div class="form-group">
-              <label for="amount">{{ $t('form.amount') }} *</label>
-              <input
-                id="amount"
-                v-model="formData.amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                required
-              />
+            <div>
+              <dt>{{ $t('home.lastRepertoire') }}</dt>
+              <dd v-if="lastRepertoire">{{ lastRepertoire.name }} · {{ formatDate(lastRepertoire.date) }}</dd>
+              <dd v-else>{{ $t('home.none') }}</dd>
             </div>
+          </dl>
+          <span class="module-link">{{ $t('home.open') }} <i class="fa-solid fa-arrow-right"></i></span>
+        </router-link>
+
+        <router-link to="/financeiro" class="module-card">
+          <div class="module-title">
+            <i class="fa-solid fa-coins"></i>
+            <h2>{{ $t('finance.title') }}</h2>
           </div>
-
-          <div class="form-group">
-            <label for="date">{{ $t('expenses.date') }} *</label>
-            <input
-              id="date"
-              v-model="formData.date"
-              type="date"
-              required
-            />
-          </div>
-
-          <div class="form-group form-group-checkbox">
-            <label for="paid">
-              <input id="paid" v-model="formData.paid" type="checkbox" />
-              {{ $t('form.paid') }}
-            </label>
-          </div>
-
-          <div class="form-group">
-            <label for="member">{{ $t('form.members') }}</label>
-            <select id="member" v-model="formData.memberIds" multiple size="5">
-              <option v-for="mem in members" :key="mem.id" :value="mem.id">
-                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
-              </option>
-            </select>
-            <small>{{ $t('form.membersHint') }}</small>
-          </div>
-
-          <div class="form-group">
-            <label for="notes">{{ $t('form.notes') }}</label>
-            <textarea
-              id="notes"
-              v-model="formData.notes"
-              :placeholder="$t('form.notes')"
-              rows="3"
-            ></textarea>
-          </div>
-
-          <button type="submit" :disabled="submitting || loading" class="btn-primary">
-            <i v-if="!submitting" class="fa-solid fa-check"></i> {{ submitting ? $t('actions.loading') : $t('form.submit') }}
-          </button>
-        </form>
-      </Modal>
-
-      <Modal v-model="isEditExpenseModalOpen" :title="$t('expenses.edit')">
-        <form @submit.prevent="updateExpense" class="form">
-          <div class="form-group">
-            <label for="edit-description">{{ $t('form.description') }} *</label>
-            <input
-              id="edit-description"
-              v-model="editFormData.description"
-              type="text"
-              :placeholder="$t('form.description')"
-              required
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="edit-type">{{ $t('form.type') }} *</label>
-              <select id="edit-type" v-model="editFormData.typeId" required>
-                <option value="" disabled>{{ $t('form.selectType') }}</option>
-                <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
-                  {{ type.name }}
-                </option>
-              </select>
+          <p class="module-description">{{ $t('home.financeDescription') }}</p>
+          <dl class="module-facts">
+            <div>
+              <dt>{{ $t('home.entries') }}</dt>
+              <dd>{{ expenses.length }}</dd>
             </div>
-
-            <div class="form-group">
-              <label for="edit-amount">{{ $t('form.amount') }} *</label>
-              <input
-                id="edit-amount"
-                v-model="editFormData.amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                required
-              />
+            <div>
+              <dt>{{ $t('home.lastEntry') }}</dt>
+              <dd v-if="lastExpense">{{ lastExpense.description }} · {{ formatDate(lastExpense.date || lastExpense.createdAt) }}</dd>
+              <dd v-else>{{ $t('home.none') }}</dd>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-date">{{ $t('expenses.date') }} *</label>
-            <input
-              id="edit-date"
-              v-model="editFormData.date"
-              type="date"
-              required
-            />
-          </div>
-
-          <div class="form-group form-group-checkbox">
-            <label for="edit-paid">
-              <input id="edit-paid" v-model="editFormData.paid" type="checkbox" />
-              {{ $t('form.paid') }}
-            </label>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-member">{{ $t('form.members') }}</label>
-            <select id="edit-member" v-model="editFormData.memberIds" multiple size="5">
-              <option v-for="mem in members" :key="mem.id" :value="String(mem.id)">
-                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
-              </option>
-            </select>
-            <small>{{ $t('form.membersHint') }}</small>
-          </div>
-
-          <button type="submit" :disabled="updating" class="btn-primary">
-            <i v-if="!updating" class="fa-solid fa-check"></i> {{ updating ? $t('actions.loading') : $t('actions.save') }}
-          </button>
-        </form>
-      </Modal>
-    </div>
-
-    <!-- Report Tab -->
-    <div v-if="activeTab === 'report' || printing" class="content">
-      <h2 class="print-only print-tab-title">{{ $t('tabs.report') }}</h2>
-      <div v-if="loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}</div>
-
-      <div v-else-if="report.length === 0" class="empty-state">
-        <p>{{ $t('report.noData') }}</p>
+          </dl>
+          <span class="module-link">{{ $t('home.open') }} <i class="fa-solid fa-arrow-right"></i></span>
+        </router-link>
       </div>
 
-      <template v-else>
-        <!-- Summary -->
-        <section class="report-section">
-          <h2>{{ $t('report.summary') }}</h2>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>{{ $t('report.description') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{{ $t('report.totalInflows') }}</td>
-                <td class="amount">R$ {{ totalInflows.toFixed(2) }}</td>
-              </tr>
-              <tr>
-                <td>{{ $t('report.totalExpenses') }}</td>
-                <td class="amount amount-negative">R$ {{ totalOutflows.toFixed(2) }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="summary-row">
-                <td><strong>{{ $t('report.netBalance') }}</strong></td>
-                <td class="amount" :class="{ 'amount-negative': netBalance < 0 }">
-                  <strong>R$ {{ netBalance.toFixed(2) }}</strong>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+      <div class="panels">
+        <section class="expenses-section">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-users"></i> {{ $t('home.members') }}</h2>
+            <router-link to="/integrantes" class="panel-link">{{ $t('home.viewAll') }}</router-link>
+          </div>
+          <p v-if="activeMembers.length === 0" class="empty-state">{{ $t('home.noMembers') }}</p>
+          <ul v-else class="member-list">
+            <li v-for="m in activeMembers" :key="m.id">{{ m.name }}</li>
+          </ul>
         </section>
 
-        <!-- Settlement per member -->
-        <section class="report-section">
-          <h2>{{ $t('report.settlement') }}</h2>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th class="name">{{ $t('report.member') }}</th>
-                <th>{{ $t('report.status') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in report" :key="item.id" class="report-row">
-                <td class="name">{{ item.name }}</td>
-                <td>
-                  <span class="status-badge" :class="item.active ? 'is-active' : 'is-inactive'">
-                    {{ item.active ? $t('report.active') : $t('report.inactive') }}
-                  </span>
-                </td>
-                <td class="amount" :class="{ 'amount-negative': parseFloat(item.total) < 0 }">
-                  R$ {{ parseFloat(item.total).toFixed(2) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <section class="expenses-section">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> {{ $t('home.recentActivity') }}</h2>
+            <router-link to="/registros" class="panel-link">{{ $t('home.viewAll') }}</router-link>
+          </div>
+          <p v-if="logs.length === 0" class="empty-state">{{ $t('home.noActivity') }}</p>
+          <ul v-else class="activity-list">
+            <li v-for="log in logs" :key="log.id">
+              <span class="activity-what">{{ log.action }} · {{ log.resource }}</span>
+              <span class="activity-meta">{{ log.userName || '-' }} · {{ formatDate(log.createdAt) }}</span>
+            </li>
+          </ul>
         </section>
-      </template>
-    </div>
-
-    <!-- Members Tab -->
-    <div v-if="activeTab === 'members' || printing" class="content">
-      <h2 class="print-only print-tab-title">{{ $t('tabs.members') }}</h2>
-      <section class="expenses-section">
-        <div class="section-header">
-          <div class="section-actions">
-            <button @click="isAddMemberModalOpen = true" class="btn-primary">
-              + {{ $t('members.addMember') }}
-            </button>
-            <button @click="loadData" :disabled="loading" class="btn-secondary">
-              <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
-        <div v-if="error" class="alert alert-error">{{ error }}</div>
-
-        <div v-if="loading && members.length === 0" class="loading">
-          <i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}
-        </div>
-
-        <div v-else-if="members.length === 0" class="empty-state">
-          <p>{{ $t('members.noMembers') }}</p>
-        </div>
-
-        <table v-else class="expenses-table">
-          <thead>
-            <tr>
-              <th class="id">#</th>
-              <th>{{ $t('members.name') }}</th>
-              <th>{{ $t('members.status') }}</th>
-              <th class="actions">{{ $t('members.actions') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="member in members" :key="member.id" class="expense-row">
-              <td class="id">{{ member.id }}</td>
-              <td class="description">{{ member.name }}</td>
-              <td>
-                <span class="status-badge" :class="member.active ? 'is-active' : 'is-inactive'">
-                  {{ member.active ? $t('members.active') : $t('members.inactive') }}
-                </span>
-              </td>
-              <td class="actions" style="white-space: nowrap;">
-                <button
-                  @click="openEditMemberModal(member)"
-                  class="btn-secondary"
-                  style="font-size: 0.8rem; padding: 4px 10px; margin-right: 4px;"
-                  :title="$t('members.editMember')"
-                >
-                  <i class="fa-solid fa-pencil"></i>
-                </button>
-                <button
-                  @click="toggleMemberActive(member.id)"
-                  class="btn-secondary"
-                  style="font-size: 0.8rem; padding: 4px 10px;"
-                >
-                  {{ member.active ? $t('members.disable') : $t('members.enable') }}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <Modal v-model="isAddMemberModalOpen" :title="'👤 ' + $t('members.addMember')">
-        <form @submit.prevent="createMember" class="form">
-          <div class="form-group">
-            <label for="member-name">{{ $t('members.name') }} *</label>
-            <input
-              id="member-name"
-              v-model="newMemberName"
-              type="text"
-              :placeholder="$t('members.name')"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="member-email">{{ $t('members.email') }}</label>
-            <input
-              id="member-email"
-              v-model="newMemberEmail"
-              type="email"
-              :placeholder="$t('members.email')"
-            />
-          </div>
-          <button type="submit" :disabled="creatingMember" class="btn-primary">
-            <i v-if="!creatingMember" class="fa-solid fa-check"></i> {{ creatingMember ? $t('actions.loading') : $t('actions.save') }}
-          </button>
-        </form>
-      </Modal>
-
-      <Modal v-model="isEditMemberModalOpen" :title="'✏️ ' + $t('members.editMember')">
-        <form @submit.prevent="updateMember" class="form">
-          <div class="form-group">
-            <label for="edit-member-name">{{ $t('members.name') }} *</label>
-            <input
-              id="edit-member-name"
-              v-model="editMemberFormData.name"
-              type="text"
-              :placeholder="$t('members.name')"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="edit-member-email">{{ $t('members.email') }}</label>
-            <input
-              id="edit-member-email"
-              v-model="editMemberFormData.email"
-              type="email"
-              :placeholder="$t('members.email')"
-            />
-          </div>
-          <button type="submit" :disabled="updatingMember" class="btn-primary">
-            <i v-if="!updatingMember" class="fa-solid fa-check"></i> {{ updatingMember ? $t('actions.loading') : $t('actions.save') }}
-          </button>
-        </form>
-      </Modal>
-    </div>
-
-    <!-- Logs Tab -->
-    <div v-if="activeTab === 'logs' || printing" class="content">
-      <h2 class="print-only print-tab-title">{{ $t('tabs.logs') }}</h2>
-      <section class="expenses-section">
-        <div class="section-header">
-          <div class="section-actions">
-            <button @click="loadData" :disabled="loading" class="btn-secondary">
-              <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="loading && logs.length === 0" class="loading">
-          <i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}
-        </div>
-
-        <div v-else-if="logs.length === 0" class="empty-state">
-          <p>{{ $t('logs.noLogs') }}</p>
-        </div>
-
-        <table v-else class="expenses-table logs-table">
-          <thead>
-            <tr>
-              <th class="id">#</th>
-              <th>{{ $t('logs.action') }}</th>
-              <th>{{ $t('logs.resource') }}</th>
-              <th class="log-resource-id">{{ $t('logs.resourceId') }}</th>
-              <th>{{ $t('logs.user') }}</th>
-              <th class="log-details">{{ $t('logs.details') }}</th>
-              <th class="date">{{ $t('logs.createdAt') }}</th>
-              <th class="log-details-btn"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="log in logs" :key="log.id">
-              <tr class="expense-row">
-                <td class="id">{{ log.id }}</td>
-                <td class="description">
-                  <span class="action-badge" :class="'action-' + log.action.toLowerCase()">
-                    {{ log.action }}
-                  </span>
-                </td>
-                <td class="type">{{ log.resource }}</td>
-                <td class="log-resource-id">{{ log.resourceId || '-' }}</td>
-                <td>{{ log.userName || '-' }}</td>
-                <td class="log-details" style="font-size: 0.85rem; word-break: break-word;">
-                  <code v-if="log.details">{{ log.details.substring(0, 100) }}{{ log.details.length > 100 ? '...' : '' }}</code>
-                  <span v-else>-</span>
-                </td>
-                <td class="date">{{ formatDate(log.createdAt) }}</td>
-                <td class="log-details-btn">
-                  <button class="btn-dots" @click="expandedLogId = expandedLogId === log.id ? null : log.id" :title="$t('logs.details')">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="expandedLogId === log.id" class="log-expanded-row">
-                <td :colspan="5">
-                  <div class="log-expanded-details">
-                    <div><strong>{{ $t('logs.resourceId') }}:</strong> {{ log.resourceId || '-' }}</div>
-                    <div><strong>{{ $t('logs.createdAt') }}:</strong> {{ formatDate(log.createdAt) }}</div>
-                    <div v-if="log.details"><strong>{{ $t('logs.details') }}:</strong> <code>{{ log.details }}</code></div>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </section>
+      </div>
     </div>
 
     <footer class="app-footer">
@@ -1265,3 +203,179 @@ async function handleLogout() {
     </footer>
   </div>
 </template>
+
+<style scoped>
+.welcome h2 {
+  margin: 0;
+  color: var(--text-h);
+}
+.welcome p {
+  margin: 4px 0 0;
+  color: var(--text-light);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  background: var(--bg-white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.stat i {
+  color: var(--accent);
+}
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+.modules,
+.panels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.module-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.module-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+}
+.module-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+.module-title h2 {
+  margin: 0;
+  color: var(--text-h);
+}
+.module-description {
+  margin: 0;
+  color: var(--text-light);
+  text-align: left;
+}
+.module-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+.module-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.module-facts dt {
+  flex-shrink: 0;
+  color: var(--text-light);
+  text-align: left;
+  white-space: nowrap;
+}
+.module-facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.module-link {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 8px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  text-align: left;
+}
+.panel-link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.panel-link:hover {
+  text-decoration: underline;
+}
+.member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.member-list li {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.activity-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.activity-list li:last-child {
+  border-bottom: none;
+}
+.activity-meta {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .modules,
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

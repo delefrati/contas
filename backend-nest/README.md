@@ -1,6 +1,6 @@
 # minhabanda.com API - Backend
 
-A NestJS-based REST API for expense tracking with JWT-based authentication.
+A NestJS-based REST API for band management (members, finances, songs and setlists) with JWT-based authentication.
 
 ## Features
 
@@ -10,6 +10,7 @@ A NestJS-based REST API for expense tracking with JWT-based authentication.
 - 📝 Comprehensive activity logging
 - 🗂️ Expense types and categorization
 - 🔄 Multi-member expense tracking
+- 🎵 Songs and setlists (repertoires)
 
 ## Prerequisites
 

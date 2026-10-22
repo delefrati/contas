@@ -2,8 +2,8 @@ describe('Expenses', () => {
   beforeEach(() => {
     cy.login()
     cy.setupApiIntercepts()
-    cy.visit('/dashboard')
-    cy.wait(['@health', '@expenses', '@members', '@report', '@types', '@logs'])
+    cy.visit('/financeiro')
+    cy.wait(['@health', '@expenses', '@members', '@report', '@types'])
   })
 
   it('should display expenses list', () => {

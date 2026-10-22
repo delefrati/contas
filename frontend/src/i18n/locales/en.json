@@ -1,13 +1,37 @@
 {
   "app": {
     "name": "minhabanda.com",
-    "title": "Expense Report",
+    "title": "Band Management",
     "health": "Loading...",
     "logout": "Logout",
     "language": "Language",
     "print": "Print",
     "printedOn": "Generated on",
     "confirmLogout": "Are you sure you want to logout?"
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Hi, {name}!",
+    "subtitle": "An overview of what's going on with the band.",
+    "activeMembers": "Active members",
+    "songs": "Songs",
+    "repertoires": "Setlists",
+    "pendingEntries": "Unpaid entries",
+    "repertoireDescription": "Register songs and build the setlists for your shows.",
+    "financeDescription": "Expenses, gig fees and settlement between members.",
+    "lastRepertoire": "Latest setlist",
+    "entries": "Entries",
+    "lastEntry": "Latest entry",
+    "none": "None",
+    "open": "Open",
+    "members": "Members",
+    "noMembers": "No active members",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity recorded",
+    "viewAll": "View all"
+  },
+  "finance": {
+    "title": "Finances"
   },
   "login": {
     "title": "Login",
@@ -22,9 +46,7 @@
   },
   "tabs": {
     "expenses": "Expenses",
-    "report": "Report",
-    "members": "Members",
-    "logs": "Logs"
+    "report": "Report"
   },
   "expenses": {
     "title": "Expenses",
@@ -121,16 +143,19 @@
     "successCreate": "Member added successfully!",
     "successUpdate": "Member updated successfully!",
     "editMember": "Edit Member",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "loadingError": "Could not load the members."
   },
   "logs": {
+    "title": "Logs",
     "action": "Action",
     "resource": "Resource",
     "resourceId": "Resource ID",
     "user": "User",
     "details": "Details",
     "createdAt": "Created At",
-    "noLogs": "No logs found"
+    "noLogs": "No logs found",
+    "loadingError": "Could not load the logs."
   },
   "errors": {
     "genericError": "An error occurred. Please try again."
@@ -192,6 +217,9 @@
     "printSettings": "Print settings",
     "printColumns": "Columns",
     "printFontSize": "Font",
+    "printArtists": "Artists",
+    "showArtists": "Show",
+    "hideArtists": "Hide",
     "shareText": "Share",
     "shareSuccess": "Setlist copied to clipboard!",
     "shareFallbackHint": "Copy the text below:"

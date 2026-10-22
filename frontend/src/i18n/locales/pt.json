@@ -1,13 +1,37 @@
 {
   "app": {
     "name": "minhabanda.com",
-    "title": "Prestação de Contas",
+    "title": "Gerenciamento da Banda",
     "health": "Carregando...",
     "logout": "Sair",
     "language": "Idioma",
     "print": "Imprimir",
     "printedOn": "Gerado em",
     "confirmLogout": "Tem certeza de que deseja sair?"
+  },
+  "home": {
+    "title": "Início",
+    "welcome": "Olá, {name}!",
+    "subtitle": "Um resumo do que está acontecendo na banda.",
+    "activeMembers": "Integrantes ativos",
+    "songs": "Músicas",
+    "repertoires": "Repertórios",
+    "pendingEntries": "Lançamentos não pagos",
+    "repertoireDescription": "Cadastre músicas e monte os repertórios dos shows.",
+    "financeDescription": "Despesas, cachês e acerto entre integrantes.",
+    "lastRepertoire": "Último repertório",
+    "entries": "Lançamentos",
+    "lastEntry": "Último lançamento",
+    "none": "Nenhum",
+    "open": "Acessar",
+    "members": "Integrantes",
+    "noMembers": "Nenhum integrante ativo",
+    "recentActivity": "Atividade recente",
+    "noActivity": "Nenhuma atividade registrada",
+    "viewAll": "Ver todos"
+  },
+  "finance": {
+    "title": "Financeiro"
   },
   "login": {
     "title": "Entrar",
@@ -22,9 +46,7 @@
   },
   "tabs": {
     "expenses": "Despesas",
-    "report": "Relatório",
-    "members": "Integrantes",
-    "logs": "Registros"
+    "report": "Relatório"
   },
   "expenses": {
     "title": "Despesas",
@@ -121,16 +143,19 @@
     "successCreate": "Integrante adicionado com sucesso!",
     "successUpdate": "Integrante atualizado com sucesso!",
     "editMember": "Editar Integrante",
-    "nameRequired": "Nome é obrigatório"
+    "nameRequired": "Nome é obrigatório",
+    "loadingError": "Não foi possível carregar os integrantes."
   },
   "logs": {
+    "title": "Registros",
     "action": "Ação",
     "resource": "Recurso",
     "resourceId": "ID do Recurso",
     "user": "Usuário",
     "details": "Detalhes",
     "createdAt": "Criado em",
-    "noLogs": "Nenhum registro encontrado"
+    "noLogs": "Nenhum registro encontrado",
+    "loadingError": "Não foi possível carregar os registros."
   },
   "errors": {
     "genericError": "Ocorreu um erro. Por favor, tente novamente."
@@ -192,6 +217,9 @@
     "printSettings": "Configurações de impressão",
     "printColumns": "Colunas",
     "printFontSize": "Fonte",
+    "printArtists": "Artistas",
+    "showArtists": "Mostrar",
+    "hideArtists": "Ocultar",
     "shareText": "Compartilhar",
     "shareSuccess": "Repertório copiado para a área de transferência!",
     "shareFallbackHint": "Copie o texto abaixo:"

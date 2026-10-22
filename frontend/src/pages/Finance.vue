@@ -1,0 +1,911 @@
+<script setup>
+import { onMounted, ref, computed, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useAuth } from '../composables/useAuth'
+import AppHeader from '../components/AppHeader.vue'
+import Modal from '../components/Modal.vue'
+import { formatDate as formatLocalDate, localeTag, todayISO } from '../utils/date'
+
+const { t, locale } = useI18n()
+const router = useRouter()
+const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+
+const health = ref('loading...')
+const expenses = ref([])
+const members = ref([])
+const report = ref([])
+const types = ref([])
+const loading = ref(false)
+const submitting = ref(false)
+const creatingType = ref(false)
+const error = ref('')
+const successMessage = ref('')
+const activeTab = ref('expenses')
+const filtersVisible = ref(false)
+const isAddExpenseModalOpen = ref(false)
+const isEditExpenseModalOpen = ref(false)
+const editingExpense = ref(null)
+const editFormData = ref({
+  description: '',
+  typeId: '',
+  amount: '',
+  date: '',
+  paid: false,
+  memberIds: [],
+})
+const updating = ref(false)
+const openActionMenuId = ref(null)
+const selectedExpenseIds = ref([])
+const markingPaid = ref(false)
+const newTypeName = ref('')
+const printing = ref(false)
+const printedAt = ref('')
+
+// Filters
+const filters = ref({
+  text: '',
+  dateFrom: '',
+  dateTo: '',
+  typeId: '',
+  memberIds: [],
+  paid: '',
+})
+
+// Form
+const formData = ref({
+  description: '',
+  typeId: '',
+  amount: '',
+  date: todayISO(),
+  paid: false,
+  memberIds: [],
+  notes: '',
+})
+
+const activeTypes = computed(() =>
+  types.value.filter(type => !type.deletedAt)
+)
+
+const filteredExpenses = computed(() => {
+  return expenses.value.filter(exp => {
+    // Text search
+    if (filters.value.text) {
+      const search = filters.value.text.toLowerCase()
+      const desc = (exp.description || '').toLowerCase()
+      if (!desc.includes(search)) return false
+    }
+    // Date from
+    if (filters.value.dateFrom) {
+      const expDate = exp.date || (exp.createdAt ? exp.createdAt.slice(0, 10) : '')
+      if (expDate < filters.value.dateFrom) return false
+    }
+    // Date to
+    if (filters.value.dateTo) {
+      const expDate = exp.date || (exp.createdAt ? exp.createdAt.slice(0, 10) : '')
+      if (expDate > filters.value.dateTo) return false
+    }
+    // Type
+    if (filters.value.typeId) {
+      if (String(exp.typeId) !== String(filters.value.typeId)) return false
+    }
+    // Members
+    if (filters.value.memberIds.length > 0) {
+      const expMemberIds = (exp.memberIds || []).map(String)
+      const hasMatch = filters.value.memberIds.some(id => expMemberIds.includes(String(id)))
+      if (!hasMatch) return false
+    }
+    // Paid status
+    if (filters.value.paid === 'paid' && !exp.paid) return false
+    if (filters.value.paid === 'unpaid' && exp.paid) return false
+    return true
+  })
+})
+
+function toggleActionMenu(id) {
+  openActionMenuId.value = openActionMenuId.value === id ? null : id
+}
+
+function clearFilters() {
+  filters.value = { text: '', dateFrom: '', dateTo: '', typeId: '', memberIds: [], paid: '' }
+}
+
+function toggleExpenseSelection(id) {
+  const index = selectedExpenseIds.value.indexOf(id)
+  if (index === -1) {
+    selectedExpenseIds.value.push(id)
+  } else {
+    selectedExpenseIds.value.splice(index, 1)
+  }
+}
+
+const allFilteredSelected = computed(() =>
+  filteredExpenses.value.length > 0 &&
+  filteredExpenses.value.every(exp => selectedExpenseIds.value.includes(exp.id))
+)
+
+function toggleSelectAll() {
+  if (allFilteredSelected.value) {
+    selectedExpenseIds.value = []
+  } else {
+    selectedExpenseIds.value = filteredExpenses.value.map(exp => exp.id)
+  }
+}
+
+async function markSelectedPaid(paid) {
+  if (selectedExpenseIds.value.length === 0) return
+
+  markingPaid.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/expenses/mark-paid`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ ids: selectedExpenseIds.value, paid }),
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || t('errors.genericError'))
+    }
+
+    successMessage.value = '✓ ' + t('expenses.successMarkPaid')
+    selectedExpenseIds.value = []
+    await loadData()
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    markingPaid.value = false
+  }
+}
+
+
+function syncSelectedType() {
+  const hasCurrentType = activeTypes.value.some(
+    type => String(type.id) === String(formData.value.typeId)
+  )
+
+  if (!hasCurrentType) {
+    formData.value.typeId = activeTypes.value[0] ? String(activeTypes.value[0].id) : ''
+  }
+}
+
+async function loadData() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const authHeader = getAuthHeader()
+    const [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse] = await Promise.all([
+      fetch(`${apiBaseUrl}/api/health`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/expenses`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/members`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/expenses/report/by-member`, { headers: authHeader }),
+      fetch(`${apiBaseUrl}/api/expense-types?includeDeleted=true`, { headers: authHeader }),
+    ])
+
+    const responses = [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse]
+    if (responses.some((response) => response.status === 401)) {
+      await logout()
+      await router.push({ path: '/login', query: { reason: 'expired' } })
+      return
+    }
+
+    if (!healthResponse.ok || !expensesResponse.ok || !typesResponse.ok) {
+      throw new Error(t('expenses.loadingError'))
+    }
+
+    const healthPayload = await healthResponse.json()
+    const expensesPayload = await expensesResponse.json()
+    const membersPayload = membersResponse.ok ? await membersResponse.json() : { data: [] }
+    const reportPayload = reportResponse.ok ? await reportResponse.json() : { data: [] }
+    const typesPayload = await typesResponse.json()
+
+    health.value = healthPayload.status
+    expenses.value = expensesPayload.data || []
+    members.value = membersPayload.data || []
+    report.value = reportPayload.data || []
+    types.value = typesPayload.data || []
+    syncSelectedType()
+  } catch (exception) {
+    health.value = 'erro'
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitForm() {
+  submitting.value = true
+  error.value = ''
+  successMessage.value = ''
+
+  try {
+    const selectedTypeId = parseInt(String(formData.value.typeId))
+    if (!selectedTypeId) {
+      throw new Error(t('form.typeRequired'))
+    }
+
+    const payload = {
+      description: formData.value.description,
+      typeId: selectedTypeId,
+      amount: parseFloat(formData.value.amount),
+      date: formData.value.date,
+      paid: formData.value.paid,
+    }
+
+    if (formData.value.memberIds.length > 0) {
+      payload.memberIds = formData.value.memberIds.map((id) => parseInt(id))
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/expenses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || t('errors.genericError'))
+    }
+
+    successMessage.value = '✓ ' + t('expenses.successCreate')
+    formData.value = {
+      description: '',
+      typeId: activeTypes.value[0] ? String(activeTypes.value[0].id) : '',
+      amount: '',
+      date: todayISO(),
+      paid: false,
+      memberIds: [],
+      notes: '',
+    }
+    isAddExpenseModalOpen.value = false
+
+    // Recarregar lista
+    await loadData()
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function createExpenseType() {
+  const trimmedTypeName = newTypeName.value.trim()
+  if (!trimmedTypeName) {
+    error.value = t('form.typeNameRequired')
+    return
+  }
+
+  creatingType.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/expense-types`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ name: trimmedTypeName }),
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || t('errors.genericError'))
+    }
+
+    const payload = await response.json()
+    const createdType = payload?.data
+
+    await loadData()
+
+    if (createdType?.id) {
+      formData.value.typeId = String(createdType.id)
+    } else {
+      syncSelectedType()
+    }
+
+    newTypeName.value = ''
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    creatingType.value = false
+  }
+}
+
+async function deleteExpense(id) {
+  if (!confirm(t('expenses.successDelete'))) {
+    return
+  }
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/expenses/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeader(),
+    })
+
+    if (!response.ok) {
+      throw new Error(t('expenses.successDelete'))
+    }
+
+    successMessage.value = '✓ ' + t('expenses.successDelete')
+    error.value = ''
+    
+    // Recarregar lista
+    await loadData()
+    
+    // Limpar mensagem após 3 segundos
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  }
+}
+
+function getTypeName(typeId) {
+  const normalizedTypeId = parseInt(String(typeId))
+  return types.value.find(t => t.id === normalizedTypeId)?.name || 'Unknown'
+}
+
+function openEditModal(expense) {
+  editingExpense.value = expense
+  editFormData.value = {
+    description: expense.description,
+    typeId: String(expense.typeId),
+    amount: String(expense.amount),
+    date: expense.date || (expense.createdAt ? expense.createdAt.slice(0, 10) : ''),
+    paid: Boolean(expense.paid),
+    memberIds: expense.memberIds ? expense.memberIds.map(String) : [],
+  }
+  isEditExpenseModalOpen.value = true
+}
+
+async function updateExpense() {
+  updating.value = true
+  error.value = ''
+
+  try {
+    const payload = {
+      description: editFormData.value.description,
+      typeId: parseInt(editFormData.value.typeId),
+      amount: parseFloat(editFormData.value.amount),
+      date: editFormData.value.date,
+      paid: editFormData.value.paid,
+    }
+
+    if (editFormData.value.memberIds.length > 0) {
+      payload.memberIds = editFormData.value.memberIds.map((id) => parseInt(id))
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/expenses/${editingExpense.value.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || t('errors.genericError'))
+    }
+
+    successMessage.value = '✓ ' + t('expenses.successUpdate')
+    isEditExpenseModalOpen.value = false
+    editingExpense.value = null
+    await loadData()
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
+  } finally {
+    updating.value = false
+  }
+}
+
+function getMemberNames(expense) {
+  if (Array.isArray(expense.members) && expense.members.length > 0) {
+    return expense.members.join(', ')
+  }
+
+  if (Array.isArray(expense.memberIds) && expense.memberIds.length > 0) {
+    return expense.memberIds
+      .map((id) => members.value.find((i) => i.id === id)?.name || `#${id}`)
+      .join(', ')
+  }
+
+  if (expense.memberId) {
+    return members.value.find((i) => i.id === expense.memberId)?.name || 'Unknown'
+  }
+
+  return '—'
+}
+
+function formatDate(dateStr) {
+  return formatLocalDate(dateStr, locale.value)
+}
+
+function calculateTotal() {
+  return filteredExpenses.value.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0)
+}
+
+const totalInflows = computed(() =>
+  filteredExpenses.value
+    .filter(e => parseFloat(e.amount) > 0)
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
+)
+
+const totalOutflows = computed(() =>
+  filteredExpenses.value
+    .filter(e => parseFloat(e.amount) < 0)
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
+)
+
+const netBalance = computed(() => totalInflows.value + totalOutflows.value)
+
+function calculateReportTotal() {
+  return report.value.reduce((sum, item) => sum + parseFloat(item.total || 0), 0)
+}
+
+async function printPage() {
+  printing.value = true
+  await nextTick()
+  window.print()
+}
+
+function setPrintedAt() {
+  printedAt.value = new Date().toLocaleString(localeTag(locale.value))
+}
+
+onMounted(async () => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) {
+    await router.push('/login')
+    return
+  }
+
+  loadData()
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.actions-mobile')) {
+      openActionMenuId.value = null
+    }
+  })
+  window.addEventListener('beforeprint', setPrintedAt)
+  window.addEventListener('afterprint', () => {
+    printing.value = false
+  })
+})
+</script>
+
+<template>
+  <div class="container">
+    <AppHeader icon="fa-coins" :title="$t('finance.title')">
+      <button @click="printPage" class="btn-secondary btn-print" :title="$t('app.print')">
+        <i class="fa-solid fa-print"></i>
+      </button>
+    </AppHeader>
+
+    <div class="print-header print-only">
+      <h1>{{ $t('finance.title') }}</h1>
+      <p class="print-meta">{{ $t('app.printedOn') }}: {{ printedAt }}</p>
+      <p v-if="filters.dateFrom || filters.dateTo" class="print-meta">
+        {{ $t('filters.dateFrom') }}: {{ filters.dateFrom || '—' }} — {{ $t('filters.dateTo') }}: {{ filters.dateTo || '—' }}
+      </p>
+    </div>
+
+    <div class="tabs">
+      <button 
+        @click="activeTab = 'expenses'" 
+        :class="{ active: activeTab === 'expenses' }"
+        class="tab-button"
+      >
+        <i class="fa-solid fa-list"></i> {{ $t('tabs.expenses') }}
+      </button>
+      <button 
+        @click="activeTab = 'report'" 
+        :class="{ active: activeTab === 'report' }"
+        class="tab-button"
+      >
+        <i class="fa-solid fa-chart-bar"></i> {{ $t('tabs.report') }}
+      </button>
+    </div>
+
+    <!-- Expenses Tab -->
+    <div v-if="activeTab === 'expenses' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.expenses') }}</h2>
+      <!-- Expenses List -->
+      <section class="expenses-section">
+        <div class="section-header">
+          <div class="section-actions">
+            <button @click="filtersVisible = !filtersVisible" class="btn-secondary" :title="$t('filters.toggle')">
+              <i class="fa-solid fa-filter"></i>
+            </button>
+            <button @click="isAddExpenseModalOpen = true" class="btn-primary">
+              + {{ $t('form.addExpense') }}
+            </button>
+            <button @click="loadData" :disabled="loading" class="btn-secondary">
+              <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+        <div v-if="error" class="alert alert-error">{{ error }}</div>
+
+        <!-- Filters -->
+        <div v-show="filtersVisible" class="filters">
+          <div class="filter-group">
+            <label>{{ $t('filters.text') }}</label>
+            <input type="text" v-model="filters.text" :placeholder="$t('filters.textPlaceholder')" />
+          </div>
+          <div class="filter-group">
+            <label>{{ $t('filters.dateFrom') }}</label>
+            <input type="date" v-model="filters.dateFrom" />
+          </div>
+          <div class="filter-group">
+            <label>{{ $t('filters.dateTo') }}</label>
+            <input type="date" v-model="filters.dateTo" />
+          </div>
+          <div class="filter-group">
+            <label>{{ $t('form.type') }}</label>
+            <select v-model="filters.typeId">
+              <option value="">{{ $t('filters.allTypes') }}</option>
+              <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
+                {{ type.name }}
+              </option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>{{ $t('form.members') }}</label>
+            <select v-model="filters.memberIds" multiple size="3">
+              <option v-for="mem in members" :key="mem.id" :value="String(mem.id)">
+                {{ mem.name }}
+              </option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>{{ $t('form.paid') }}</label>
+            <select v-model="filters.paid">
+              <option value="">{{ $t('filters.allPaid') }}</option>
+              <option value="paid">{{ $t('filters.onlyPaid') }}</option>
+              <option value="unpaid">{{ $t('filters.onlyUnpaid') }}</option>
+            </select>
+          </div>
+          <div class="filter-group filter-actions">
+            <button @click="clearFilters" class="btn-secondary">{{ $t('filters.clear') }}</button>
+          </div>
+        </div>
+
+        <div v-if="loading && expenses.length === 0" class="loading">
+          <i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}
+        </div>
+
+        <div v-else-if="filteredExpenses.length === 0" class="empty-state">
+          <p>{{ $t('expenses.noExpenses') }}</p>
+        </div>
+
+        <template v-else>
+          <div v-if="selectedExpenseIds.length > 0" class="bulk-actions no-print">
+            <span class="bulk-count">{{ $t('expenses.selectedCount', { count: selectedExpenseIds.length }) }}</span>
+            <button @click="markSelectedPaid(true)" :disabled="markingPaid" class="btn-primary">
+              <i class="fa-solid fa-check"></i> {{ $t('expenses.markAsPaid') }}
+            </button>
+            <button @click="markSelectedPaid(false)" :disabled="markingPaid" class="btn-secondary">
+              {{ $t('expenses.markAsUnpaid') }}
+            </button>
+            <button @click="selectedExpenseIds = []" class="btn-secondary">
+              {{ $t('actions.cancel') }}
+            </button>
+          </div>
+
+          <table class="expenses-table">
+            <thead>
+              <tr>
+                <th class="select-col no-print">
+                  <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAll" :title="$t('expenses.selectAll')" />
+                </th>
+                <th class="id">#</th>
+                <th class="description">{{ $t('form.description') }}</th>
+                <th class="type">{{ $t('form.type') }}</th>
+                <th class="member">{{ $t('form.members') }}</th>
+                <th class="amount">{{ $t('form.amount') }}</th>
+                <th class="paid">{{ $t('form.paid') }}</th>
+                <th class="date">{{ $t('expenses.date') }}</th>
+                <th class="actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row" :class="{ 'is-selected': selectedExpenseIds.includes(expense.id) }">
+                <td class="select-col no-print">
+                  <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
+                </td>
+                <td class="id">{{ expense.id }}</td>
+                <td class="description">{{ expense.description }}</td>
+                <td class="type">
+                  <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
+                    <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
+                    <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
+                  </span>
+                </td>
+                <td class="member">{{ getMemberNames(expense) }}</td>
+                <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
+                <td class="paid">
+                  <span class="status-badge" :class="expense.paid ? 'is-active' : 'is-inactive'">
+                    {{ expense.paid ? $t('expenses.paid') : $t('expenses.unpaid') }}
+                  </span>
+                </td>
+                <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
+                <td class="actions">
+                  <div class="actions-desktop">
+                    <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
+                      <i class="fa-solid fa-pencil"></i>
+                    </button>
+                    <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div class="actions-mobile">
+                    <button @click="toggleActionMenu(expense.id)" class="btn-dots">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <div v-if="openActionMenuId === expense.id" class="action-dropdown">
+                      <button @click="openEditModal(expense); openActionMenuId = null">
+                        <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+                      </button>
+                      <button @click="deleteExpense(expense.id); openActionMenuId = null">
+                        <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+
+        <div class="summary" v-if="filteredExpenses.length > 0">
+          <strong>{{ $t('expenses.total') }}</strong> R$ {{ calculateTotal().toFixed(2) }}
+        </div>
+      </section>
+
+      <Modal v-model="isAddExpenseModalOpen" :title="$t('form.addExpense')">
+        <form @submit.prevent="submitForm" class="form">
+          <div class="form-group">
+            <label for="description">{{ $t('form.description') }} *</label>
+            <input
+              id="description"
+              v-model="formData.description"
+              type="text"
+              :placeholder="$t('form.description')"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="type">{{ $t('form.type') }} *</label>
+              <select id="type" v-model="formData.typeId" required>
+                <option value="" disabled>{{ $t('form.selectType') }}</option>
+                <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
+                  {{ type.name }}
+                </option>
+              </select>
+              <div class="type-quick-add">
+                <input
+                  v-model="newTypeName"
+                  type="text"
+                  :placeholder="$t('form.newTypePlaceholder')"
+                  :disabled="creatingType"
+                />
+                <button
+                  type="button"
+                  @click="createExpenseType"
+                  :disabled="creatingType"
+                  class="btn-secondary"
+                >
+                  {{ creatingType ? $t('actions.loading') : '+ ' + $t('form.addType') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="amount">{{ $t('form.amount') }} *</label>
+              <input
+                id="amount"
+                v-model="formData.amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="date">{{ $t('expenses.date') }} *</label>
+            <input
+              id="date"
+              v-model="formData.date"
+              type="date"
+              required
+            />
+          </div>
+
+          <div class="form-group form-group-checkbox">
+            <label for="paid">
+              <input id="paid" v-model="formData.paid" type="checkbox" />
+              {{ $t('form.paid') }}
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="member">{{ $t('form.members') }}</label>
+            <select id="member" v-model="formData.memberIds" multiple size="5">
+              <option v-for="mem in members" :key="mem.id" :value="mem.id">
+                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
+              </option>
+            </select>
+            <small>{{ $t('form.membersHint') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">{{ $t('form.notes') }}</label>
+            <textarea
+              id="notes"
+              v-model="formData.notes"
+              :placeholder="$t('form.notes')"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <button type="submit" :disabled="submitting || loading" class="btn-primary">
+            <i v-if="!submitting" class="fa-solid fa-check"></i> {{ submitting ? $t('actions.loading') : $t('form.submit') }}
+          </button>
+        </form>
+      </Modal>
+
+      <Modal v-model="isEditExpenseModalOpen" :title="$t('expenses.edit')">
+        <form @submit.prevent="updateExpense" class="form">
+          <div class="form-group">
+            <label for="edit-description">{{ $t('form.description') }} *</label>
+            <input
+              id="edit-description"
+              v-model="editFormData.description"
+              type="text"
+              :placeholder="$t('form.description')"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-type">{{ $t('form.type') }} *</label>
+              <select id="edit-type" v-model="editFormData.typeId" required>
+                <option value="" disabled>{{ $t('form.selectType') }}</option>
+                <option v-for="type in activeTypes" :key="type.id" :value="String(type.id)">
+                  {{ type.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-amount">{{ $t('form.amount') }} *</label>
+              <input
+                id="edit-amount"
+                v-model="editFormData.amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-date">{{ $t('expenses.date') }} *</label>
+            <input
+              id="edit-date"
+              v-model="editFormData.date"
+              type="date"
+              required
+            />
+          </div>
+
+          <div class="form-group form-group-checkbox">
+            <label for="edit-paid">
+              <input id="edit-paid" v-model="editFormData.paid" type="checkbox" />
+              {{ $t('form.paid') }}
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-member">{{ $t('form.members') }}</label>
+            <select id="edit-member" v-model="editFormData.memberIds" multiple size="5">
+              <option v-for="mem in members" :key="mem.id" :value="String(mem.id)">
+                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
+              </option>
+            </select>
+            <small>{{ $t('form.membersHint') }}</small>
+          </div>
+
+          <button type="submit" :disabled="updating" class="btn-primary">
+            <i v-if="!updating" class="fa-solid fa-check"></i> {{ updating ? $t('actions.loading') : $t('actions.save') }}
+          </button>
+        </form>
+      </Modal>
+    </div>
+
+    <!-- Report Tab -->
+    <div v-if="activeTab === 'report' || printing" class="content">
+      <h2 class="print-only print-tab-title">{{ $t('tabs.report') }}</h2>
+      <div v-if="loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ $t('actions.loading') }}</div>
+
+      <div v-else-if="report.length === 0" class="empty-state">
+        <p>{{ $t('report.noData') }}</p>
+      </div>
+
+      <template v-else>
+        <!-- Summary -->
+        <section class="report-section">
+          <h2>{{ $t('report.summary') }}</h2>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>{{ $t('report.description') }}</th>
+                <th class="amount">{{ $t('form.amount') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ $t('report.totalInflows') }}</td>
+                <td class="amount">R$ {{ totalInflows.toFixed(2) }}</td>
+              </tr>
+              <tr>
+                <td>{{ $t('report.totalExpenses') }}</td>
+                <td class="amount amount-negative">R$ {{ totalOutflows.toFixed(2) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="summary-row">
+                <td><strong>{{ $t('report.netBalance') }}</strong></td>
+                <td class="amount" :class="{ 'amount-negative': netBalance < 0 }">
+                  <strong>R$ {{ netBalance.toFixed(2) }}</strong>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+
+        <!-- Settlement per member -->
+        <section class="report-section">
+          <h2>{{ $t('report.settlement') }}</h2>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th class="name">{{ $t('report.member') }}</th>
+                <th>{{ $t('report.status') }}</th>
+                <th class="amount">{{ $t('form.amount') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in report" :key="item.id" class="report-row">
+                <td class="name">{{ item.name }}</td>
+                <td>
+                  <span class="status-badge" :class="item.active ? 'is-active' : 'is-inactive'">
+                    {{ item.active ? $t('report.active') : $t('report.inactive') }}
+                  </span>
+                </td>
+                <td class="amount" :class="{ 'amount-negative': parseFloat(item.total) < 0 }">
+                  R$ {{ parseFloat(item.total).toFixed(2) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </template>
+    </div>
+
+    <footer class="app-footer">
+      <span class="badge" :class="{ online: health === 'ok', offline: health !== 'ok' }">
+        <i class="fa-solid fa-circle"></i> {{ health === 'ok' ? 'Online' : 'Offline' }}
+      </span>
+    </footer>
+  </div>
+</template>

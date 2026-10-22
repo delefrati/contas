@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import Login from '../pages/Login.vue'
 import Dashboard from '../pages/Dashboard.vue'
+import Finance from '../pages/Finance.vue'
+import Members from '../pages/Members.vue'
+import Logs from '../pages/Logs.vue'
 import Songs from '../pages/Songs.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
 import { centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
@@ -29,7 +32,25 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true, titleKey: 'app.title' },
+    meta: { requiresAuth: true, titleKey: 'home.title' },
+  },
+  {
+    path: '/financeiro',
+    name: 'Finance',
+    component: Finance,
+    meta: { requiresAuth: true, titleKey: 'finance.title' },
+  },
+  {
+    path: '/integrantes',
+    name: 'Members',
+    component: Members,
+    meta: { requiresAuth: true, titleKey: 'members.title' },
+  },
+  {
+    path: '/registros',
+    name: 'Logs',
+    component: Logs,
+    meta: { requiresAuth: true, titleKey: 'logs.title' },
   },
   {
     path: '/repertorio',
