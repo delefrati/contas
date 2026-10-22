@@ -20,15 +20,11 @@
 	}
 }
 
-*.{$BASE_DOMAIN} {
-	tls {
-		on_demand
-	}
-
+(app) {
 	import security_headers
 	encode zstd gzip
 
-	# API is served on the band's own host, so no CORS is needed
+	# API is served on the same host as the app, so no CORS is needed
 	handle /api/* {
 		reverse_proxy backend:3000
 	}
@@ -36,4 +32,21 @@
 	handle {
 		reverse_proxy frontend:80
 	}
+}
+
+# Central login (the only origin registered with Google); hands off to the band's subdomain
+{$BASE_DOMAIN} {
+	import app
+}
+
+www.{$BASE_DOMAIN} {
+	redir https://{$BASE_DOMAIN}{uri} permanent
+}
+
+*.{$BASE_DOMAIN} {
+	tls {
+		on_demand
+	}
+
+	import app
 }

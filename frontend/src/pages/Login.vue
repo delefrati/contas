@@ -13,7 +13,20 @@
         {{ t('login.loggingIn') }}
       </div>
 
-      <div id="google-signin-btn" class="google-btn-wrapper"></div>
+      <div v-if="bands.length" class="band-choice">
+        <p>{{ t('login.chooseBand') }}</p>
+        <button
+          v-for="choice in bands"
+          :key="choice.slug"
+          type="button"
+          class="band-choice-btn"
+          @click="continueCentralLogin(choice.slug)"
+        >
+          {{ choice.name }}
+        </button>
+      </div>
+
+      <div v-show="!bands.length" id="google-signin-btn" class="google-btn-wrapper"></div>
 
       <div class="login-info">
         <p>{{ t('login.info') }}</p>
@@ -28,14 +41,17 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useBand } from '../composables/useBand'
+import { bandCallbackUrl, isCentralHost } from '../hosts'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { loginWithGoogle, loading } = useAuth()
+const { loginWithGoogle, centralLogin, loading } = useAuth()
 const { band } = useBand()
 
 const error = ref('')
+const credential = ref('')
+const bands = ref([])
 
 function initGoogleSignIn() {
   if (!window.google) return
@@ -49,8 +65,29 @@ function initGoogleSignIn() {
   )
 }
 
+// Central host: pick the band, then hand off to its subdomain with a one-time code
+async function continueCentralLogin(slug) {
+  error.value = ''
+  try {
+    const result = await centralLogin(credential.value, slug)
+    if (result.code) {
+      window.location.assign(bandCallbackUrl(result.band, result.code, route.query.redirect))
+      return
+    }
+    bands.value = result.bands || []
+  } catch (err) {
+    bands.value = []
+    error.value = err.message || t('login.loginFailed')
+  }
+}
+
 async function handleGoogleResponse(response) {
   error.value = ''
+  if (isCentralHost()) {
+    credential.value = response.credential
+    await continueCentralLogin(route.query.band)
+    return
+  }
   try {
     await loginWithGoogle(response.credential)
     const redirectTo = route.query.redirect || '/dashboard'
@@ -112,6 +149,31 @@ h1 {
   margin: 0 0 30px 0;
   color: #666;
   font-size: 14px;
+}
+
+.band-choice p {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.band-choice-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.band-choice-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
 }
 
 .error-message {

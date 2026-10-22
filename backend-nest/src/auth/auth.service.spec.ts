@@ -8,10 +8,11 @@ import { MemberService } from '../member/member.service';
 import { RequestContextService } from '../common/request-context.service';
 
 // Mock google-auth-library
+const mockVerifyIdToken = jest.fn();
 jest.mock('google-auth-library', () => {
   return {
     OAuth2Client: jest.fn().mockImplementation(() => ({
-      verifyIdToken: jest.fn(),
+      verifyIdToken: mockVerifyIdToken,
     })),
   };
 });
@@ -19,7 +20,11 @@ jest.mock('google-auth-library', () => {
 describe('AuthService', () => {
   let service: AuthService;
   let jwtService: { sign: jest.Mock; verify: jest.Mock };
-  let prisma: { session: { create: jest.Mock; findUnique: jest.Mock; deleteMany: jest.Mock } };
+  let prisma: {
+    session: { create: jest.Mock; findUnique: jest.Mock; deleteMany: jest.Mock };
+    member: { findMany: jest.Mock; findFirst: jest.Mock };
+  };
+  let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getMemberId: jest.Mock };
   let logService: { log: jest.Mock };
   let memberService: { findByOidcSub: jest.Mock; findByEmail: jest.Mock };
 
@@ -31,6 +36,12 @@ describe('AuthService', () => {
         findUnique: jest.fn(),
         deleteMany: jest.fn(),
       },
+      member: { findMany: jest.fn(), findFirst: jest.fn() },
+    };
+    requestContext = {
+      requireBandId: jest.fn().mockReturnValue(1),
+      getBandId: jest.fn().mockReturnValue(1),
+      getMemberId: jest.fn(),
     };
     logService = { log: jest.fn().mockResolvedValue({}) };
     memberService = { findByOidcSub: jest.fn(), findByEmail: jest.fn() };
@@ -42,14 +53,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: LogService, useValue: logService },
         { provide: MemberService, useValue: memberService },
-        {
-          provide: RequestContextService,
-          useValue: {
-            requireBandId: jest.fn().mockReturnValue(1),
-            getBandId: jest.fn().mockReturnValue(1),
-            getMemberId: jest.fn(),
-          },
-        },
+        { provide: RequestContextService, useValue: requestContext },
       ],
     }).compile();
 
@@ -65,6 +69,124 @@ describe('AuthService', () => {
       delete process.env.GOOGLE_CLIENT_ID;
       await expect(service.loginWithGoogle('some-token'))
         .rejects.toThrow('Google authentication is not configured');
+    });
+  });
+
+  describe('centralLoginWithGoogle', () => {
+    const maverick = { id: 1, bandId: 1, band: { slug: 'maverick', name: 'Maverick' } };
+    const outra = { id: 9, bandId: 2, band: { slug: 'outra', name: 'Outra' } };
+
+    beforeEach(() => {
+      process.env.GOOGLE_CLIENT_ID = 'client-id';
+      mockVerifyIdToken.mockResolvedValue({
+        getPayload: () => ({ sub: 'google-sub', email: 'me@test.com' }),
+      });
+    });
+
+    it('should look up active memberships by OIDC subject or email', async () => {
+      prisma.member.findMany.mockResolvedValue([maverick]);
+      await service.centralLoginWithGoogle('id-token');
+      expect(prisma.member.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { active: true, OR: [{ oidcSub: 'google-sub' }, { email: 'me@test.com' }] },
+        }),
+      );
+    });
+
+    it('should issue a code when the account belongs to a single band', async () => {
+      prisma.member.findMany.mockResolvedValue([maverick]);
+      const result = await service.centralLoginWithGoogle('id-token');
+      expect(result.band).toBe('maverick');
+      expect(result.code).toEqual(expect.any(String));
+      expect(result.bands).toBeUndefined();
+    });
+
+    it('should list the bands when the account belongs to several and none was requested', async () => {
+      prisma.member.findMany.mockResolvedValue([maverick, outra]);
+      const result = await service.centralLoginWithGoogle('id-token');
+      expect(result.code).toBeUndefined();
+      expect(result.bands).toEqual([
+        { slug: 'maverick', name: 'Maverick' },
+        { slug: 'outra', name: 'Outra' },
+      ]);
+    });
+
+    it('should issue a code for the requested band', async () => {
+      prisma.member.findMany.mockResolvedValue([maverick, outra]);
+      const result = await service.centralLoginWithGoogle('id-token', 'outra');
+      expect(result.band).toBe('outra');
+      expect(result.code).toEqual(expect.any(String));
+    });
+
+    it('should reject a band the account does not belong to', async () => {
+      prisma.member.findMany.mockResolvedValue([maverick]);
+      await expect(service.centralLoginWithGoogle('id-token', 'outra')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject an account with no memberships', async () => {
+      prisma.member.findMany.mockResolvedValue([]);
+      await expect(service.centralLoginWithGoogle('id-token')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('exchangeLoginCode', () => {
+    const member = { id: 1, bandId: 1, name: 'Me', email: 'me@test.com', active: true };
+
+    async function issueCode(bandId = 1): Promise<string> {
+      process.env.GOOGLE_CLIENT_ID = 'client-id';
+      mockVerifyIdToken.mockResolvedValue({ getPayload: () => ({ sub: 'google-sub' }) });
+      prisma.member.findMany.mockResolvedValue([
+        { id: member.id, bandId, band: { slug: 'maverick', name: 'Maverick' } },
+      ]);
+      const { code } = await service.centralLoginWithGoogle('id-token');
+      return code as string;
+    }
+
+    beforeEach(() => {
+      jwtService.sign.mockReturnValue('jwt-token');
+      prisma.session.create.mockResolvedValue({});
+      prisma.member.findFirst.mockResolvedValue(member);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should exchange a valid code for a session on its band', async () => {
+      const code = await issueCode();
+      const result = await service.exchangeLoginCode(code);
+
+      expect(result).toEqual({ token: 'jwt-token', member: { id: 1, name: 'Me', email: 'me@test.com' } });
+      expect(prisma.member.findFirst).toHaveBeenCalledWith({ where: { id: 1, bandId: 1, active: true } });
+      expect(logService.log).toHaveBeenCalledWith('LOGIN', 'auth', 1, { method: 'google-central' });
+    });
+
+    it('should only accept a code once', async () => {
+      const code = await issueCode();
+      await service.exchangeLoginCode(code);
+      await expect(service.exchangeLoginCode(code)).rejects.toThrow('Invalid or expired login code');
+    });
+
+    it('should reject a code issued for another band', async () => {
+      const code = await issueCode(2);
+      await expect(service.exchangeLoginCode(code)).rejects.toThrow('Invalid or expired login code');
+    });
+
+    it('should reject an expired code', async () => {
+      const code = await issueCode();
+      const now = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(now + 61_000);
+      await expect(service.exchangeLoginCode(code)).rejects.toThrow('Invalid or expired login code');
+    });
+
+    it('should reject an unknown code', async () => {
+      await expect(service.exchangeLoginCode('nope')).rejects.toThrow('Invalid or expired login code');
+    });
+
+    it('should reject a code for a member that was disabled meanwhile', async () => {
+      const code = await issueCode();
+      prisma.member.findFirst.mockResolvedValue(null);
+      await expect(service.exchangeLoginCode(code)).rejects.toThrow('Member account is disabled');
     });
   });
 

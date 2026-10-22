@@ -10,6 +10,26 @@ const member = ref(JSON.parse(localStorage.getItem(MEMBER_KEY) || 'null'))
 const loading = ref(false)
 const error = ref('')
 
+function storeSession(data) {
+  token.value = data.token
+  member.value = data.member
+  localStorage.setItem(TOKEN_KEY, token.value)
+  localStorage.setItem(MEMBER_KEY, JSON.stringify(member.value))
+}
+
+async function postJson(path, body) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Login failed')
+  }
+  return data.data
+}
+
 function clearSession() {
   token.value = ''
   member.value = null
@@ -37,18 +57,33 @@ export function useAuth() {
       }
 
       const data = await response.json()
-
-      // Store token and member info
-      token.value = data.data.token
-      member.value = data.data.member
-
-      localStorage.setItem(TOKEN_KEY, token.value)
-      localStorage.setItem(MEMBER_KEY, JSON.stringify(member.value))
-
+      storeSession(data.data)
       return data.data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Central host: returns { code, band } for a single band, or { bands } to choose from
+  async function centralLogin(credential, band) {
+    loading.value = true
+    try {
+      return await postJson('/api/auth/central/google', { credential, band })
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Band host: trade the one-time code from the central login for a session
+  async function exchangeLoginCode(code) {
+    loading.value = true
+    try {
+      const data = await postJson('/api/auth/central/exchange', { code })
+      storeSession(data)
+      return data
     } finally {
       loading.value = false
     }
@@ -149,6 +184,8 @@ export function useAuth() {
     error,
     clearSession,
     loginWithGoogle,
+    centralLogin,
+    exchangeLoginCode,
     logout,
     logoutAll,
     getCurrentUser,

@@ -7,7 +7,9 @@ This guide deploys the app on a single Oracle Cloud Always Free VM using Docker 
 1. Create an Ubuntu VM (Always Free shape).
 2. Assign a static public IP.
 3. Create DNS records:
-  - `*.minhabanda.com` (wildcard A record) -> VM public IP
+  - `minhabanda.com` (A record `@`) -> VM public IP — central login page
+  - `www.minhabanda.com` (CNAME -> `minhabanda.com`) — redirects to `minhabanda.com`
+  - `*.minhabanda.com` (wildcard A record) -> VM public IP — one subdomain per band
 
   Every band is served at `<slug>.minhabanda.com`, with the API under `/api` on the same host.
   Caddy issues each band's HTTPS certificate on its first visit (on-demand TLS), after checking
@@ -52,7 +54,11 @@ Important values:
 
 In Google Cloud Console for your OAuth client:
 - Add Authorized JavaScript origins:
-  - `https://<slug>.minhabanda.com` for every band (Google does not accept wildcards here)
+  - `https://minhabanda.com`
+
+Google login always happens on `https://minhabanda.com/entrar`. After signing in, the backend
+issues a single-use code (valid for 60 seconds) for the chosen band and the browser exchanges it
+on `https://<slug>.minhabanda.com/auth/callback`, so new bands need no Google configuration.
 
 No redirect URI is required for the Google Identity token flow used here.
 

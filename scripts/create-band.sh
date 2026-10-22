@@ -47,5 +47,4 @@ COMPOSE_FILE="$COMPOSE_FILE" scripts/create-admin.sh "$SLUG" "$ADMIN_NAME" "$ADM
 
 echo ""
 echo "Next steps:"
-echo "  - Add https://$SLUG.${BASE_DOMAIN:-minhabanda.com} to the Google OAuth client's Authorized JavaScript origins."
 echo "  - Open https://$SLUG.${BASE_DOMAIN:-minhabanda.com} (the HTTPS certificate is issued on the first visit)."

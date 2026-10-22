@@ -14,7 +14,11 @@
     "subtitle": "Entre com sua conta Google",
     "loggingIn": "Entrando...",
     "loginFailed": "Falha ao entrar. Tente novamente.",
-    "info": "Apenas contas autorizadas podem entrar. Entre em contato com um administrador se precisar de acesso."
+    "info": "Apenas contas autorizadas podem entrar. Entre em contato com um administrador se precisar de acesso.",
+    "chooseBand": "Escolha a banda:",
+    "completing": "Concluindo login...",
+    "codeFailed": "Não foi possível concluir o login. Tente novamente.",
+    "backToLogin": "Voltar ao login"
   },
   "tabs": {
     "expenses": "Despesas",

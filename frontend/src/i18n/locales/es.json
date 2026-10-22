@@ -14,7 +14,11 @@
     "subtitle": "Inicia sesión con tu cuenta de Google",
     "loggingIn": "Iniciando sesión...",
     "loginFailed": "Error al iniciar sesión. Intenta de nuevo.",
-    "info": "Solo las cuentas autorizadas pueden iniciar sesión. Contacta a un administrador si necesitas acceso."
+    "info": "Solo las cuentas autorizadas pueden iniciar sesión. Contacta a un administrador si necesitas acceso.",
+    "chooseBand": "Elige la banda:",
+    "completing": "Completando el inicio de sesión...",
+    "codeFailed": "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
+    "backToLogin": "Volver al inicio de sesión"
   },
   "tabs": {
     "expenses": "Gastos",

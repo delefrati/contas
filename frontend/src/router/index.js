@@ -3,12 +3,26 @@ import { useAuth } from '../composables/useAuth'
 import Login from '../pages/Login.vue'
 import Dashboard from '../pages/Dashboard.vue'
 import Songs from '../pages/Songs.vue'
+import AuthCallback from '../pages/AuthCallback.vue'
+import { centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false, titleKey: 'login.title' },
+  },
+  {
+    path: '/entrar',
+    name: 'CentralLogin',
+    component: Login,
+    meta: { requiresAuth: false, titleKey: 'login.title' },
+  },
+  {
+    path: '/auth/callback',
+    name: 'AuthCallback',
+    component: AuthCallback,
     meta: { requiresAuth: false, titleKey: 'login.title' },
   },
   {
@@ -36,6 +50,20 @@ const router = createRouter({
 
 // Navigation guard to check authentication
 router.beforeEach(async (to, from, next) => {
+  // The central host (BASE_DOMAIN) only serves the login page
+  if (isCentralHost()) {
+    if (to.name !== 'CentralLogin') {
+      next({ name: 'CentralLogin', query: to.query })
+      return
+    }
+    next()
+    return
+  }
+  if (to.name === 'CentralLogin') {
+    next({ name: 'Login', query: to.query })
+    return
+  }
+
   const { isLoggedIn, token, getCurrentUser } = useAuth()
 
   if (to.meta.requiresAuth) {
@@ -61,6 +89,13 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.name === 'Login' && isLoggedIn.value) {
     next('/dashboard')
+    return
+  }
+
+  // Band subdomains log in through the central host
+  if (to.name === 'Login' && currentBandSlug()) {
+    window.location.assign(centralLoginUrl(to.query.redirect))
+    next(false)
     return
   }
 

@@ -14,7 +14,11 @@
     "subtitle": "Sign in with your Google account",
     "loggingIn": "Logging in...",
     "loginFailed": "Login failed. Please try again.",
-    "info": "Only authorized accounts can sign in. Contact an administrator if you need access."
+    "info": "Only authorized accounts can sign in. Contact an administrator if you need access.",
+    "chooseBand": "Choose your band:",
+    "completing": "Completing login...",
+    "codeFailed": "Could not complete the login. Please try again.",
+    "backToLogin": "Back to login"
   },
   "tabs": {
     "expenses": "Expenses",

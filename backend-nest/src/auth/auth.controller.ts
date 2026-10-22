@@ -8,7 +8,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthService, LoginResponse } from './auth.service';
+import { AuthService, CentralLoginResponse, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthPayload } from './auth.service';
 
@@ -21,6 +21,20 @@ export class AuthController {
     @Body() body: { credential: string },
   ): Promise<{ data: LoginResponse }> {
     const data = await this.authService.loginWithGoogle(body.credential);
+    return { data };
+  }
+
+  @Post('central/google')
+  async centralLoginWithGoogle(
+    @Body() body: { credential: string; band?: string },
+  ): Promise<{ data: CentralLoginResponse }> {
+    const data = await this.authService.centralLoginWithGoogle(body.credential, body.band);
+    return { data };
+  }
+
+  @Post('central/exchange')
+  async exchangeLoginCode(@Body() body: { code: string }): Promise<{ data: LoginResponse }> {
+    const data = await this.authService.exchangeLoginCode(body.code);
     return { data };
   }
 
