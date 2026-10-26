@@ -162,6 +162,7 @@ export function useAuth() {
           id: data.data.memberId,
           name: data.data.name,
           email: data.data.email,
+          superAdmin: Boolean(data.data.superAdminId),
         }
         localStorage.setItem(MEMBER_KEY, JSON.stringify(member.value))
       }

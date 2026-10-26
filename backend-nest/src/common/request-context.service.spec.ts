@@ -8,31 +8,31 @@ describe('RequestContextService', () => {
     service = new RequestContextService();
   });
 
-  it('should return undefined when no context is active', () => {
-    expect(service.getMemberId()).toBeUndefined();
+  it('should return an empty identity when no context is active', () => {
+    expect(service.getIdentity()).toEqual({ memberId: undefined, superAdminId: undefined });
   });
 
-  it('should store and retrieve memberId within a run context', (done) => {
+  it('should store and retrieve the member within a run context', (done) => {
     service.run({ memberId: 42 }, () => {
-      expect(service.getMemberId()).toBe(42);
+      expect(service.getIdentity()).toEqual({ memberId: 42, superAdminId: undefined });
+      done();
+    });
+  });
+
+  it('should store and retrieve the super admin within a run context', (done) => {
+    service.run({ superAdminId: 3 }, () => {
+      expect(service.getIdentity()).toEqual({ memberId: undefined, superAdminId: 3 });
       done();
     });
   });
 
   it('should isolate contexts between nested runs', (done) => {
     service.run({ memberId: 1 }, () => {
-      expect(service.getMemberId()).toBe(1);
+      expect(service.getIdentity().memberId).toBe(1);
       service.run({ memberId: 2 }, () => {
-        expect(service.getMemberId()).toBe(2);
+        expect(service.getIdentity().memberId).toBe(2);
         done();
       });
-    });
-  });
-
-  it('should handle undefined memberId in context', (done) => {
-    service.run({ memberId: undefined }, () => {
-      expect(service.getMemberId()).toBeUndefined();
-      done();
     });
   });
 });

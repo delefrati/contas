@@ -57,7 +57,7 @@ export class AuthController {
     }
 
     const token = this.extractToken(req);
-    await this.authService.logout(req.user.memberId, token);
+    await this.authService.logout(req.user, token);
     return { message: 'Logged out successfully' };
   }
 
@@ -70,7 +70,7 @@ export class AuthController {
       throw new BadRequestException('User not found in request');
     }
 
-    await this.authService.logoutAll(req.user.memberId);
+    await this.authService.logoutAll(req.user);
     return { message: 'Logged out from all devices' };
   }
 

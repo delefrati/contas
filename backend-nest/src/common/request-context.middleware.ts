@@ -12,6 +12,7 @@ export class RequestContextMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     let memberId: number | undefined;
+    let superAdminId: number | undefined;
 
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
@@ -24,8 +25,11 @@ export class RequestContextMiddleware implements NestMiddleware {
         if (typeof payload?.memberId === 'number') {
           memberId = payload.memberId;
         }
+        if (typeof payload?.superAdminId === 'number') {
+          superAdminId = payload.superAdminId;
+        }
       } catch {
-        // Malformed token — context will have no memberId
+        // Malformed token — context will have no identity
       }
     }
 
@@ -38,6 +42,6 @@ export class RequestContextMiddleware implements NestMiddleware {
       return;
     }
 
-    this.requestContext.run({ memberId, bandId }, () => next());
+    this.requestContext.run({ memberId, superAdminId, bandId }, () => next());
   }
 }

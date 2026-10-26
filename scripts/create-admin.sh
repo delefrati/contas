@@ -23,13 +23,9 @@ EMAIL="$3"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 
 cd "$(dirname "$0")/.."
+source scripts/lib.sh
 
-mysql_exec() {
-  docker compose -f "$COMPOSE_FILE" exec -T db mysql -N -s \
-    -uroot -p"${MYSQL_ROOT_PASSWORD:-root}" "${MYSQL_DATABASE:-contas}" -e "$1"
-}
-
-BAND_ID="$(mysql_exec "SELECT id FROM bands WHERE slug = '${SLUG//\'/\'\'}';")"
+BAND_ID="$(mysql_exec "SELECT id FROM bands WHERE slug = '$(sql_quote "$SLUG")';")"
 if [[ -z "$BAND_ID" ]]; then
   echo "Band '$SLUG' not found. Create it first with scripts/create-band.sh." >&2
   exit 1
@@ -37,6 +33,6 @@ fi
 
 echo "==> Creating admin member in band '$SLUG': $NAME <$EMAIL>"
 
-mysql_exec "INSERT INTO members (band_id, name, email, active) VALUES ($BAND_ID, '${NAME//\'/\'\'}', '${EMAIL//\'/\'\'}', true) ON DUPLICATE KEY UPDATE name = VALUES(name);"
+mysql_exec "INSERT INTO members (band_id, name, email, active) VALUES ($BAND_ID, '$(sql_quote "$NAME")', '$(sql_quote "$EMAIL")', true) ON DUPLICATE KEY UPDATE name = VALUES(name);"
 
 echo "==> Done."

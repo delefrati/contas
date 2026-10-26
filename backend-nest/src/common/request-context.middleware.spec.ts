@@ -35,6 +35,20 @@ describe('RequestContextMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it('should extract superAdminId from a super admin JWT', async () => {
+    const payload = { superAdminId: 3, bandId: 7 };
+    const token = `header.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`;
+    const req = { headers: { authorization: `Bearer ${token}` } } as unknown as Request;
+    const next = jest.fn();
+
+    await middleware.use(req, {} as Response, next);
+
+    expect(requestContext.run).toHaveBeenCalledWith(
+      { memberId: undefined, superAdminId: 3, bandId: 7 },
+      expect.any(Function),
+    );
+  });
+
   it('should set memberId to undefined when no authorization header', async () => {
     const req = { headers: {} } as unknown as Request;
     const res = {} as Response;

@@ -45,6 +45,20 @@ model Member {
   @@map("members")
 }
 
+// Manages the platform: not a member of any band, but may sign in to all of them
+model SuperAdmin {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sessions Session[]
+  logs     Log[]
+
+  @@map("super_admins")
+}
+
 model ExpenseType {
   id        Int       @id @default(autoincrement())
   bandId    Int       @map("band_id")
@@ -97,30 +111,37 @@ model Log {
   resource   String   @db.VarChar(100)
   resourceId Int?     @map("resource_id")
   details    String?  @db.LongText
-  createdAt  DateTime @default(now()) @map("created_at")
-  userId     Int?     @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  userId       Int?     @map("user_id")
+  superAdminId Int?     @map("super_admin_id")
 
-  band Band    @relation(fields: [bandId], references: [id])
-  user Member? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  band       Band        @relation(fields: [bandId], references: [id])
+  user       Member?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  superAdmin SuperAdmin? @relation(fields: [superAdminId], references: [id], onDelete: SetNull)
 
   @@index([action])
   @@index([resource])
   @@index([createdAt])
   @@index([bandId])
+  @@index([superAdminId])
   @@map("logs")
 }
 
+// Belongs to either a band member or a super admin
 model Session {
-  id        Int      @id @default(autoincrement())
-  memberId  Int      @map("member_id")
-  token     String   @unique @db.VarChar(500)
-  oidcSub   String?  @map("oidc_sub") @db.VarChar(255)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  memberId     Int?     @map("member_id")
+  superAdminId Int?     @map("super_admin_id")
+  token        String   @unique @db.VarChar(500)
+  oidcSub      String?  @map("oidc_sub") @db.VarChar(255)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member     Member?     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  superAdmin SuperAdmin? @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
+  @@index([superAdminId])
   @@index([expiresAt])
   @@index([oidcSub])
   @@map("sessions")

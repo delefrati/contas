@@ -18,7 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<AuthPayload> {
-    if (!payload.memberId) {
+    if (!payload.memberId && !payload.superAdminId) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
@@ -29,6 +29,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     return {
       memberId: payload.memberId,
+      superAdminId: payload.superAdminId,
       bandId: payload.bandId,
       email: payload.email,
       name: payload.name,

@@ -59,6 +59,7 @@ async function handleLogout() {
         <LanguageSelector v-if="showLanguageSelector" />
         <div v-if="member" class="user-info">
           <span class="user-name">{{ member.name }}</span>
+          <span v-if="member.superAdmin" class="super-admin-badge">{{ $t('app.superAdmin') }}</span>
         </div>
         <button @click="handleLogout" class="btn-logout" :title="$t('app.logout')">
           <i class="fa-solid fa-right-from-bracket"></i>
@@ -69,6 +70,16 @@ async function handleLogout() {
 </template>
 
 <style scoped>
+.super-admin-badge {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .header-nav {
   display: flex;
   align-items: center;

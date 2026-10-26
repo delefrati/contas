@@ -163,6 +163,25 @@ describe('useAuth', () => {
       expect(result).toEqual({ memberId: 1, name: 'T' })
     })
 
+    it('should flag a super admin session', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          data: { token: 'tk', member: { name: 'Root', superAdmin: true } },
+        }),
+      })
+      const { loginWithGoogle, getCurrentUser, member } = useAuth()
+      await loginWithGoogle('cred')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ data: { superAdminId: 3, name: 'Root' } }),
+      })
+      await getCurrentUser()
+
+      expect(member.value).toEqual({ id: undefined, name: 'Root', email: undefined, superAdmin: true })
+    })
+
     it('should clear token on 401 response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

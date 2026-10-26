@@ -47,7 +47,7 @@ describe('ExpenseService', () => {
           useValue: {
             requireBandId: jest.fn().mockReturnValue(1),
             getBandId: jest.fn().mockReturnValue(1),
-            getMemberId: jest.fn(),
+            getIdentity: jest.fn(),
           },
         },
       ],

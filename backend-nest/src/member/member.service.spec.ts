@@ -17,7 +17,7 @@ describe('MemberService', () => {
     };
   };
   let logService: { log: jest.Mock };
-  let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getMemberId: jest.Mock };
+  let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -33,7 +33,7 @@ describe('MemberService', () => {
     requestContext = {
       requireBandId: jest.fn().mockReturnValue(1),
       getBandId: jest.fn().mockReturnValue(1),
-      getMemberId: jest.fn(),
+      getIdentity: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

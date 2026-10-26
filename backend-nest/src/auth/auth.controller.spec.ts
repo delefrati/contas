@@ -61,7 +61,7 @@ describe('AuthController', () => {
 
       const result = await controller.logout(req);
 
-      expect(authService.logout).toHaveBeenCalledWith(1, 'token-123');
+      expect(authService.logout).toHaveBeenCalledWith(req.user, 'token-123');
       expect(result).toEqual({ message: 'Logged out successfully' });
     });
 
@@ -91,7 +91,7 @@ describe('AuthController', () => {
 
       const result = await controller.logoutAll(req);
 
-      expect(authService.logoutAll).toHaveBeenCalledWith(1);
+      expect(authService.logoutAll).toHaveBeenCalledWith(req.user);
       expect(result).toEqual({ message: 'Logged out from all devices' });
     });
 

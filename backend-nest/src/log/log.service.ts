@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { RequestContextService } from '../common/request-context.service';
+import { Identity, RequestContextService } from '../common/request-context.service';
 
 export interface LogDto {
   id: number;
@@ -11,6 +12,24 @@ export interface LogDto {
   createdAt: Date;
   userId?: number;
   userName?: string;
+}
+
+const LOG_AUTHORS = {
+  user: { select: { name: true } },
+  superAdmin: { select: { name: true } },
+} satisfies Prisma.LogInclude;
+
+function toLogDto(log: Prisma.LogGetPayload<{ include: typeof LOG_AUTHORS }>): LogDto {
+  return {
+    id: log.id,
+    action: log.action,
+    resource: log.resource,
+    resourceId: log.resourceId ?? undefined,
+    details: log.details ?? undefined,
+    createdAt: log.createdAt,
+    userId: log.userId ?? undefined,
+    userName: log.user?.name ?? log.superAdmin?.name ?? undefined,
+  };
 }
 
 @Injectable()
@@ -25,9 +44,10 @@ export class LogService {
     resource: string,
     resourceId?: number,
     details?: any,
-    userId?: number,
+    // Defaults to whoever is authenticated on the current request
+    actor?: Identity,
   ): Promise<LogDto> {
-    const resolvedUserId = userId ?? this.requestContext.getMemberId();
+    const { memberId, superAdminId } = actor ?? this.requestContext.getIdentity();
     const log = await this.prisma.log.create({
       data: {
         bandId: this.requestContext.requireBandId(),
@@ -35,7 +55,8 @@ export class LogService {
         resource,
         resourceId,
         details: details ? JSON.stringify(details) : null,
-        userId: resolvedUserId,
+        userId: memberId,
+        superAdminId,
       },
     });
 
@@ -55,19 +76,10 @@ export class LogService {
       where: { bandId: this.requestContext.requireBandId() },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: { user: { select: { name: true } } },
+      include: LOG_AUTHORS,
     });
 
-    return logs.map((log) => ({
-      id: log.id,
-      action: log.action,
-      resource: log.resource,
-      resourceId: log.resourceId ?? undefined,
-      details: log.details ?? undefined,
-      createdAt: log.createdAt,
-      userId: log.userId ?? undefined,
-      userName: log.user?.name ?? undefined,
-    }));
+    return logs.map(toLogDto);
   }
 
   async findByResource(
@@ -83,19 +95,10 @@ export class LogService {
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: { user: { select: { name: true } } },
+      include: LOG_AUTHORS,
     });
 
-    return logs.map((log) => ({
-      id: log.id,
-      action: log.action,
-      resource: log.resource,
-      resourceId: log.resourceId ?? undefined,
-      details: log.details ?? undefined,
-      createdAt: log.createdAt,
-      userId: log.userId ?? undefined,
-      userName: log.user?.name ?? undefined,
-    }));
+    return logs.map(toLogDto);
   }
 
   async findByAction(
@@ -106,18 +109,9 @@ export class LogService {
       where: { bandId: this.requestContext.requireBandId(), action },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: { user: { select: { name: true } } },
+      include: LOG_AUTHORS,
     });
 
-    return logs.map((log) => ({
-      id: log.id,
-      action: log.action,
-      resource: log.resource,
-      resourceId: log.resourceId ?? undefined,
-      details: log.details ?? undefined,
-      createdAt: log.createdAt,
-      userId: log.userId ?? undefined,
-      userName: log.user?.name ?? undefined,
-    }));
+    return logs.map(toLogDto);
   }
 }

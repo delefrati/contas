@@ -95,6 +95,12 @@ To add a band (and its first admin member):
 COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-band.sh <slug> 'Band Name' 'YourName' 'you@example.com'
 ```
 
+To manage every band without being a member of them, make yourself a super admin:
+
+```bash
+COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-super-admin.sh 'YourName' 'you@example.com'
+```
+
 ## 6) Update deployment
 
 Just re-run the sync script from your local machine:

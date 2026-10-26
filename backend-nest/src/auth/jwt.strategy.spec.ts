@@ -6,14 +6,14 @@ import { RequestContextService } from '../common/request-context.service';
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let authService: Partial<AuthService>;
-  let requestContext: { getBandId: jest.Mock; requireBandId: jest.Mock; getMemberId: jest.Mock };
+  let requestContext: { getBandId: jest.Mock; requireBandId: jest.Mock; getIdentity: jest.Mock };
 
   beforeEach(() => {
     authService = {};
     requestContext = {
       getBandId: jest.fn().mockReturnValue(1),
       requireBandId: jest.fn().mockReturnValue(1),
-      getMemberId: jest.fn(),
+      getIdentity: jest.fn(),
     };
     strategy = new JwtStrategy(
       authService as AuthService,
@@ -33,6 +33,14 @@ describe('JwtStrategy', () => {
         name: 'Test',
         oidcSub: 'sub1',
       });
+    });
+
+    it('should accept a super admin token', async () => {
+      const payload = { superAdminId: 3, bandId: 1, email: 'root@test.com', name: 'Root' };
+      const result = await strategy.validate(payload);
+
+      expect(result).toEqual(expect.objectContaining({ superAdminId: 3, bandId: 1, name: 'Root' }));
+      expect(result.memberId).toBeUndefined();
     });
 
     it('should throw UnauthorizedException when memberId is missing', async () => {

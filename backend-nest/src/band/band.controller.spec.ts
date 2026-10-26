@@ -7,7 +7,7 @@ import { RequestContextService } from '../common/request-context.service';
 describe('BandController', () => {
   let controller: BandController;
   let bandService: { slugFromHost: jest.Mock; findBySlug: jest.Mock; findById: jest.Mock };
-  let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getMemberId: jest.Mock };
+  let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
 
   beforeEach(async () => {
     bandService = {
@@ -18,7 +18,7 @@ describe('BandController', () => {
     requestContext = {
       requireBandId: jest.fn().mockReturnValue(1),
       getBandId: jest.fn().mockReturnValue(1),
-      getMemberId: jest.fn(),
+      getIdentity: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

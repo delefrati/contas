@@ -5,10 +5,10 @@ import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { MemberService } from '../member/member.service';
-import { RequestContextService } from '../common/request-context.service';
+import { Identity, RequestContextService } from '../common/request-context.service';
 
-export interface AuthPayload {
-  memberId: number;
+// Identifies either a band member or a super admin (see Identity)
+export interface AuthPayload extends Identity {
   bandId: number;
   email?: string;
   name: string;
@@ -23,8 +23,7 @@ export interface CentralLoginResponse {
   bands?: { slug: string; name: string }[];
 }
 
-interface LoginCode {
-  memberId: number;
+interface LoginCode extends Identity {
   bandId: number;
   expiresAt: number;
 }
@@ -34,9 +33,11 @@ const LOGIN_CODE_TTL_MS = 60_000;
 export interface LoginResponse {
   token: string;
   member: {
-    id: number;
+    // Unset for super admins, who aren't members of the band
+    id?: number;
     name: string;
     email?: string;
+    superAdmin?: boolean;
   };
 }
 
@@ -53,7 +54,9 @@ export class AuthService {
     private requestContext: RequestContextService,
   ) {}
 
-  private async verifyGoogleToken(idToken: string): Promise<{ oidcSub: string; email?: string }> {
+  private async verifyGoogleToken(
+    idToken: string,
+  ): Promise<{ oidcSub: string; email?: string; verifiedEmail?: string }> {
     if (!idToken) {
       throw new BadRequestException('Google ID token is required');
     }
@@ -67,6 +70,7 @@ export class AuthService {
 
     let oidcSub: string;
     let email: string | undefined;
+    let verifiedEmail: string | undefined;
 
     try {
       const ticket = await client.verifyIdToken({
@@ -77,19 +81,51 @@ export class AuthService {
       if (!payload) throw new Error('Empty payload');
       oidcSub = payload.sub;
       email = payload.email;
+      verifiedEmail = payload.email_verified === true ? payload.email : undefined;
     } catch {
       throw new BadRequestException('Invalid Google token');
     }
 
-    return { oidcSub, email };
+    return { oidcSub, email, verifiedEmail };
+  }
+
+  // Super admins are matched by email only, so it must be one Google has verified
+  private async findSuperAdmin(verifiedEmail: string | undefined) {
+    if (!verifiedEmail) return null;
+    return this.prisma.superAdmin.findFirst({ where: { email: verifiedEmail, active: true } });
+  }
+
+  private async startSession(
+    identity: Identity,
+    account: { name: string; email?: string | null },
+    details: Record<string, unknown>,
+  ): Promise<LoginResponse> {
+    const email = account.email ?? undefined;
+    const token = await this.createToken(identity, email, account.name);
+
+    await this.logService.log('LOGIN', 'auth', identity.memberId, details, identity);
+
+    return {
+      token,
+      member: identity.superAdminId
+        ? { name: account.name, email, superAdmin: true }
+        : { id: identity.memberId, name: account.name, email },
+    };
   }
 
   async loginWithGoogle(idToken: string): Promise<LoginResponse> {
-    const { oidcSub, email } = await this.verifyGoogleToken(idToken);
+    const { oidcSub, email, verifiedEmail } = await this.verifyGoogleToken(idToken);
 
     let member = await this.memberService.findByOidcSub(oidcSub);
     if (!member && email) {
       member = await this.memberService.findByEmail(email);
+    }
+
+    if (!member?.active) {
+      const superAdmin = await this.findSuperAdmin(verifiedEmail);
+      if (superAdmin) {
+        return this.startSession({ superAdminId: superAdmin.id }, superAdmin, { method: 'google' });
+      }
     }
 
     if (!member) {
@@ -100,55 +136,49 @@ export class AuthService {
       throw new BadRequestException('Member account is disabled');
     }
 
-    const token = await this.createToken(member.id, member.email, member.name);
-
-    await this.logService.log(
-      'LOGIN',
-      'auth',
-      member.id,
-      { method: 'google', oidcSub },
-    );
-
-    return {
-      token,
-      member: {
-        id: member.id,
-        name: member.name,
-        email: member.email,
-      },
-    };
+    return this.startSession({ memberId: member.id }, member, { method: 'google', oidcSub });
   }
 
   // Login on the central host: find the account's bands and issue a code for one of them.
   async centralLoginWithGoogle(idToken: string, bandSlug?: string): Promise<CentralLoginResponse> {
-    const { oidcSub, email } = await this.verifyGoogleToken(idToken);
+    const { oidcSub, email, verifiedEmail } = await this.verifyGoogleToken(idToken);
 
-    const memberships = await this.prisma.member.findMany({
-      where: {
-        active: true,
-        OR: [{ oidcSub }, ...(email ? [{ email }] : [])],
-      },
-      include: { band: true },
-      orderBy: { band: { name: 'asc' } },
-    });
+    const [memberships, superAdmin] = await Promise.all([
+      this.prisma.member.findMany({
+        where: {
+          active: true,
+          OR: [{ oidcSub }, ...(email ? [{ email }] : [])],
+        },
+        include: { band: true },
+        orderBy: { band: { name: 'asc' } },
+      }),
+      this.findSuperAdmin(verifiedEmail),
+    ]);
 
-    if (memberships.length === 0) {
+    // Super admins may enter every band; where they're also members they enter as such
+    const bands = superAdmin
+      ? await this.prisma.band.findMany({ orderBy: { name: 'asc' } })
+      : memberships.map((m) => m.band);
+
+    if (bands.length === 0) {
       throw new BadRequestException('Member not found. Please contact an administrator.');
     }
 
-    let chosen = memberships.length === 1 && !bandSlug ? memberships[0] : undefined;
+    let chosen = bands.length === 1 && !bandSlug ? bands[0] : undefined;
     if (bandSlug) {
-      chosen = memberships.find((m) => m.band.slug === bandSlug);
+      chosen = bands.find((b) => b.slug === bandSlug);
       if (!chosen) {
         throw new BadRequestException('Member not found in this band. Please contact an administrator.');
       }
     }
 
     if (!chosen) {
-      return { bands: memberships.map((m) => ({ slug: m.band.slug, name: m.band.name })) };
+      return { bands: bands.map((b) => ({ slug: b.slug, name: b.name })) };
     }
 
-    return { code: this.issueLoginCode(chosen.id, chosen.bandId), band: chosen.band.slug };
+    const membership = memberships.find((m) => m.bandId === chosen.id);
+    const identity = membership ? { memberId: membership.id } : { superAdminId: superAdmin!.id };
+    return { code: this.issueLoginCode(identity, chosen.id), band: chosen.slug };
   }
 
   // Exchange a central-login code on the band subdomain it was issued for.
@@ -161,6 +191,16 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired login code');
     }
 
+    if (entry.superAdminId) {
+      const superAdmin = await this.prisma.superAdmin.findFirst({
+        where: { id: entry.superAdminId, active: true },
+      });
+      if (!superAdmin) {
+        throw new BadRequestException('Account is disabled');
+      }
+      return this.startSession({ superAdminId: superAdmin.id }, superAdmin, { method: 'google-central' });
+    }
+
     const member = await this.prisma.member.findFirst({
       where: { id: entry.memberId, bandId, active: true },
     });
@@ -168,35 +208,32 @@ export class AuthService {
       throw new BadRequestException('Member account is disabled');
     }
 
-    const token = await this.createToken(member.id, member.email ?? undefined, member.name);
-
-    await this.logService.log('LOGIN', 'auth', member.id, { method: 'google-central' });
-
-    return {
-      token,
-      member: {
-        id: member.id,
-        name: member.name,
-        email: member.email ?? undefined,
-      },
-    };
+    return this.startSession({ memberId: member.id }, member, { method: 'google-central' });
   }
 
-  private issueLoginCode(memberId: number, bandId: number): string {
+  private issueLoginCode(identity: Identity, bandId: number): string {
     const now = Date.now();
     for (const [key, value] of this.loginCodes) {
       if (value.expiresAt < now) this.loginCodes.delete(key);
     }
 
     const code = randomBytes(32).toString('base64url');
-    this.loginCodes.set(code, { memberId, bandId, expiresAt: now + LOGIN_CODE_TTL_MS });
+    this.loginCodes.set(code, { ...identity, bandId, expiresAt: now + LOGIN_CODE_TTL_MS });
     return code;
   }
 
-  async createToken(memberId: number, email?: string, name?: string): Promise<string> {
+  // Sessions and their queries must always name their owner: an empty filter would match everyone
+  private sessionOwner(identity: Identity): { memberId: number } | { superAdminId: number } {
+    if (identity.superAdminId) return { superAdminId: identity.superAdminId };
+    if (identity.memberId) return { memberId: identity.memberId };
+    throw new BadRequestException('Session has no owner');
+  }
+
+  async createToken(identity: Identity, email?: string, name?: string): Promise<string> {
     const expiresIn = '24h';
+    const owner = this.sessionOwner(identity);
     const payload: AuthPayload = {
-      memberId,
+      ...owner,
       bandId: this.requestContext.requireBandId(),
       email,
       name: name || '',
@@ -210,7 +247,7 @@ export class AuthService {
 
     await this.prisma.session.create({
       data: {
-        memberId,
+        ...owner,
         token,
         expiresAt,
       },
@@ -238,10 +275,10 @@ export class AuthService {
     }
   }
 
-  async logout(memberId: number, token: string): Promise<void> {
+  async logout(identity: Identity, token: string): Promise<void> {
     await this.prisma.session.deleteMany({
       where: {
-        memberId,
+        ...this.sessionOwner(identity),
         token,
       },
     });
@@ -249,20 +286,20 @@ export class AuthService {
     await this.logService.log(
       'LOGOUT',
       'auth',
-      memberId,
+      identity.memberId,
       {},
     );
   }
 
-  async logoutAll(memberId: number): Promise<void> {
+  async logoutAll(identity: Identity): Promise<void> {
     await this.prisma.session.deleteMany({
-      where: { memberId },
+      where: this.sessionOwner(identity),
     });
 
     await this.logService.log(
       'LOGOUT_ALL',
       'auth',
-      memberId,
+      identity.memberId,
       {},
     );
   }
