@@ -159,39 +159,77 @@ function showSuccess(message) {
   setTimeout(() => { successMessage.value = '' }, 3000)
 }
 
-// Plain text for WhatsApp: *bold* dates, one line per event
-function buildAgendaText() {
-  const tag = localeTag(locale.value)
+// Plain text for WhatsApp: a *bold* heading naming the filtered types, then one line per event
+function shareHeading(subtitle) {
   const heading = [t('agenda.title'), band.value?.name].filter(Boolean).join(' · ')
-  const monthName = monthLabel.value.charAt(0).toUpperCase() + monthLabel.value.slice(1)
-  const lines = [`*${heading} — ${monthName}*`]
+  const lines = [`*${heading} — ${subtitle}*`]
   if (isFiltered.value) {
     lines.push(types.value.filter(isTypeShown).map((type) => type.name).join(', '))
   }
   lines.push('')
+  return lines
+}
 
-  for (const event of monthEvents.value) {
-    const date = parseDate(event.date)
-    const day = date.toLocaleDateString(tag, { day: '2-digit', month: '2-digit' })
-    const when = [formatWeekday(event.date), day, event.time].filter(Boolean).join(' ')
-    const place = event.location ? ` (${event.location})` : ''
-    lines.push(`*${when}* — ${eventName(event)}${place}`)
-  }
+function eventLine(event) {
+  const day = parseDate(event.date).toLocaleDateString(localeTag(locale.value), { day: '2-digit', month: '2-digit' })
+  const when = [formatWeekday(event.date), day, event.time].filter(Boolean).join(' ')
+  const place = event.location ? ` (${event.location})` : ''
+  return `*${when}* — ${eventName(event)}${place}`
+}
 
+function buildAgendaText() {
+  const monthName = monthLabel.value.charAt(0).toUpperCase() + monthLabel.value.slice(1)
+  return [...shareHeading(monthName), ...monthEvents.value.map(eventLine)].join('\n')
+}
+
+// A blank line between months, as in a WhatsApp group description
+function buildUpcomingText(upcoming) {
+  const lines = shareHeading(t('agenda.upcoming'))
+  upcoming.forEach((event, index) => {
+    if (index > 0 && event.date.slice(0, 7) !== upcoming[index - 1].date.slice(0, 7)) lines.push('')
+    lines.push(eventLine(event))
+  })
   return lines.join('\n')
 }
 
-async function shareAgenda() {
-  const text = buildAgendaText()
+async function copyText(text, message) {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
     } else {
       throw new Error('clipboard unavailable')
     }
-    showSuccess(t('agenda.shareSuccess'))
+    showSuccess(message)
   } catch {
     window.prompt(t('repertoires.shareFallbackHint'), text)
+  }
+}
+
+function shareAgenda() {
+  return copyText(buildAgendaText(), t('agenda.shareSuccess'))
+}
+
+// Every event from today on, whatever month is shown
+async function shareUpcoming() {
+  error.value = ''
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/events?from=${today}`, { headers: getAuthHeader() })
+    if (response.status === 401) {
+      await logout()
+      await router.push({ path: '/login', query: { reason: 'expired' } })
+      return
+    }
+    if (!response.ok) throw new Error(t('agenda.loadingError'))
+
+    const upcoming = ((await response.json()).data || [])
+      .filter((event) => !hiddenTypeIds.value.includes(event.typeId))
+    if (upcoming.length === 0) {
+      error.value = t('agenda.noUpcoming')
+      return
+    }
+    await copyText(buildUpcomingText(upcoming), t('agenda.shareSuccess'))
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('errors.genericError')
   }
 }
 
@@ -244,6 +282,9 @@ onMounted(async () => {
           <div class="toolbar-actions">
             <button @click="shareAgenda" :disabled="monthEvents.length === 0" class="btn-secondary" :title="$t('agenda.shareHint')">
               <i class="fa-solid fa-share-nodes"></i> {{ $t('agenda.share') }}
+            </button>
+            <button @click="shareUpcoming" class="btn-secondary" :title="$t('agenda.shareUpcomingHint')">
+              <i class="fa-solid fa-list-ul"></i> {{ $t('agenda.shareUpcoming') }}
             </button>
             <button @click="isTypesModalOpen = true" class="btn-secondary" :title="$t('agenda.typesTitle')">
               <i class="fa-solid fa-tags"></i> {{ $t('agenda.manageTypes') }}

@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { ref } from 'vue'
 import Agenda from './Agenda.vue'
+import { todayISO } from '../utils/date'
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -29,6 +30,7 @@ const messages = {
       noEvents: 'No events this month', manageTypes: 'Types',
       songCount: 'no songs | {n} song | {n} songs', addOnDay: 'Add event on {date}',
       share: 'Share', shareSuccess: 'Calendar copied!',
+      shareUpcoming: 'Upcoming', upcoming: 'Upcoming dates', noUpcoming: 'Nothing upcoming',
     },
     errors: { genericError: 'An error occurred' },
   },
@@ -170,6 +172,47 @@ describe('Agenda', () => {
       '*Sat 10/24 21:00* — Bar do Zé (Centro)',
       '*Sat 10/31* — Barbecue',
     ].join('\n'))
+  })
+
+  it('should copy every event from today on, a blank line between months', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const upcoming = [
+      { id: 10, typeId: 1, type: show, title: 'Vila Domitila', date: '2026-10-31', time: '', location: null },
+      { id: 11, typeId: 2, type: rehearsal, title: '', date: '2026-11-04', time: '', location: null },
+      { id: 12, typeId: 1, type: show, title: 'Mercadão', date: '2026-11-20', time: '20:00', location: null },
+      { id: 13, typeId: 1, type: show, title: 'Inebria', date: '2026-12-05', time: '', location: 'Centro' },
+    ]
+    const { wrapper } = await createWrapper()
+    mockFetch.mockImplementation((url) => respond(url.includes('/api/event-types') ? types : upcoming))
+    await filterChip(wrapper, 'Rehearsal').trigger('click')
+    await filterChip(wrapper, 'Party').trigger('click')
+    await wrapper.findAll('button').find((b) => b.text() === 'Upcoming').trigger('click')
+    await flushPromises()
+
+    expect(eventsUrls().at(-1)).toMatch(new RegExp(`/api/events\\?from=${todayISO()}$`))
+    expect(writeText).toHaveBeenCalledWith([
+      '*Calendar · Maverick — Upcoming dates*',
+      'Show',
+      '',
+      '*Sat 10/31* — Vila Domitila',
+      '',
+      '*Fri 11/20 20:00* — Mercadão',
+      '',
+      '*Sat 12/05* — Inebria (Centro)',
+    ].join('\n'))
+  })
+
+  it('should say so when there is nothing upcoming to share', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const { wrapper } = await createWrapper()
+    mockFetch.mockImplementation((url) => respond(url.includes('/api/event-types') ? types : []))
+    await wrapper.findAll('button').find((b) => b.text() === 'Upcoming').trigger('click')
+    await flushPromises()
+
+    expect(writeText).not.toHaveBeenCalled()
+    expect(wrapper.find('.alert-error').text()).toBe('Nothing upcoming')
   })
 
   it('should not share an empty month', async () => {
