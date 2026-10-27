@@ -1,12 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { BandController } from './band.controller';
 import { BandService } from './band.service';
 import { RequestContextService } from '../common/request-context.service';
+import { LogService } from '../log/log.service';
 
 describe('BandController', () => {
   let controller: BandController;
-  let bandService: { slugFromHost: jest.Mock; findBySlug: jest.Mock; findById: jest.Mock };
+  let bandService: {
+    slugFromHost: jest.Mock;
+    findBySlug: jest.Mock;
+    findById: jest.Mock;
+    getLogo: jest.Mock;
+    setLogo: jest.Mock;
+    removeLogo: jest.Mock;
+  };
+  let logService: { log: jest.Mock };
   let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
 
   beforeEach(async () => {
@@ -14,7 +23,11 @@ describe('BandController', () => {
       slugFromHost: jest.fn(),
       findBySlug: jest.fn(),
       findById: jest.fn(),
+      getLogo: jest.fn(),
+      setLogo: jest.fn(),
+      removeLogo: jest.fn(),
     };
+    logService = { log: jest.fn().mockResolvedValue({}) };
     requestContext = {
       requireBandId: jest.fn().mockReturnValue(1),
       getBandId: jest.fn().mockReturnValue(1),
@@ -26,6 +39,7 @@ describe('BandController', () => {
       providers: [
         { provide: BandService, useValue: bandService },
         { provide: RequestContextService, useValue: requestContext },
+        { provide: LogService, useValue: logService },
       ],
     }).compile();
 
@@ -83,6 +97,55 @@ describe('BandController', () => {
 
       await expect(controller.tlsCheck('evil.example.com')).rejects.toThrow(NotFoundException);
       expect(bandService.findBySlug).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logo', () => {
+    const withLogo = { id: 1, slug: 'maverick', name: 'Maverick', logoUrl: '/api/band/logo?v=1' };
+
+    it('should serve the logo with its stored type, cacheable for good', async () => {
+      bandService.getLogo.mockResolvedValue({ data: Buffer.from('png-bytes'), type: 'image/png' });
+      const res = { setHeader: jest.fn() };
+
+      const result = await controller.logo(res as any);
+
+      expect(result).toBeInstanceOf(StreamableFile);
+      expect(result.getHeaders()).toEqual(expect.objectContaining({ type: 'image/png', length: 9 }));
+      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=31536000, immutable');
+    });
+
+    it('should answer an uncached 404 when the band has no logo', async () => {
+      bandService.getLogo.mockResolvedValue(null);
+      const res = { setHeader: jest.fn() };
+
+      await expect(controller.logo(res as any)).rejects.toThrow(NotFoundException);
+      expect(res.setHeader).not.toHaveBeenCalled();
+    });
+
+    it('should store an uploaded logo for the current band and log it', async () => {
+      bandService.setLogo.mockResolvedValue(withLogo);
+      const buffer = Buffer.from('png-bytes');
+
+      const result = await controller.uploadLogo({ buffer });
+
+      expect(bandService.setLogo).toHaveBeenCalledWith(1, buffer);
+      expect(logService.log).toHaveBeenCalledWith('UPDATE', 'band_logo', 1, { bytes: 9 });
+      expect(result).toEqual({ data: withLogo });
+    });
+
+    it('should reject an upload without a file', async () => {
+      await expect(controller.uploadLogo(undefined)).rejects.toThrow(BadRequestException);
+      expect(bandService.setLogo).not.toHaveBeenCalled();
+    });
+
+    it('should remove the logo of the current band and log it', async () => {
+      bandService.removeLogo.mockResolvedValue({ ...withLogo, logoUrl: null });
+
+      const result = await controller.removeLogo();
+
+      expect(bandService.removeLogo).toHaveBeenCalledWith(1);
+      expect(logService.log).toHaveBeenCalledWith('DELETE', 'band_logo', 1);
+      expect(result.data.logoUrl).toBeNull();
     });
   });
 });

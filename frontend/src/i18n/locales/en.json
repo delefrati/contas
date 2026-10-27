@@ -132,6 +132,17 @@
     "clear": "Clear filters",
     "toggle": "Filters"
   },
+  "band": {
+    "logo": "Band logo",
+    "changeLogo": "Change logo",
+    "chooseFile": "Choose image",
+    "logoHint": "PNG, JPG or WebP, up to 1 MB. Square images look best.",
+    "noLogo": "The band has no logo yet.",
+    "removeLogo": "Remove logo",
+    "confirmRemoveLogo": "Remove the band's logo?",
+    "invalidType": "Use a PNG, JPG or WebP image.",
+    "tooLarge": "The image is larger than 1 MB."
+  },
   "members": {
     "title": "Members",
     "addMember": "Add Member",

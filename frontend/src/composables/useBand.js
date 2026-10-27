@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { isCentralHost } from '../hosts'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
@@ -19,8 +19,17 @@ async function fetchBand() {
   }
 }
 
+// The API returns a path that changes on every upload, so browsers never show a stale logo
+const logoUrl = computed(() => (band.value?.logoUrl ? `${API_BASE_URL}${band.value.logoUrl}` : null))
+
 export function useBand() {
   // The central login host isn't a band
   if (!request && !isCentralHost()) request = fetchBand()
-  return { band }
+
+  // After uploading or removing the logo, the endpoint answers with the updated band
+  function setBand(updated) {
+    band.value = updated
+  }
+
+  return { band, logoUrl, setBand }
 }

@@ -16,6 +16,11 @@ model Band {
   name      String   @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at")
 
+  // Uploaded by the band (PNG, JPEG or WebP); logoUpdatedAt versions its URL for caching
+  logo          Bytes?    @db.MediumBlob
+  logoType      String?   @map("logo_type") @db.VarChar(20)
+  logoUpdatedAt DateTime? @map("logo_updated_at")
+
   members      Member[]
   expenseTypes ExpenseType[]
   expenses     Expense[]

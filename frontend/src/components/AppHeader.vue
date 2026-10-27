@@ -8,7 +8,13 @@ import LanguageSelector from './LanguageSelector.vue'
 defineProps({
   icon: { type: String, required: true },
   title: { type: String, required: true },
+  // Shown instead of the icon when set
+  logo: { type: String, default: null },
+  // Turns the logo/icon into a button that emits edit-logo
+  logoEditable: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['edit-logo'])
 
 const { t } = useI18n()
 const route = useRoute()
@@ -38,7 +44,22 @@ async function handleLogout() {
 <template>
   <header class="header">
     <div class="header-top">
-      <h1><i class="fa-solid" :class="icon"></i> {{ title }}</h1>
+      <h1>
+        <component
+          :is="logoEditable ? 'button' : 'span'"
+          :type="logoEditable ? 'button' : undefined"
+          class="header-logo"
+          :class="{ 'is-editable': logoEditable }"
+          :title="logoEditable ? $t('band.changeLogo') : undefined"
+          :aria-label="logoEditable ? $t('band.changeLogo') : undefined"
+          @click="logoEditable && emit('edit-logo')"
+        >
+          <img v-if="logo" :src="logo" alt="" />
+          <i v-else class="fa-solid" :class="icon"></i>
+          <span v-if="logoEditable" class="header-logo-edit"><i class="fa-solid fa-camera"></i></span>
+        </component>
+        {{ title }}
+      </h1>
       <div class="header-controls">
         <nav class="header-nav">
           <router-link
@@ -70,6 +91,43 @@ async function handleLogout() {
 </template>
 
 <style scoped>
+.header-logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-right: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.header-logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.header-logo.is-editable {
+  cursor: pointer;
+}
+.header-logo-edit {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
 .super-admin-badge {
   margin-left: 6px;
   padding: 2px 8px;

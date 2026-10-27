@@ -132,6 +132,17 @@
     "clear": "Limpar filtros",
     "toggle": "Filtros"
   },
+  "band": {
+    "logo": "Logo da banda",
+    "changeLogo": "Alterar logo",
+    "chooseFile": "Escolher imagem",
+    "logoHint": "PNG, JPG ou WebP, até 1 MB. Imagens quadradas ficam melhores.",
+    "noLogo": "A banda ainda não tem logo.",
+    "removeLogo": "Remover logo",
+    "confirmRemoveLogo": "Remover o logo da banda?",
+    "invalidType": "Use uma imagem PNG, JPG ou WebP.",
+    "tooLarge": "A imagem passa de 1 MB."
+  },
   "members": {
     "title": "Integrantes",
     "addMember": "Adicionar Integrante",

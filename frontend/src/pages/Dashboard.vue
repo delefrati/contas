@@ -5,13 +5,15 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useBand } from '../composables/useBand'
 import AppHeader from '../components/AppHeader.vue'
+import BandLogoModal from '../components/BandLogoModal.vue'
 import { formatDate as formatLocalDate, todayISO } from '../utils/date'
 import { eventName } from '../utils/events'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
-const { band } = useBand()
+const { band, logoUrl } = useBand()
+const isLogoModalOpen = ref(false)
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const health = ref('loading...')
@@ -106,7 +108,14 @@ onMounted(async () => {
 
 <template>
   <div class="container">
-    <AppHeader icon="fa-guitar" :title="band?.name || $t('app.title')" />
+    <AppHeader
+      icon="fa-guitar"
+      :title="band?.name || $t('app.title')"
+      :logo="logoUrl"
+      logo-editable
+      @edit-logo="isLogoModalOpen = true"
+    />
+    <BandLogoModal v-model="isLogoModalOpen" />
 
     <div class="content">
       <div class="welcome">

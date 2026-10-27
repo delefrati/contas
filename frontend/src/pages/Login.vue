@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
+      <img v-if="logoUrl" :src="logoUrl" :alt="band?.name" class="band-logo" />
       <p v-if="band" class="band-name">{{ band.name }}</p>
       <h1>{{ t('login.title') }}</h1>
       <p class="subtitle">{{ t('login.subtitle') }}</p>
@@ -47,7 +48,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { loginWithGoogle, centralLogin, loading } = useAuth()
-const { band } = useBand()
+const { band, logoUrl } = useBand()
 
 const error = ref('')
 const credential = ref('')
@@ -127,6 +128,14 @@ onMounted(() => {
   width: 100%;
   max-width: 400px;
   text-align: center;
+}
+
+.band-logo {
+  display: block;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 12px;
+  object-fit: contain;
 }
 
 .band-name {
