@@ -207,11 +207,7 @@ code {
 }
 
 #app {
-  width: $width-app-max;
-  max-width: 100%;
-  margin: 0 auto;
   text-align: center;
-  border-inline: $border-width-thin solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
