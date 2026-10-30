@@ -9,7 +9,15 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CreateSongDto, SongDto, SongService, UpdateSongDto, ImportSongsDto, ImportSongsResultDto } from './song.service';
+import {
+  CreateSongDto,
+  SongDto,
+  SongService,
+  SongWithLyricsDto,
+  UpdateSongDto,
+  ImportSongsDto,
+  ImportSongsResultDto,
+} from './song.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/songs')
@@ -23,8 +31,14 @@ export class SongController {
     return { data };
   }
 
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<{ data: SongWithLyricsDto }> {
+    const data = await this.songService.findOne(id);
+    return { data };
+  }
+
   @Post()
-  async create(@Body() createSongDto: CreateSongDto): Promise<{ data: SongDto }> {
+  async create(@Body() createSongDto: CreateSongDto): Promise<{ data: SongWithLyricsDto }> {
     const data = await this.songService.create(createSongDto);
     return { data };
   }
@@ -39,7 +53,7 @@ export class SongController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSongDto: UpdateSongDto,
-  ): Promise<{ data: SongDto }> {
+  ): Promise<{ data: SongWithLyricsDto }> {
     const data = await this.songService.update(id, updateSongDto);
     return { data };
   }

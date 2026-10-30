@@ -3,10 +3,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import StageView from './StageView.vue'
 
 const setlist = [
-  { id: 1, type: 'song', title: 'Exagerado', artist: 'Cazuza' },
+  { id: 1, type: 'song', title: 'Exagerado', artist: 'Cazuza', lyrics: 'Amor da minha vida\nDaqui até a eternidade' },
   { id: 2, type: 'song', title: 'Pro Dia Nascer Feliz', artist: null },
   { id: 3, type: 'pause', label: 'BIS' },
-  { id: 4, type: 'song', title: 'Malandragem', artist: null },
+  { id: 4, type: 'song', title: 'Malandragem', artist: null, lyrics: 'Quem sabe eu ainda sou uma garotinha' },
   { id: 5, type: 'pause', label: '' },
   { id: 6, type: 'song', title: 'Codinome Beija-Flor', artist: null },
 ]
@@ -110,6 +110,56 @@ describe('StageView', () => {
     await swipe(wrapper, [800, 300], [300, 300])
     expect(wrapper.find('.stage-content').classes()).toContain('is-overview')
     expect(wrapper.find('.stage-position').text()).toContain('"current":1')
+  })
+
+  it('should open the lyrics when the name of a song that has them is tapped', async () => {
+    const wrapper = createWrapper()
+    const [exagerado, proDia] = wrapper.findAll('.stage-block.is-current .stage-title')
+    expect(exagerado.find('.stage-lyrics-mark').exists()).toBe(true)
+    expect(proDia.find('.stage-lyrics-mark').exists()).toBe(false)
+
+    // A song without lyrics is just a tap on that side
+    await proDia.trigger('click', { clientX: 100 })
+    expect(wrapper.find('.stage-lyrics').exists()).toBe(false)
+
+    await exagerado.trigger('click', { clientX: 900 })
+    expect(wrapper.find('.stage-lyrics .stage-title').text()).toBe('Exagerado')
+    expect(wrapper.findAll('.stage-lyrics-line').map((l) => l.text())).toEqual(['Amor da minha vida', 'Daqui até a eternidade'])
+    expect(wrapper.find('.stage-position').text()).toContain('{"current":1,"total":4}')
+    expect(wrapper.find('.stage-block').exists()).toBe(false)
+  })
+
+  it('should go song by song while the lyrics are open and close back on that song\'s block', async () => {
+    const wrapper = createWrapper()
+    await wrapper.find('[data-lyrics="1"]').trigger('click', { clientX: 900 })
+
+    await tapRight(wrapper)
+    expect(wrapper.find('.stage-lyrics .stage-title').text()).toBe('Pro Dia Nascer Feliz')
+    expect(wrapper.find('.stage-lyrics .stage-empty').text()).toBe('repertoires.stageNoLyrics')
+
+    await swipe(wrapper, [800, 300], [300, 300])
+    expect(wrapper.find('.stage-lyrics-text').text()).toBe('Quem sabe eu ainda sou uma garotinha')
+
+    await wrapper.find('.stage-close-lyrics').trigger('click')
+    expect(wrapper.find('.stage-lyrics').exists()).toBe(false)
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Malandragem'])
+  })
+
+  it('should close the lyrics with Escape before leaving the view', async () => {
+    const wrapper = createWrapper()
+    await wrapper.find('[data-lyrics="1"]').trigger('click')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('.stage-lyrics').exists()).toBe(false)
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+
+  it('should jump to a block from the whole setlist even when tapping a song with lyrics', async () => {
+    const wrapper = createWrapper()
+    await wrapper.find('.stage-footer').trigger('click')
+    await wrapper.findAll('.stage-block')[1].find('[data-lyrics]').trigger('click')
+    expect(wrapper.find('.stage-lyrics').exists()).toBe(false)
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Malandragem'])
   })
 
   it('should show the whole setlist from the bottom and jump to the block picked there', async () => {

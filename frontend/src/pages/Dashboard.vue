@@ -126,26 +126,26 @@ onMounted(async () => {
       <div v-if="error" class="alert alert-error">{{ error }}</div>
 
       <div class="stats">
-        <div class="stat">
+        <router-link to="/integrantes" class="stat">
           <i class="fa-solid fa-users"></i>
           <span class="stat-value">{{ loading ? '…' : activeMembers.length }}</span>
           <span class="stat-label">{{ $t('home.activeMembers') }}</span>
-        </div>
-        <div class="stat">
+        </router-link>
+        <router-link to="/musicas" class="stat">
           <i class="fa-solid fa-music"></i>
           <span class="stat-value">{{ loading ? '…' : songs.length }}</span>
           <span class="stat-label">{{ $t('home.songs') }}</span>
-        </div>
-        <div class="stat">
+        </router-link>
+        <router-link to="/agenda" class="stat">
           <i class="fa-solid fa-calendar-days"></i>
           <span class="stat-value">{{ loading ? '…' : upcomingEvents.length }}</span>
           <span class="stat-label">{{ $t('home.upcomingEvents') }}</span>
-        </div>
-        <div class="stat">
+        </router-link>
+        <router-link :to="{ path: '/financeiro', query: { pago: 'nao' } }" class="stat">
           <i class="fa-solid fa-hourglass-half"></i>
           <span class="stat-value">{{ loading ? '…' : unpaidCount }}</span>
           <span class="stat-label">{{ $t('home.pendingEntries') }}</span>
-        </div>
+        </router-link>
       </div>
 
       <div class="modules">
@@ -268,8 +268,16 @@ onMounted(async () => {
   padding: 16px 8px;
   background: var(--bg-white);
   border-radius: 12px;
+  border: 1px solid transparent;
   box-shadow: var(--shadow);
+  color: var(--text);
   text-align: center;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.stat:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
 }
 .stat i {
   color: var(--accent);

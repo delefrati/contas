@@ -8,19 +8,27 @@ export class SongDto {
   title!: string;
   artist!: string | null;
   notes!: string | null;
+  hasLyrics!: boolean;
   createdAt!: string;
+}
+
+// Lyrics only come with a single song: the list stays light for big repertoires
+export class SongWithLyricsDto extends SongDto {
+  lyrics!: string | null;
 }
 
 export class CreateSongDto {
   title!: string;
   artist?: string;
   notes?: string;
+  lyrics?: string;
 }
 
 export class UpdateSongDto {
   title?: string;
   artist?: string;
   notes?: string;
+  lyrics?: string;
 }
 
 export class ImportSongItemDto {
@@ -39,6 +47,15 @@ export class ImportSongsResultDto {
   songs!: SongDto[];
 }
 
+type SongRow = {
+  id: number;
+  title: string;
+  artist: string | null;
+  notes: string | null;
+  lyrics: string | null;
+  createdAt: Date;
+};
+
 @Injectable()
 export class SongService {
   constructor(
@@ -47,20 +64,31 @@ export class SongService {
     private requestContext: RequestContextService,
   ) {}
 
-  private mapToDto(song: {
-    id: number;
-    title: string;
-    artist: string | null;
-    notes: string | null;
-    createdAt: Date;
-  }): SongDto {
+  private mapToDto(song: SongRow): SongDto {
     return {
       id: song.id,
       title: song.title,
       artist: song.artist,
       notes: song.notes,
+      hasLyrics: !!song.lyrics,
       createdAt: song.createdAt.toISOString(),
     };
+  }
+
+  private mapToDtoWithLyrics(song: SongRow): SongWithLyricsDto {
+    return { ...this.mapToDto(song), lyrics: song.lyrics };
+  }
+
+  // Trailing spaces go, but blank lines between verses stay
+  private normalizeLyrics(lyrics: string): string | null {
+    const text = String(lyrics).replace(/\r\n?/g, '\n').replace(/[ \t]+$/gm, '');
+    return text.trim() ? text.replace(/^\n+|\n+$/g, '') : null;
+  }
+
+  // Lyrics are long: the log only tells they changed
+  private logDetails<T extends { lyrics?: string }>(dto: T) {
+    const { lyrics, ...rest } = dto;
+    return lyrics === undefined ? rest : { ...rest, lyricsChanged: true };
   }
 
   async findAll(): Promise<SongDto[]> {
@@ -72,7 +100,18 @@ export class SongService {
     return songs.map((song) => this.mapToDto(song));
   }
 
-  async create(dto: CreateSongDto): Promise<SongDto> {
+  async findOne(id: number): Promise<SongWithLyricsDto> {
+    const song = await this.prisma.song.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId(), deletedAt: null },
+    });
+    if (!song) {
+      throw new NotFoundException('Song not found.');
+    }
+
+    return this.mapToDtoWithLyrics(song);
+  }
+
+  async create(dto: CreateSongDto): Promise<SongWithLyricsDto> {
     const title = dto?.title?.trim() || '';
     if (!title) {
       throw new BadRequestException('Song title is required.');
@@ -84,12 +123,13 @@ export class SongService {
         title,
         artist: dto.artist?.trim() || null,
         notes: dto.notes?.trim() || null,
+        lyrics: dto.lyrics !== undefined ? this.normalizeLyrics(dto.lyrics) : null,
       },
     });
 
     await this.logService.log('CREATE', 'song', song.id, { title });
 
-    return this.mapToDto(song);
+    return this.mapToDtoWithLyrics(song);
   }
 
   private parseTextToItems(text: string): ImportSongItemDto[] {
@@ -165,7 +205,7 @@ export class SongService {
     return { created: created.length, skipped, songs: created };
   }
 
-  async update(id: number, dto: UpdateSongDto): Promise<SongDto> {
+  async update(id: number, dto: UpdateSongDto): Promise<SongWithLyricsDto> {
     const existing = await this.prisma.song.findFirst({
       where: { id, bandId: this.requestContext.requireBandId() },
     });
@@ -173,7 +213,7 @@ export class SongService {
       throw new NotFoundException('Song not found.');
     }
 
-    const data: { title?: string; artist?: string | null; notes?: string | null } = {};
+    const data: { title?: string; artist?: string | null; notes?: string | null; lyrics?: string | null } = {};
 
     if (dto.title !== undefined) {
       const title = dto.title.trim();
@@ -189,11 +229,15 @@ export class SongService {
       data.notes = dto.notes.trim() || null;
     }
 
+    if (dto.lyrics !== undefined) {
+      data.lyrics = this.normalizeLyrics(dto.lyrics);
+    }
+
     const song = await this.prisma.song.update({ where: { id }, data });
 
-    await this.logService.log('UPDATE', 'song', id, dto);
+    await this.logService.log('UPDATE', 'song', id, this.logDetails(dto));
 
-    return this.mapToDto(song);
+    return this.mapToDtoWithLyrics(song);
   }
 
   async delete(id: number): Promise<void> {

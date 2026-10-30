@@ -242,7 +242,11 @@
     "importPlaceholder": "Exagerado - Cazuza\nPais e Filhos\nMalandragem",
     "importEmpty": "Paste at least one song.",
     "importSuccess": "{created} song(s) imported, {skipped} skipped.",
-    "importResult": "{created} added, {skipped} already existed."
+    "importResult": "{created} added, {skipped} already existed.",
+    "lyrics": "Lyrics",
+    "lyricsPlaceholder": "Type or paste the lyrics. Leave a blank line between verses.",
+    "hasLyrics": "Has lyrics",
+    "lyricsLoadingError": "Could not load the lyrics. Try opening the song again."
   },
   "repertoires": {
     "title": "Setlist",
@@ -286,7 +290,11 @@
     "stageBlock": "Block {current} of {total}",
     "stageShowAll": "See the whole setlist",
     "stageBackToBlock": "Back to the block",
-    "stageEnd": "End"
+    "stageEnd": "End",
+    "stageLyricsHint": "Tap the song name to see its lyrics",
+    "stageCloseLyrics": "Close lyrics",
+    "stageNoLyrics": "This song has no lyrics yet",
+    "stageSong": "Song {current} of {total}"
   },
   "language": {
     "select": "Language"

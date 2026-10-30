@@ -20,8 +20,10 @@ const successMessage = ref('')
 // Song form
 const isSongModalOpen = ref(false)
 const editingSong = ref(null)
-const songForm = ref({ title: '', artist: '', notes: '' })
+const songForm = ref({ title: '', artist: '', notes: '', lyrics: '' })
 const savingSong = ref(false)
+// The list doesn't carry lyrics: they're fetched when a song is opened for editing
+const lyricsLoaded = ref(false)
 const songFilter = ref('')
 
 // Song import
@@ -76,14 +78,29 @@ async function loadData() {
 // ---- Songs CRUD ----
 function openCreateSong() {
   editingSong.value = null
-  songForm.value = { title: '', artist: '', notes: '' }
+  songForm.value = { title: '', artist: '', notes: '', lyrics: '' }
+  lyricsLoaded.value = true
   isSongModalOpen.value = true
 }
 
-function openEditSong(song) {
+async function openEditSong(song) {
   editingSong.value = song
-  songForm.value = { title: song.title, artist: song.artist || '', notes: song.notes || '' }
+  songForm.value = { title: song.title, artist: song.artist || '', notes: song.notes || '', lyrics: '' }
+  lyricsLoaded.value = !song.hasLyrics
   isSongModalOpen.value = true
+  if (!song.hasLyrics) return
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/songs/${song.id}`, { headers: getAuthHeader() })
+    if (!response.ok) throw new Error(t('songs.lyricsLoadingError'))
+    const lyrics = (await response.json()).data.lyrics || ''
+    // Another song may have been opened meanwhile
+    if (editingSong.value !== song) return
+    songForm.value.lyrics = lyrics
+    lyricsLoaded.value = true
+  } catch (exception) {
+    handleError(exception)
+  }
 }
 
 async function saveSong() {
@@ -101,6 +118,8 @@ async function saveSong() {
       artist: songForm.value.artist.trim(),
       notes: songForm.value.notes.trim(),
     }
+    // Lyrics that failed to load stay as they are instead of being wiped
+    if (lyricsLoaded.value) payload.lyrics = songForm.value.lyrics
     const url = editingSong.value
       ? `${apiBaseUrl}/api/songs/${editingSong.value.id}`
       : `${apiBaseUrl}/api/songs`
@@ -234,7 +253,10 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="song in filteredSongs" :key="song.id">
-              <td>{{ song.title }}</td>
+              <td>
+                {{ song.title }}
+                <i v-if="song.hasLyrics" class="fa-solid fa-align-left lyrics-mark" :title="$t('songs.hasLyrics')"></i>
+              </td>
               <td>{{ song.artist || '—' }}</td>
               <td>{{ song.notes || '—' }}</td>
               <td class="actions">
@@ -267,6 +289,16 @@ onMounted(async () => {
         <div class="form-group">
           <label>{{ $t('songs.notes') }}</label>
           <textarea v-model="songForm.notes" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>{{ $t('songs.lyrics') }}</label>
+          <textarea
+            v-model="songForm.lyrics"
+            rows="12"
+            class="lyrics-textarea"
+            :disabled="!lyricsLoaded"
+            :placeholder="lyricsLoaded ? $t('songs.lyricsPlaceholder') : $t('actions.loading')"
+          ></textarea>
         </div>
         <div class="form-actions">
           <button type="button" @click="isSongModalOpen = false" class="btn-secondary">{{ $t('actions.cancel') }}</button>
@@ -331,6 +363,15 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+.lyrics-textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.lyrics-mark {
+  margin-left: 6px;
+  font-size: 0.8em;
+  color: var(--text-light, #718096);
 }
 .import-hint {
   font-size: 0.85rem;

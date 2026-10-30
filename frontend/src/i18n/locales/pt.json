@@ -242,7 +242,11 @@
     "importPlaceholder": "Exagerado - Cazuza\nPais e Filhos\nMalandragem",
     "importEmpty": "Cole ao menos uma música.",
     "importSuccess": "{created} música(s) importada(s), {skipped} ignorada(s).",
-    "importResult": "{created} adicionada(s), {skipped} já existiam."
+    "importResult": "{created} adicionada(s), {skipped} já existiam.",
+    "lyrics": "Letra",
+    "lyricsPlaceholder": "Escreva ou cole a letra. Deixe uma linha em branco entre as estrofes.",
+    "hasLyrics": "Tem letra",
+    "lyricsLoadingError": "Não foi possível carregar a letra. Tente abrir a música de novo."
   },
   "repertoires": {
     "title": "Repertório",
@@ -286,7 +290,11 @@
     "stageBlock": "Bloco {current} de {total}",
     "stageShowAll": "Ver repertório inteiro",
     "stageBackToBlock": "Voltar ao bloco",
-    "stageEnd": "Fim"
+    "stageEnd": "Fim",
+    "stageLyricsHint": "Toque no nome da música para ver a letra",
+    "stageCloseLyrics": "Fechar letra",
+    "stageNoLyrics": "Esta música não tem letra cadastrada",
+    "stageSong": "Música {current} de {total}"
   },
   "language": {
     "select": "Idioma"

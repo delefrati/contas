@@ -4,7 +4,8 @@ import { useWakeLock } from '../composables/useWakeLock'
 import { setlistBlocks } from '../utils/setlist'
 
 // Full-screen setlist for reading on a phone during a show: one block (songs up to a
-// pause) at a time in big letters, with a peek at the next one.
+// pause) at a time in big letters, with a peek at the next one. Tapping the name of a
+// song with lyrics shows them, and from there the same moves go song by song.
 const props = defineProps({
   setlist: { type: Array, required: true },
   showArtists: { type: Boolean, default: false },
@@ -47,9 +48,20 @@ const shownBlocks = computed(() => {
 
 const isLast = computed(() => index.value === blocks.value.length - 1)
 
+// Every song in order, each knowing its block. Songs are numbered from 1, so a
+// song's number is also its place here.
+const songs = computed(() => blocks.value.flatMap((block, i) => block.songs.map((song) => ({ ...song, block: i }))))
+
+// Number of the song whose lyrics are open, if any
+const lyricsNumber = ref(null)
+const lyricsSong = computed(() => (lyricsNumber.value === null ? null : songs.value[lyricsNumber.value - 1]))
+
 // Songs removed elsewhere while the view is open
 watch(() => blocks.value.length, (length) => {
   if (index.value >= length) index.value = Math.max(length - 1, 0)
+})
+watch(() => songs.value.length, (length) => {
+  if (lyricsNumber.value > length) lyricsNumber.value = null
 })
 
 function scrollToTop() {
@@ -65,12 +77,37 @@ function goTo(i) {
   scrollToTop()
 }
 
+function openLyrics(number) {
+  if (number < 1 || number > songs.value.length) return
+  lyricsNumber.value = number
+  scrollToTop()
+}
+
+// Back to the block of the song last shown, which may have moved on from where it was opened
+function closeLyrics() {
+  const song = lyricsSong.value
+  lyricsNumber.value = null
+  if (song) goTo(song.block)
+}
+
 function next() {
-  goTo(index.value + 1)
+  if (lyricsSong.value) openLyrics(lyricsNumber.value + 1)
+  else goTo(index.value + 1)
 }
 
 function previous() {
-  goTo(index.value - 1)
+  if (lyricsSong.value) openLyrics(lyricsNumber.value - 1)
+  else goTo(index.value - 1)
+}
+
+const hasPrevious = computed(() => (lyricsSong.value ? lyricsNumber.value > 1 : index.value > 0))
+const hasNext = computed(() =>
+  lyricsSong.value ? lyricsNumber.value < songs.value.length : index.value < blocks.value.length - 1,
+)
+
+function onFooterClick() {
+  if (lyricsSong.value) closeLyrics()
+  else toggleAll()
 }
 
 function toggleAll() {
@@ -88,6 +125,11 @@ function onContentClick(e) {
   if (showingAll.value) {
     const block = e.target.closest?.('[data-block]')
     if (block) goTo(Number(block.dataset.block))
+    return
+  }
+  const title = !lyricsSong.value && e.target.closest?.('[data-lyrics]')
+  if (title) {
+    openLyrics(Number(title.dataset.lyrics))
     return
   }
   if (e.clientX < window.innerWidth / 2) previous()
@@ -132,7 +174,8 @@ function onKeydown(e) {
     e.preventDefault()
     previous()
   } else if (e.key === 'Escape') {
-    if (showingAll.value) toggleAll()
+    if (lyricsSong.value) closeLyrics()
+    else if (showingAll.value) toggleAll()
     else emit('close')
   }
 }
@@ -184,36 +227,68 @@ onBeforeUnmount(() => {
       @touchend="onTouchEnd"
       @touchcancel="onTouchCancel"
     >
-      <section
-        v-for="{ block, i } in shownBlocks"
-        :key="i"
-        class="stage-block"
-        :class="{ 'is-current': i === index, 'is-upcoming': !showingAll && i > index }"
-        :data-block="i"
-      >
-        <p v-if="block.pause" class="stage-pause">
-          <span>{{ block.pause.label || $t('repertoires.pause') }}</span>
-        </p>
-        <ol class="stage-songs">
-          <li v-for="song in block.songs" :key="song.id" class="stage-song">
-            <span class="stage-number">{{ song.number }}</span>
-            <span class="stage-title">
-              {{ song.title }}
-              <small v-if="showArtists && song.artist" class="stage-artist">{{ song.artist }}</small>
-            </span>
-          </li>
-        </ol>
-      </section>
-      <p v-if="!showingAll && isLast" class="stage-end">{{ $t('repertoires.stageEnd') }}</p>
-      <p v-if="blocks.length === 0" class="stage-empty">{{ $t('repertoires.noSongs') }}</p>
+      <article v-if="lyricsSong" class="stage-lyrics">
+        <h2 class="stage-song">
+          <span class="stage-number">{{ lyricsSong.number }}</span>
+          <span class="stage-title">
+            {{ lyricsSong.title }}
+            <small v-if="showArtists && lyricsSong.artist" class="stage-artist">{{ lyricsSong.artist }}</small>
+          </span>
+        </h2>
+        <div v-if="lyricsSong.lyrics" class="stage-lyrics-text">
+          <p v-for="(line, n) in lyricsSong.lyrics.split('\n')" :key="n" class="stage-lyrics-line">{{ line }}</p>
+        </div>
+        <p v-else class="stage-empty">{{ $t('repertoires.stageNoLyrics') }}</p>
+      </article>
+      <template v-else>
+        <section
+          v-for="{ block, i } in shownBlocks"
+          :key="i"
+          class="stage-block"
+          :class="{ 'is-current': i === index, 'is-upcoming': !showingAll && i > index }"
+          :data-block="i"
+        >
+          <p v-if="block.pause" class="stage-pause">
+            <span>{{ block.pause.label || $t('repertoires.pause') }}</span>
+          </p>
+          <ol class="stage-songs">
+            <li v-for="song in block.songs" :key="song.id" class="stage-song">
+              <span class="stage-number">{{ song.number }}</span>
+              <span
+                class="stage-title"
+                :data-lyrics="song.lyrics ? song.number : null"
+              >
+                {{ song.title }}
+                <i
+                  v-if="song.lyrics"
+                  class="fa-solid fa-align-left stage-lyrics-mark"
+                  :title="$t('repertoires.stageLyricsHint')"
+                  :aria-label="$t('repertoires.stageLyricsHint')"
+                ></i>
+                <small v-if="showArtists && song.artist" class="stage-artist">{{ song.artist }}</small>
+              </span>
+            </li>
+          </ol>
+        </section>
+        <p v-if="!showingAll && isLast" class="stage-end">{{ $t('repertoires.stageEnd') }}</p>
+        <p v-if="blocks.length === 0" class="stage-empty">{{ $t('repertoires.noSongs') }}</p>
+      </template>
     </main>
 
     <template v-if="!showingAll">
-      <span v-if="index > 0" class="stage-hint stage-hint-left"><i class="fa-solid fa-chevron-left"></i></span>
-      <span v-if="index < blocks.length - 1" class="stage-hint stage-hint-right"><i class="fa-solid fa-chevron-right"></i></span>
+      <span v-if="hasPrevious" class="stage-hint stage-hint-left"><i class="fa-solid fa-chevron-left"></i></span>
+      <span v-if="hasNext" class="stage-hint stage-hint-right"><i class="fa-solid fa-chevron-right"></i></span>
     </template>
 
-    <button type="button" class="stage-footer" @click="toggleAll">
+    <button v-if="lyricsSong" type="button" class="stage-footer" @click="onFooterClick">
+      <span class="stage-position">
+        {{ $t('repertoires.stageSong', { current: lyricsNumber, total: songs.length }) }}
+      </span>
+      <span class="stage-footer-action stage-close-lyrics">
+        <i class="fa-solid fa-xmark"></i> {{ $t('repertoires.stageCloseLyrics') }}
+      </span>
+    </button>
+    <button v-else type="button" class="stage-footer" @click="onFooterClick">
       <span v-if="blocks.length > 0" class="stage-position">
         {{ $t('repertoires.stageBlock', { current: index + 1, total: blocks.length }) }}
       </span>
@@ -347,6 +422,30 @@ onBeforeUnmount(() => {
   font-size: 0.5em;
   font-weight: 400;
   color: var(--stage-muted);
+}
+.stage-lyrics-mark {
+  margin-left: 0.3em;
+  font-size: 0.45em;
+  vertical-align: middle;
+  color: var(--stage-muted);
+}
+.stage-lyrics .stage-song {
+  margin: 0 0 0.6em;
+  color: inherit;
+  font-size: 1em;
+  line-height: 1.2;
+}
+.stage-lyrics-text {
+  font-size: clamp(1.2rem, min(6vw, 5vh), 2.5rem);
+  line-height: 1.35;
+}
+/* A verse too long for the screen goes on indented, so it doesn't read as a new one */
+.stage-lyrics-line {
+  min-height: 1em;
+  margin: 0 0 0.15em;
+  padding-left: 1em;
+  text-indent: -1em;
+  overflow-wrap: anywhere;
 }
 .stage-end,
 .stage-empty {

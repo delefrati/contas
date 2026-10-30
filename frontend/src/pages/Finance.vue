@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref, computed, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import AppHeader from '../components/AppHeader.vue'
@@ -8,6 +8,7 @@ import Modal from '../components/Modal.vue'
 import { formatDate as formatLocalDate, localeTag, todayISO } from '../utils/date'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const { logout, getAuthHeader, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
@@ -52,6 +53,12 @@ const filters = ref({
   memberIds: [],
   paid: '',
 })
+
+// The home page's unpaid count links here with ?pago=nao
+if (route.query.pago === 'nao') {
+  filters.value.paid = 'unpaid'
+  filtersVisible.value = true
+}
 
 // Form
 const formData = ref({

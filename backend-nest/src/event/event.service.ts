@@ -21,6 +21,7 @@ export class SetlistItemDto {
   title!: string | null;
   artist!: string | null;
   notes!: string | null;
+  lyrics!: string | null;
   label!: string | null;
   position!: number;
 }
@@ -263,6 +264,7 @@ export class EventService {
         title: entry.song?.title ?? null,
         artist: entry.song?.artist ?? null,
         notes: entry.song?.notes ?? null,
+        lyrics: entry.song?.lyrics ?? null,
         label: entry.label ?? null,
         position: entry.position,
       })),

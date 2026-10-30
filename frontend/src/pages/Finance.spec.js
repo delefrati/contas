@@ -60,7 +60,7 @@ const messages = {
   },
 }
 
-function createWrapper() {
+async function createWrapper(path = '/financeiro') {
   const i18n = createI18n({ legacy: false, locale: 'en', messages })
 
   const router = createRouter({
@@ -70,6 +70,7 @@ function createWrapper() {
       { path: '/login', name: 'Login', component: { template: '<div>Login</div>' } },
     ],
   })
+  await router.push(path)
 
   return mount(Finance, {
     global: {
@@ -96,13 +97,13 @@ describe('Finance', () => {
   })
 
   it('should render header with finance title', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('h1').text()).toContain('Finances')
   })
 
   it('should render all tabs', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     const tabs = wrapper.findAll('.tab-button')
     expect(tabs).toHaveLength(2)
@@ -111,13 +112,13 @@ describe('Finance', () => {
   })
 
   it('should show expenses tab by default', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('.tab-button.active').text()).toContain('Expenses')
   })
 
   it('should fetch data on mount', async () => {
-    createWrapper()
+    await createWrapper()
     await flushPromises()
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/health'),
@@ -130,13 +131,13 @@ describe('Finance', () => {
   })
 
   it('should show empty state when no expenses', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('.empty-state').exists()).toBe(true)
   })
 
   it('should switch tabs when clicked', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     const reportTab = wrapper.findAll('.tab-button')[1]
     await reportTab.trigger('click')
@@ -144,14 +145,39 @@ describe('Finance', () => {
   })
 
   it('should display user name in header', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('.user-name').exists()).toBe(true)
   })
 
+  it('should open showing only unpaid entries when asked by the address', async () => {
+    mockFetch.mockImplementation((url) => {
+      if (url.includes('/api/health')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'ok' }) })
+      if (url.includes('/api/expenses/report')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) })
+      if (url.includes('/api/expenses')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            data: [
+              { id: 1, description: 'Cachê', amount: '500', paid: true, date: '2026-10-01', memberIds: [] },
+              { id: 2, description: 'Cordas', amount: '-80', paid: false, date: '2026-10-10', memberIds: [] },
+            ],
+          }),
+        })
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) })
+    })
+    const wrapper = await createWrapper('/financeiro?pago=nao')
+    await flushPromises()
+    const rows = wrapper.findAll('.expense-row')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].text()).toContain('Cordas')
+    expect(wrapper.find('.filters').isVisible()).toBe(true)
+  })
+
   it('should show error on API failure', async () => {
     mockFetch.mockImplementation(() => Promise.resolve({ ok: false }))
-    const wrapper = createWrapper()
+    const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('.alert-error').exists()).toBe(true)
   })

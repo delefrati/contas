@@ -73,6 +73,7 @@ function createWrapper() {
     routes: [
       { path: '/dashboard', name: 'Dashboard', component: Dashboard },
       { path: '/agenda', name: 'Agenda', component: { template: '<div />' } },
+      { path: '/integrantes', name: 'Members', component: { template: '<div />' } },
       { path: '/musicas', name: 'Songs', component: { template: '<div />' } },
       { path: '/financeiro', name: 'Finance', component: { template: '<div />' } },
       { path: '/login', name: 'Login', component: { template: '<div>Login</div>' } },
@@ -117,6 +118,13 @@ describe('Dashboard', () => {
     await flushPromises()
     const eventsUrl = mockFetch.mock.calls.map(([url]) => url).find((url) => url.includes('/api/events'))
     expect(eventsUrl).toMatch(/\/api\/events\?from=\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('should open each section from its summary block', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+    const links = wrapper.findAll('a.stat').map((a) => a.attributes('href'))
+    expect(links).toEqual(['/integrantes', '/musicas', '/agenda', '/financeiro?pago=nao'])
   })
 
   it('should link to the calendar, songs and finance pages', async () => {
