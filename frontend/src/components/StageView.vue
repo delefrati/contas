@@ -94,6 +94,35 @@ function onContentClick(e) {
   else next()
 }
 
+// Swiping turns blocks like pages: right to left goes forward. Only mostly sideways
+// moves count, so scrolling through a long block doesn't turn it.
+const SWIPE_MIN_DISTANCE = 50
+let touchStart = null
+
+function onTouchStart(e) {
+  const touch = e.touches[0]
+  touchStart = e.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null
+}
+
+function onTouchEnd(e) {
+  const start = touchStart
+  touchStart = null
+  if (!start || showingAll.value) return
+  const touch = e.changedTouches[0]
+  const dx = touch.clientX - start.x
+  const dy = touch.clientY - start.y
+  if (Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.5) return
+  // Keeps the browser from also treating it as a tap on one side. Browsers that already
+  // saw a drag don't let it be cancelled, and don't send that tap either.
+  if (e.cancelable) e.preventDefault()
+  if (dx < 0) next()
+  else previous()
+}
+
+function onTouchCancel() {
+  touchStart = null
+}
+
 // Arrows and page keys, which is also what Bluetooth page-turner pedals send
 function onKeydown(e) {
   if (['ArrowRight', 'PageDown', ' '].includes(e.key)) {
@@ -146,7 +175,15 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <main ref="content" class="stage-content" :class="{ 'is-overview': showingAll }" @click="onContentClick">
+    <main
+      ref="content"
+      class="stage-content"
+      :class="{ 'is-overview': showingAll }"
+      @click="onContentClick"
+      @touchstart.passive="onTouchStart"
+      @touchend="onTouchEnd"
+      @touchcancel="onTouchCancel"
+    >
       <section
         v-for="{ block, i } in shownBlocks"
         :key="i"
@@ -250,6 +287,8 @@ onBeforeUnmount(() => {
   font-size: clamp(1.75rem, min(9vw, 8vh), 4rem);
   line-height: 1.2;
   cursor: pointer;
+  /* Sideways moves are swipes, not page pans */
+  touch-action: pan-y;
 }
 .stage-content.is-overview {
   font-size: clamp(1.15rem, min(5vw, 5vh), 2rem);

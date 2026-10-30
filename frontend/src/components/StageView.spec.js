@@ -31,6 +31,12 @@ function titles(section) {
 const tapLeft = (wrapper) => wrapper.find('.stage-content').trigger('click', { clientX: 100 })
 const tapRight = (wrapper) => wrapper.find('.stage-content').trigger('click', { clientX: 900 })
 
+async function swipe(wrapper, from, to) {
+  const content = wrapper.find('.stage-content')
+  await content.trigger('touchstart', { touches: [{ clientX: from[0], clientY: from[1] }] })
+  await content.trigger('touchend', { changedTouches: [{ clientX: to[0], clientY: to[1] }] })
+}
+
 describe('StageView', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -81,6 +87,29 @@ describe('StageView', () => {
     const wrapper = createWrapper()
     await tapLeft(wrapper)
     expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
+  })
+
+  it('should go forward with a right-to-left swipe and back with a left-to-right one', async () => {
+    const wrapper = createWrapper()
+    await swipe(wrapper, [800, 300], [300, 320])
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Malandragem'])
+    await swipe(wrapper, [200, 300], [700, 280])
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
+  })
+
+  it('should not turn the block on short or mostly vertical moves', async () => {
+    const wrapper = createWrapper()
+    await swipe(wrapper, [500, 300], [470, 300])
+    await swipe(wrapper, [500, 600], [400, 200])
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
+  })
+
+  it('should not turn the block when swiping over the whole setlist', async () => {
+    const wrapper = createWrapper()
+    await wrapper.find('.stage-footer').trigger('click')
+    await swipe(wrapper, [800, 300], [300, 300])
+    expect(wrapper.find('.stage-content').classes()).toContain('is-overview')
+    expect(wrapper.find('.stage-position').text()).toContain('"current":1')
   })
 
   it('should show the whole setlist from the bottom and jump to the block picked there', async () => {
