@@ -35,6 +35,36 @@ function toggleTheme() {
   }
 }
 
+// Text size on top of the one that fits the screen, remembered per browser
+const FONT_SCALE_KEY = 'stage_view_font_scale'
+const FONT_SCALES = [0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2]
+
+function readFontScale() {
+  try {
+    const saved = Number(localStorage.getItem(FONT_SCALE_KEY))
+    if (FONT_SCALES.includes(saved)) return saved
+  } catch {
+    // Fall back to the default size
+  }
+  return 1
+}
+
+const fontScale = ref(readFontScale())
+const fontScaleIndex = computed(() => FONT_SCALES.indexOf(fontScale.value))
+const canShrinkFont = computed(() => fontScaleIndex.value > 0)
+const canGrowFont = computed(() => fontScaleIndex.value < FONT_SCALES.length - 1)
+
+function changeFont(step) {
+  const scale = FONT_SCALES[fontScaleIndex.value + step]
+  if (scale === undefined) return
+  fontScale.value = scale
+  try {
+    localStorage.setItem(FONT_SCALE_KEY, String(scale))
+  } catch {
+    // Not persisting the preference is fine
+  }
+}
+
 const blocks = computed(() => setlistBlocks(props.setlist))
 const index = ref(0)
 const showingAll = ref(false)
@@ -203,13 +233,33 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="stage" :class="`is-${theme}`" role="dialog" aria-modal="true" :aria-label="$t('repertoires.stageView')">
+  <div class="stage" :class="`is-${theme}`" :style="{ '--stage-font-scale': fontScale }" role="dialog" aria-modal="true" :aria-label="$t('repertoires.stageView')">
     <header class="stage-toolbar">
       <button type="button" class="stage-btn stage-exit" @click="emit('close')">
         <i class="fa-solid fa-xmark"></i> {{ $t('repertoires.stageExit') }}
       </button>
       <!-- More tools will join this group -->
       <div class="stage-tools">
+        <button
+          type="button"
+          class="stage-btn stage-font-down"
+          :disabled="!canShrinkFont"
+          :title="$t('repertoires.stageFontDown')"
+          :aria-label="$t('repertoires.stageFontDown')"
+          @click="changeFont(-1)"
+        >
+          A<sup>−</sup>
+        </button>
+        <button
+          type="button"
+          class="stage-btn stage-font-up"
+          :disabled="!canGrowFont"
+          :title="$t('repertoires.stageFontUp')"
+          :aria-label="$t('repertoires.stageFontUp')"
+          @click="changeFont(1)"
+        >
+          A<sup>+</sup>
+        </button>
         <button
           type="button"
           class="stage-btn stage-theme"
@@ -359,18 +409,31 @@ onBeforeUnmount(() => {
   font-weight: 600;
   cursor: pointer;
 }
+.stage-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.stage-font-down,
+.stage-font-up {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.stage-font-down sup,
+.stage-font-up sup {
+  font-size: 0.7em;
+}
 .stage-content {
   flex: 1;
   overflow-y: auto;
   padding: 16px 24px 24px;
-  font-size: clamp(1.75rem, min(9vw, 8vh), 4rem);
+  font-size: calc(clamp(1.75rem, min(9vw, 8vh), 4rem) * var(--stage-font-scale, 1));
   line-height: 1.2;
   cursor: pointer;
   /* Sideways moves are swipes, not page pans */
   touch-action: pan-y;
 }
 .stage-content.is-overview {
-  font-size: clamp(1.15rem, min(5vw, 5vh), 2rem);
+  font-size: calc(clamp(1.15rem, min(5vw, 5vh), 2rem) * var(--stage-font-scale, 1));
 }
 .stage-block.is-upcoming {
   color: var(--stage-muted);
@@ -440,7 +503,7 @@ onBeforeUnmount(() => {
   line-height: 1.2;
 }
 .stage-lyrics-text {
-  font-size: clamp(1.2rem, min(6vw, 5vh), 2.5rem);
+  font-size: calc(clamp(1.2rem, min(6vw, 5vh), 2.5rem) * var(--stage-font-scale, 1));
   line-height: 1.35;
 }
 /* A verse too long for the screen goes on indented, so it doesn't read as a new one */

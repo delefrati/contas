@@ -294,7 +294,9 @@
     "stageLyricsHint": "Tap the song name to see its lyrics",
     "stageCloseLyrics": "Close lyrics",
     "stageNoLyrics": "This song has no lyrics yet",
-    "stageSong": "Song {current} of {total}"
+    "stageSong": "Song {current} of {total}",
+    "stageFontDown": "Smaller text",
+    "stageFontUp": "Bigger text"
   },
   "language": {
     "select": "Language"

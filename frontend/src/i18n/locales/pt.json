@@ -294,7 +294,9 @@
     "stageLyricsHint": "Toque no nome da música para ver a letra",
     "stageCloseLyrics": "Fechar letra",
     "stageNoLyrics": "Esta música não tem letra cadastrada",
-    "stageSong": "Música {current} de {total}"
+    "stageSong": "Música {current} de {total}",
+    "stageFontDown": "Diminuir fonte",
+    "stageFontUp": "Aumentar fonte"
   },
   "language": {
     "select": "Idioma"

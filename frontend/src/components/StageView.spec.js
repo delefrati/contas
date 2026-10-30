@@ -223,6 +223,36 @@ describe('StageView', () => {
     expect(navigator.wakeLock.request).toHaveBeenCalledTimes(2)
   })
 
+  it('should make the text bigger and smaller and remember the size', async () => {
+    const wrapper = createWrapper()
+    const scale = () => wrapper.find('.stage').element.style.getPropertyValue('--stage-font-scale')
+    expect(scale()).toBe('1')
+
+    await wrapper.find('.stage-font-up').trigger('click')
+    await wrapper.find('.stage-font-up').trigger('click')
+    expect(scale()).toBe('1.3')
+    expect(localStorage.getItem('stage_view_font_scale')).toBe('1.3')
+
+    await wrapper.find('.stage-font-down').trigger('click')
+    expect(scale()).toBe('1.15')
+    expect(createWrapper().find('.stage').element.style.getPropertyValue('--stage-font-scale')).toBe('1.15')
+  })
+
+  it('should stop at the smallest and biggest sizes', async () => {
+    localStorage.setItem('stage_view_font_scale', '2')
+    const wrapper = createWrapper()
+    expect(wrapper.find('.stage-font-up').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('.stage-font-down').attributes('disabled')).toBeUndefined()
+
+    localStorage.setItem('stage_view_font_scale', '0.6')
+    expect(createWrapper().find('.stage-font-down').attributes('disabled')).toBeDefined()
+  })
+
+  it('should ignore a size saved that it does not offer', () => {
+    localStorage.setItem('stage_view_font_scale', '37')
+    expect(createWrapper().find('.stage').element.style.getPropertyValue('--stage-font-scale')).toBe('1')
+  })
+
   it('should switch between dark and light and remember the choice', async () => {
     const wrapper = createWrapper()
     expect(wrapper.find('.stage').classes()).toContain('is-dark')
