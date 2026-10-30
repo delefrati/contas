@@ -65,6 +65,7 @@ async function createWrapper() {
       stubs: {
         LanguageSelector: true,
         EventFormModal: true,
+        teleport: true,
         Modal: { template: '<div v-if="modelValue" class="modal-stub"><slot /></div>', props: ['modelValue', 'title'] },
       },
     },
@@ -159,6 +160,20 @@ describe('EventDetail', () => {
     await flushPromises()
 
     expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
+  })
+
+  it('should open the phone view from the setlist and leave it with the exit button', async () => {
+    const { wrapper, router } = await createWrapper()
+    const viewButton = wrapper.findAll('button').find((b) => b.text().includes('repertoires.stageView'))
+    await viewButton.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query.visualizar).toBe('1')
+    expect(wrapper.find('.stage .stage-block.is-current').text()).toContain('Exagerado')
+
+    await wrapper.find('.stage-exit').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/agenda/7')
+    expect(wrapper.find('.stage').exists()).toBe(false)
   })
 
   it('should say when the event does not exist', async () => {

@@ -277,7 +277,16 @@
     "copySubmit": "Copiar",
     "copyDateRequired": "Elige una fecha",
     "copyConfirmReplace": "El evento \"{name}\" ya tiene {count} canción(es) en su repertorio. ¿Reemplazarlo?",
-    "copySuccess": "¡Repertorio copiado!"
+    "copySuccess": "¡Repertorio copiado!",
+    "stageView": "Visualizar",
+    "stageViewHint": "Repertorio en letras grandes para leer en el celular durante el show",
+    "stageExit": "Salir",
+    "stageDarkMode": "Modo oscuro",
+    "stageLightMode": "Modo claro",
+    "stageBlock": "Bloque {current} de {total}",
+    "stageShowAll": "Ver el repertorio completo",
+    "stageBackToBlock": "Volver al bloque",
+    "stageEnd": "Fin"
   },
   "language": {
     "select": "Idioma"

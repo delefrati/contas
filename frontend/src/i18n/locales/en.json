@@ -277,7 +277,16 @@
     "copySubmit": "Copy",
     "copyDateRequired": "Pick a date",
     "copyConfirmReplace": "The event \"{name}\" already has {count} song(s) in its setlist. Replace it?",
-    "copySuccess": "Setlist copied!"
+    "copySuccess": "Setlist copied!",
+    "stageView": "View",
+    "stageViewHint": "Setlist in big letters for reading on a phone during the show",
+    "stageExit": "Exit",
+    "stageDarkMode": "Dark mode",
+    "stageLightMode": "Light mode",
+    "stageBlock": "Block {current} of {total}",
+    "stageShowAll": "See the whole setlist",
+    "stageBackToBlock": "Back to the block",
+    "stageEnd": "End"
   },
   "language": {
     "select": "Language"

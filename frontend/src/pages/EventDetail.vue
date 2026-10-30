@@ -6,6 +6,7 @@ import { useAuth } from '../composables/useAuth'
 import AppHeader from '../components/AppHeader.vue'
 import Modal from '../components/Modal.vue'
 import EventFormModal from '../components/EventFormModal.vue'
+import StageView from '../components/StageView.vue'
 import { formatDate as formatLocalDate, localeTag, parseDate } from '../utils/date'
 import { eventName, typeStyle } from '../utils/events'
 
@@ -102,6 +103,25 @@ function decreasePrintFont() {
 function increasePrintFont() {
   if (printFontSize.value < 40) {
     printFontSize.value += 2
+  }
+}
+
+// Phone view for reading the setlist on stage. It lives in the URL so the phone's
+// back button leaves the view instead of the page.
+const STAGE_QUERY = 'visualizar'
+const isStageOpen = computed(() => route.query[STAGE_QUERY] === '1')
+
+function openStage() {
+  router.push({ query: { ...route.query, [STAGE_QUERY]: '1' } })
+}
+
+function closeStage() {
+  const { [STAGE_QUERY]: _, ...query } = route.query
+  // Opened from this page: go back so the view doesn't linger in history
+  if (window.history.state?.back === router.resolve({ query }).fullPath) {
+    router.back()
+  } else {
+    router.replace({ query })
   }
 }
 
@@ -478,6 +498,16 @@ onBeforeUnmount(() => {
       <p v-if="event.setlist.length === 0" class="empty-state">{{ $t('repertoires.noSongs') }}</p>
     </div>
 
+    <Teleport to="body">
+      <StageView
+        v-if="isStageOpen && event"
+        class="no-print"
+        :setlist="event.setlist"
+        :show-artists="showArtists"
+        @close="closeStage"
+      />
+    </Teleport>
+
     <div class="no-print">
     <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -544,6 +574,9 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
               </div>
+              <button @click="openStage" :disabled="event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.stageViewHint')">
+                <i class="fa-solid fa-mobile-screen"></i> {{ $t('repertoires.stageView') }}
+              </button>
               <button @click="openCopy" :disabled="event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.copy')">
                 <i class="fa-solid fa-copy"></i> {{ $t('repertoires.copy') }}
               </button>
