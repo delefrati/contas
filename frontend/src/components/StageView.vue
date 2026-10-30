@@ -122,6 +122,7 @@ function toggleAll() {
 }
 
 function onContentClick(e) {
+  if (Date.now() - swipedAt < TAP_AFTER_SWIPE_MS) return
   if (showingAll.value) {
     const block = e.target.closest?.('[data-block]')
     if (block) goTo(Number(block.dataset.block))
@@ -136,10 +137,14 @@ function onContentClick(e) {
   else next()
 }
 
-// Swiping turns blocks like pages: right to left goes forward. Only mostly sideways
-// moves count, so scrolling through a long block doesn't turn it.
-const SWIPE_MIN_DISTANCE = 50
+// Swiping turns blocks like pages: right to left goes forward. Only moves more sideways
+// than up or down count, so scrolling through a long block doesn't turn it; a thumb
+// swipe arcs, so anything flatter than 45° is sideways enough.
+const SWIPE_MIN_DISTANCE = 40
+// Some browsers still send a tap where the swipe ended, which would turn back
+const TAP_AFTER_SWIPE_MS = 500
 let touchStart = null
+let swipedAt = 0
 
 function onTouchStart(e) {
   const touch = e.touches[0]
@@ -153,10 +158,9 @@ function onTouchEnd(e) {
   const touch = e.changedTouches[0]
   const dx = touch.clientX - start.x
   const dy = touch.clientY - start.y
-  if (Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.5) return
-  // Keeps the browser from also treating it as a tap on one side. Browsers that already
-  // saw a drag don't let it be cancelled, and don't send that tap either.
+  if (Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) <= Math.abs(dy)) return
   if (e.cancelable) e.preventDefault()
+  swipedAt = Date.now()
   if (dx < 0) next()
   else previous()
 }

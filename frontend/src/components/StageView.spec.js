@@ -97,10 +97,25 @@ describe('StageView', () => {
     expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
   })
 
+  it('should take a thumb swipe that arcs as a swipe', async () => {
+    const wrapper = createWrapper()
+    await swipe(wrapper, [800, 500], [500, 300])
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Malandragem'])
+  })
+
+  it('should ignore the tap some browsers send where a swipe ends', async () => {
+    const wrapper = createWrapper()
+    await swipe(wrapper, [800, 300], [300, 300])
+    // Lands on the left half, which would turn back
+    await tapLeft(wrapper)
+    expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Malandragem'])
+  })
+
   it('should not turn the block on short or mostly vertical moves', async () => {
     const wrapper = createWrapper()
     await swipe(wrapper, [500, 300], [470, 300])
     await swipe(wrapper, [500, 600], [400, 200])
+    await swipe(wrapper, [500, 600], [400, 450])
     expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
   })
 
