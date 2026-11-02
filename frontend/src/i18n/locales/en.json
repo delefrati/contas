@@ -300,5 +300,45 @@
   },
   "language": {
     "select": "Language"
+  },
+  "admin": {
+    "title": "Admin panel",
+    "openPanel": "Admin panel",
+    "signIn": "Sign in with a super admin's Google account.",
+    "expired": "Your session has ended. Please sign in again.",
+    "bands": {
+      "title": "Bands",
+      "add": "New band",
+      "none": "No bands yet.",
+      "name": "Name",
+      "address": "Address",
+      "addressHint": "Lowercase letters, digits and hyphens. It can't be changed later.",
+      "activeMembers": "Active members",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Disabled",
+      "manage": "Manage",
+      "open": "Open the band",
+      "firstMember": "First member (optional)",
+      "firstMemberHint": "Without one, only super admins can sign in until someone is added.",
+      "created": "Band created!",
+      "rename": "Rename",
+      "renamed": "Band renamed!",
+      "disable": "Disable band",
+      "enable": "Enable band",
+      "confirmDisable": "Disable {name}? Nobody can sign in to it until it's enabled again. Its data is kept.",
+      "disabled": "Band disabled.",
+      "enabled": "Band enabled.",
+      "back": "All bands",
+      "createdAt": "Created on"
+    },
+    "superAdmins": {
+      "title": "Super admins",
+      "add": "Add super admin",
+      "hint": "Super admins can enter every band and this panel. The email must be their Google account.",
+      "you": "you",
+      "added": "Super admin added!",
+      "confirmDisable": "Disable {name}? They lose access to this panel right away."
+    }
   }
 }

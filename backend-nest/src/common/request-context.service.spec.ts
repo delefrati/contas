@@ -56,6 +56,18 @@ describe('RequestContextService band scoping', () => {
     });
   });
 
+  it('should run withBand in another band, keeping who is acting', (done) => {
+    service.run({ superAdminId: 3, bandId: 1 }, async () => {
+      const seen = await service.withBand(9, async () => {
+        await Promise.resolve();
+        return { bandId: service.requireBandId(), identity: service.getIdentity() };
+      });
+      expect(seen).toEqual({ bandId: 9, identity: { memberId: undefined, superAdminId: 3 } });
+      expect(service.getBandId()).toBe(1);
+      done();
+    });
+  });
+
   it('should throw NotFoundException from requireBandId when no band is set', (done) => {
     service.run({ memberId: 1 }, () => {
       expect(() => service.requireBandId()).toThrow(NotFoundException);

@@ -300,5 +300,45 @@
   },
   "language": {
     "select": "Idioma"
+  },
+  "admin": {
+    "title": "Painel do administrador",
+    "openPanel": "Painel do administrador",
+    "signIn": "Entre com a conta Google de um super admin.",
+    "expired": "Sua sessão terminou. Entre novamente.",
+    "bands": {
+      "title": "Bandas",
+      "add": "Nova banda",
+      "none": "Nenhuma banda cadastrada.",
+      "name": "Nome",
+      "address": "Endereço",
+      "addressHint": "Letras minúsculas, números e hífens. Não dá para mudar depois.",
+      "activeMembers": "Integrantes ativos",
+      "status": "Status",
+      "active": "Ativa",
+      "inactive": "Desativada",
+      "manage": "Gerenciar",
+      "open": "Abrir a banda",
+      "firstMember": "Primeiro integrante (opcional)",
+      "firstMemberHint": "Sem ele, só super admins conseguem entrar até alguém ser adicionado.",
+      "created": "Banda criada!",
+      "rename": "Renomear",
+      "renamed": "Banda renomeada!",
+      "disable": "Desativar banda",
+      "enable": "Reativar banda",
+      "confirmDisable": "Desativar {name}? Ninguém consegue entrar nela até ser reativada. Os dados ficam guardados.",
+      "disabled": "Banda desativada.",
+      "enabled": "Banda reativada.",
+      "back": "Todas as bandas",
+      "createdAt": "Criada em"
+    },
+    "superAdmins": {
+      "title": "Super admins",
+      "add": "Adicionar super admin",
+      "hint": "Super admins entram em todas as bandas e neste painel. O email precisa ser a conta Google da pessoa.",
+      "you": "você",
+      "added": "Super admin adicionado!",
+      "confirmDisable": "Desativar {name}? A pessoa perde o acesso a este painel na hora."
+    }
   }
 }

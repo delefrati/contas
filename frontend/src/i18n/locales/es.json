@@ -300,5 +300,45 @@
   },
   "language": {
     "select": "Idioma"
+  },
+  "admin": {
+    "title": "Panel de administración",
+    "openPanel": "Panel de administración",
+    "signIn": "Entra con la cuenta de Google de un super admin.",
+    "expired": "Tu sesión terminó. Vuelve a entrar.",
+    "bands": {
+      "title": "Bandas",
+      "add": "Nueva banda",
+      "none": "Todavía no hay bandas.",
+      "name": "Nombre",
+      "address": "Dirección",
+      "addressHint": "Letras minúsculas, números y guiones. No se puede cambiar después.",
+      "activeMembers": "Integrantes activos",
+      "status": "Estado",
+      "active": "Activa",
+      "inactive": "Desactivada",
+      "manage": "Gestionar",
+      "open": "Abrir la banda",
+      "firstMember": "Primer integrante (opcional)",
+      "firstMemberHint": "Sin él, solo los super admins pueden entrar hasta que se agregue a alguien.",
+      "created": "¡Banda creada!",
+      "rename": "Renombrar",
+      "renamed": "¡Banda renombrada!",
+      "disable": "Desactivar banda",
+      "enable": "Reactivar banda",
+      "confirmDisable": "¿Desactivar {name}? Nadie puede entrar hasta que se reactive. Los datos se conservan.",
+      "disabled": "Banda desactivada.",
+      "enabled": "Banda reactivada.",
+      "back": "Todas las bandas",
+      "createdAt": "Creada el"
+    },
+    "superAdmins": {
+      "title": "Super admins",
+      "add": "Agregar super admin",
+      "hint": "Los super admins entran en todas las bandas y en este panel. El email debe ser su cuenta de Google.",
+      "you": "tú",
+      "added": "¡Super admin agregado!",
+      "confirmDisable": "¿Desactivar a {name}? Pierde el acceso a este panel de inmediato."
+    }
   }
 }

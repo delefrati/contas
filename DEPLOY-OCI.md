@@ -101,6 +101,9 @@ To manage every band without being a member of them, make yourself a super admin
 COMPOSE_FILE=docker-compose.prod.yml ./scripts/create-super-admin.sh 'YourName' 'you@example.com'
 ```
 
+Super admins can then create and manage bands, members and other super admins from
+`https://<BASE_DOMAIN>/admin` instead of the scripts.
+
 ## 6) Update deployment
 
 Just re-run the sync script from your local machine:

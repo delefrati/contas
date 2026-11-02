@@ -30,6 +30,23 @@ interface LoginCode extends Identity {
 
 const LOGIN_CODE_TTL_MS = 60_000;
 
+// Admin panel sessions: shorter than band ones, since they reach every band
+const ADMIN_SESSION_HOURS = 8;
+
+// Token for the admin panel on the central host. It has no bandId, so band hosts reject it,
+// and its scope keeps band tokens out of the panel.
+export interface AdminPayload {
+  scope: 'platform';
+  superAdminId: number;
+  email: string;
+  name: string;
+}
+
+export interface AdminLoginResponse {
+  token: string;
+  superAdmin: { id: number; name: string; email: string };
+}
+
 export interface LoginResponse {
   token: string;
   member: {
@@ -147,6 +164,7 @@ export class AuthService {
       this.prisma.member.findMany({
         where: {
           active: true,
+          band: { active: true },
           OR: [{ oidcSub }, ...(email ? [{ email }] : [])],
         },
         include: { band: true },
@@ -157,7 +175,7 @@ export class AuthService {
 
     // Super admins may enter every band; where they're also members they enter as such
     const bands = superAdmin
-      ? await this.prisma.band.findMany({ orderBy: { name: 'asc' } })
+      ? await this.prisma.band.findMany({ where: { active: true }, orderBy: { name: 'asc' } })
       : memberships.map((m) => m.band);
 
     if (bands.length === 0) {
@@ -302,6 +320,67 @@ export class AuthService {
       identity.memberId,
       {},
     );
+  }
+
+  // Sign in to the admin panel: super admins only
+  async adminLoginWithGoogle(idToken: string): Promise<AdminLoginResponse> {
+    const { verifiedEmail } = await this.verifyGoogleToken(idToken);
+    const superAdmin = await this.findSuperAdmin(verifiedEmail);
+    if (!superAdmin) {
+      throw new BadRequestException('Only super admins can use the admin panel');
+    }
+
+    const payload: AdminPayload = {
+      scope: 'platform',
+      superAdminId: superAdmin.id,
+      email: superAdmin.email,
+      name: superAdmin.name,
+    };
+    const token = this.jwtService.sign(payload, { expiresIn: `${ADMIN_SESSION_HOURS}h` });
+    await this.prisma.session.create({
+      data: {
+        superAdminId: superAdmin.id,
+        token,
+        expiresAt: new Date(Date.now() + ADMIN_SESSION_HOURS * 3600_000),
+      },
+    });
+
+    await this.logService.logPlatform('LOGIN', 'admin', undefined, { method: 'google' }, {
+      superAdminId: superAdmin.id,
+    });
+
+    return { token, superAdmin: { id: superAdmin.id, name: superAdmin.name, email: superAdmin.email } };
+  }
+
+  // Unlike band tokens, every admin request checks the session and that the super admin
+  // is still active, so logging out or disabling them takes effect at once.
+  async validateAdminToken(token: string): Promise<AdminPayload | null> {
+    let payload: AdminPayload;
+    try {
+      payload = this.jwtService.verify<AdminPayload>(token);
+    } catch {
+      return null;
+    }
+    if (payload?.scope !== 'platform' || typeof payload.superAdminId !== 'number') {
+      return null;
+    }
+
+    const session = await this.prisma.session.findUnique({ where: { token } });
+    if (!session || session.superAdminId !== payload.superAdminId || session.expiresAt < new Date()) {
+      return null;
+    }
+
+    const superAdmin = await this.prisma.superAdmin.findFirst({
+      where: { id: payload.superAdminId, active: true },
+    });
+    if (!superAdmin) return null;
+
+    return { scope: 'platform', superAdminId: superAdmin.id, email: superAdmin.email, name: superAdmin.name };
+  }
+
+  async adminLogout(superAdminId: number, token: string): Promise<void> {
+    await this.prisma.session.deleteMany({ where: { superAdminId, token } });
+    await this.logService.logPlatform('LOGOUT', 'admin');
   }
 
   async cleanupExpiredSessions(): Promise<void> {

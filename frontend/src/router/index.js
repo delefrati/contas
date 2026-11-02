@@ -9,7 +9,10 @@ import Songs from '../pages/Songs.vue'
 import Agenda from '../pages/Agenda.vue'
 import EventDetail from '../pages/EventDetail.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
-import { centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
+import AdminBands from '../pages/admin/AdminBands.vue'
+import AdminBand from '../pages/admin/AdminBand.vue'
+import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
+import { adminUrl, centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
 
 const routes = [
   {
@@ -77,6 +80,25 @@ const routes = [
     path: '/repertorio',
     redirect: '/musicas',
   },
+  // Admin panel for super admins, on the central host (it signs in on its own, see AdminLayout)
+  {
+    path: '/admin',
+    name: 'AdminBands',
+    component: AdminBands,
+    meta: { admin: true, titleKey: 'admin.bands.title' },
+  },
+  {
+    path: '/admin/bandas/:id(\\d+)',
+    name: 'AdminBand',
+    component: AdminBand,
+    meta: { admin: true, titleKey: 'admin.bands.title' },
+  },
+  {
+    path: '/admin/super-admins',
+    name: 'AdminSuperAdmins',
+    component: AdminSuperAdmins,
+    meta: { admin: true, titleKey: 'admin.superAdmins.title' },
+  },
   {
     path: '/',
     redirect: '/dashboard',
@@ -90,7 +112,18 @@ const router = createRouter({
 
 // Navigation guard to check authentication
 router.beforeEach(async (to, from, next) => {
-  // The central host (BASE_DOMAIN) only serves the login page
+  if (to.meta.admin) {
+    // Band subdomains don't serve the admin panel
+    if (currentBandSlug()) {
+      window.location.assign(adminUrl(to.fullPath))
+      next(false)
+      return
+    }
+    next()
+    return
+  }
+
+  // Besides the admin panel, the central host (BASE_DOMAIN) only serves the login page
   if (isCentralHost()) {
     if (to.name !== 'CentralLogin') {
       next({ name: 'CentralLogin', query: to.query })

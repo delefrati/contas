@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import LanguageSelector from './LanguageSelector.vue'
+import { adminUrl } from '../hosts'
 
 defineProps({
   icon: { type: String, required: true },
@@ -72,6 +73,15 @@ async function handleLogout() {
           >
             <i class="fa-solid" :class="section.icon"></i>
           </router-link>
+          <a
+            v-if="member?.superAdmin"
+            :href="adminUrl()"
+            class="nav-link"
+            :title="$t('admin.openPanel')"
+            :aria-label="$t('admin.openPanel')"
+          >
+            <i class="fa-solid fa-user-shield"></i>
+          </a>
         </nav>
         <slot />
         <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">

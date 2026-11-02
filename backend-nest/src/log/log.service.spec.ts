@@ -36,6 +36,22 @@ describe('LogService', () => {
     service = module.get<LogService>(LogService);
   });
 
+  describe('logPlatform', () => {
+    it('should log without a band, even when the request has one', async () => {
+      requestContext.getIdentity.mockReturnValue({ superAdminId: 3 });
+
+      await service.logPlatform('CREATE', 'super_admin', 4, { email: 'a@test.com' });
+
+      expect(prisma.log.create).toHaveBeenCalledWith({
+        data: {
+          bandId: null, action: 'CREATE', resource: 'super_admin', resourceId: 4,
+          details: '{"email":"a@test.com"}', userId: undefined, superAdminId: 3,
+        },
+      });
+      expect(requestContext.requireBandId).not.toHaveBeenCalled();
+    });
+  });
+
   describe('log', () => {
     it('should create a log entry with an explicit actor', async () => {
       const createdLog = {

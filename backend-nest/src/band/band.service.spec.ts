@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
-import { BandService } from './band.service';
+import { BandService, isValidSlug } from './band.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 // The per-request band lookup must never load the logo bytes
@@ -12,14 +12,14 @@ const WEBP = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('W
 
 describe('BandService', () => {
   let service: BandService;
-  let prisma: { band: { findUnique: jest.Mock; update: jest.Mock } };
+  let prisma: { band: { findUnique: jest.Mock; findFirst: jest.Mock; update: jest.Mock } };
   const originalEnv = { ...process.env };
 
   beforeEach(async () => {
     process.env.BASE_DOMAIN = 'minhabanda.com';
     delete process.env.DEFAULT_BAND;
 
-    prisma = { band: { findUnique: jest.fn(), update: jest.fn() } };
+    prisma = { band: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [BandService, { provide: PrismaService, useValue: prisma }],
@@ -87,18 +87,60 @@ describe('BandService', () => {
     });
   });
 
+  describe('isCentralHost', () => {
+    it('should match BASE_DOMAIN itself, ignoring the port and letter case', () => {
+      expect(service.isCentralHost('MinhaBanda.com:443')).toBe(true);
+    });
+
+    it('should not match band subdomains or other hosts', () => {
+      expect(service.isCentralHost('maverick.minhabanda.com')).toBe(false);
+      expect(service.isCentralHost('evilminhabanda.com')).toBe(false);
+      expect(service.isCentralHost(undefined)).toBe(false);
+    });
+
+    it('should match any host when BASE_DOMAIN is not set (local development)', () => {
+      delete process.env.BASE_DOMAIN;
+      expect(service.isCentralHost('localhost:8001')).toBe(true);
+    });
+  });
+
+  describe('isValidSlug', () => {
+    it('should accept lowercase letters, digits and inner hyphens', () => {
+      expect(isValidSlug('maverick')).toBe(true);
+      expect(isValidSlug('banda-2')).toBe(true);
+      expect(isValidSlug('a')).toBe(true);
+    });
+
+    it('should reject anything that is not a plain DNS label', () => {
+      expect(isValidSlug('')).toBe(false);
+      expect(isValidSlug('-banda')).toBe(false);
+      expect(isValidSlug('banda-')).toBe(false);
+      expect(isValidSlug('Banda')).toBe(false);
+      expect(isValidSlug('a.b')).toBe(false);
+      expect(isValidSlug('x'.repeat(64))).toBe(false);
+    });
+
+    it('should reject reserved subdomains', () => {
+      expect(isValidSlug('www')).toBe(false);
+      expect(isValidSlug('admin')).toBe(false);
+    });
+  });
+
   describe('findBySlug', () => {
-    it('should return the band dto when found', async () => {
-      prisma.band.findUnique.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null });
+    it('should return the active band dto when found', async () => {
+      prisma.band.findFirst.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null });
 
       const result = await service.findBySlug('maverick');
 
-      expect(prisma.band.findUnique).toHaveBeenCalledWith({ where: { slug: 'maverick' }, select: BAND_SELECT });
+      expect(prisma.band.findFirst).toHaveBeenCalledWith({
+        where: { slug: 'maverick', active: true },
+        select: BAND_SELECT,
+      });
       expect(result).toEqual({ id: 1, slug: 'maverick', name: 'Maverick', logoUrl: null });
     });
 
     it('should return null when not found', async () => {
-      prisma.band.findUnique.mockResolvedValue(null);
+      prisma.band.findFirst.mockResolvedValue(null);
       expect(await service.findBySlug('ghost')).toBeNull();
     });
   });

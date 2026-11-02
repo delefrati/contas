@@ -43,6 +43,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useBand } from '../composables/useBand'
 import { bandCallbackUrl, isCentralHost } from '../hosts'
+import { renderGoogleButton } from '../utils/googleSignIn'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -53,18 +54,6 @@ const { band, logoUrl } = useBand()
 const error = ref('')
 const credential = ref('')
 const bands = ref([])
-
-function initGoogleSignIn() {
-  if (!window.google) return
-  window.google.accounts.id.initialize({
-    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    callback: handleGoogleResponse,
-  })
-  window.google.accounts.id.renderButton(
-    document.getElementById('google-signin-btn'),
-    { theme: 'outline', size: 'large', width: 320, locale: 'auto' },
-  )
-}
 
 // Central host: pick the band, then hand off to its subdomain with a one-time code
 async function continueCentralLogin(slug) {
@@ -82,15 +71,15 @@ async function continueCentralLogin(slug) {
   }
 }
 
-async function handleGoogleResponse(response) {
+async function handleGoogleResponse(googleCredential) {
   error.value = ''
   if (isCentralHost()) {
-    credential.value = response.credential
+    credential.value = googleCredential
     await continueCentralLogin(route.query.band)
     return
   }
   try {
-    await loginWithGoogle(response.credential)
+    await loginWithGoogle(googleCredential)
     const redirectTo = route.query.redirect || '/dashboard'
     router.push(redirectTo)
   } catch (err) {
@@ -99,14 +88,7 @@ async function handleGoogleResponse(response) {
 }
 
 onMounted(() => {
-  if (window.google?.accounts) {
-    initGoogleSignIn()
-    return
-  }
-  const script = document.createElement('script')
-  script.src = 'https://accounts.google.com/gsi/client'
-  script.onload = initGoogleSignIn
-  document.head.appendChild(script)
+  renderGoogleButton(document.getElementById('google-signin-btn'), handleGoogleResponse)
 })
 </script>
 

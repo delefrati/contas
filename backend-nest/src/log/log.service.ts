@@ -71,6 +71,28 @@ export class LogService {
     };
   }
 
+  // Actions on the platform itself, outside any band (super admins, admin panel sign-ins)
+  async logPlatform(
+    action: string,
+    resource: string,
+    resourceId?: number,
+    details?: any,
+    actor?: Identity,
+  ): Promise<void> {
+    const { memberId, superAdminId } = actor ?? this.requestContext.getIdentity();
+    await this.prisma.log.create({
+      data: {
+        bandId: null,
+        action,
+        resource,
+        resourceId,
+        details: details ? JSON.stringify(details) : null,
+        userId: memberId,
+        superAdminId,
+      },
+    });
+  }
+
   async findAll(limit: number = 100): Promise<LogDto[]> {
     const logs = await this.prisma.log.findMany({
       where: { bandId: this.requestContext.requireBandId() },

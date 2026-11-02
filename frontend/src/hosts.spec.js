@@ -41,6 +41,21 @@ describe('hosts', () => {
     })
   })
 
+  describe('adminUrl and bandUrl', () => {
+    it('should point at the central host and the band subdomain', async () => {
+      const hosts = await loadHosts('minhabanda.com')
+      expect(hosts.adminUrl('/admin/bandas/2')).toBe('https://minhabanda.com/admin/bandas/2')
+      expect(hosts.adminUrl('//evil.com')).toBe('https://minhabanda.com/dashboard')
+      expect(hosts.bandUrl('maverick')).toBe('https://maverick.minhabanda.com/')
+    })
+
+    it('should stay on the current host without VITE_BASE_DOMAIN', async () => {
+      const hosts = await loadHosts('')
+      expect(hosts.adminUrl()).toBe('/admin')
+      expect(hosts.bandUrl('maverick')).toBeNull()
+    })
+  })
+
   describe('safeRedirectPath', () => {
     it('should keep same-site paths', async () => {
       const { safeRedirectPath } = await loadHosts('')

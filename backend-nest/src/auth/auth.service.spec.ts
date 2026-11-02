@@ -27,7 +27,7 @@ describe('AuthService', () => {
     band: { findMany: jest.Mock };
   };
   let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
-  let logService: { log: jest.Mock };
+  let logService: { log: jest.Mock; logPlatform?: jest.Mock };
   let memberService: { findByOidcSub: jest.Mock; findByEmail: jest.Mock };
 
   beforeEach(async () => {
@@ -108,12 +108,16 @@ describe('AuthService', () => {
       });
     });
 
-    it('should look up active memberships by OIDC subject or email', async () => {
+    it('should look up active memberships of active bands by OIDC subject or email', async () => {
       prisma.member.findMany.mockResolvedValue([maverick]);
       await service.centralLoginWithGoogle('id-token');
       expect(prisma.member.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { active: true, OR: [{ oidcSub: 'google-sub' }, { email: 'me@test.com' }] },
+          where: {
+            active: true,
+            band: { active: true },
+            OR: [{ oidcSub: 'google-sub' }, { email: 'me@test.com' }],
+          },
         }),
       );
     });
@@ -177,6 +181,7 @@ describe('AuthService', () => {
           { slug: 'maverick', name: 'Maverick' },
           { slug: 'outra', name: 'Outra' },
         ]);
+        expect(prisma.band.findMany).toHaveBeenCalledWith({ where: { active: true }, orderBy: { name: 'asc' } });
       });
 
       it('should issue a code for a band the account is not a member of', async () => {
@@ -427,6 +432,108 @@ describe('AuthService', () => {
     it('should never delete every session when the owner is missing', async () => {
       await expect(service.logoutAll({})).rejects.toThrow('Session has no owner');
       expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('adminLoginWithGoogle', () => {
+    beforeEach(() => {
+      process.env.GOOGLE_CLIENT_ID = 'client-id';
+      mockVerifyIdToken.mockResolvedValue({
+        getPayload: () => ({ sub: 'google-sub', email: 'root@test.com', email_verified: true }),
+      });
+      logService.logPlatform = jest.fn().mockResolvedValue(undefined);
+    });
+
+    it('should open a platform session, with no band, for a super admin', async () => {
+      prisma.superAdmin.findFirst.mockResolvedValue({ id: 3, name: 'Root', email: 'root@test.com' });
+      jwtService.sign.mockReturnValue('admin-token');
+
+      const result = await service.adminLoginWithGoogle('id-token');
+
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        { scope: 'platform', superAdminId: 3, email: 'root@test.com', name: 'Root' },
+        { expiresIn: '8h' },
+      );
+      expect(prisma.session.create).toHaveBeenCalledWith({
+        data: { superAdminId: 3, token: 'admin-token', expiresAt: expect.any(Date) },
+      });
+      expect(logService.logPlatform).toHaveBeenCalledWith('LOGIN', 'admin', undefined, { method: 'google' }, {
+        superAdminId: 3,
+      });
+      expect(result).toEqual({ token: 'admin-token', superAdmin: { id: 3, name: 'Root', email: 'root@test.com' } });
+    });
+
+    it('should refuse anyone who is not a super admin', async () => {
+      await expect(service.adminLoginWithGoogle('id-token')).rejects.toThrow(
+        'Only super admins can use the admin panel',
+      );
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('should not trust an email Google has not verified', async () => {
+      mockVerifyIdToken.mockResolvedValue({
+        getPayload: () => ({ sub: 'google-sub', email: 'root@test.com', email_verified: false }),
+      });
+      await expect(service.adminLoginWithGoogle('id-token')).rejects.toThrow(BadRequestException);
+      expect(prisma.superAdmin.findFirst).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('validateAdminToken', () => {
+    const payload = { scope: 'platform', superAdminId: 3, email: 'old@test.com', name: 'Old' };
+    const liveSession = { superAdminId: 3, expiresAt: new Date(Date.now() + 3600_000) };
+
+    it('should return the super admin as stored now, not as the token remembers them', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      prisma.session.findUnique.mockResolvedValue(liveSession);
+      prisma.superAdmin.findFirst.mockResolvedValue({ id: 3, name: 'Root', email: 'root@test.com' });
+
+      expect(await service.validateAdminToken('t')).toEqual({
+        scope: 'platform', superAdminId: 3, email: 'root@test.com', name: 'Root',
+      });
+      expect(prisma.superAdmin.findFirst).toHaveBeenCalledWith({ where: { id: 3, active: true } });
+    });
+
+    it('should reject band tokens, even a super admin\'s', async () => {
+      jwtService.verify.mockReturnValue({ superAdminId: 3, bandId: 1, name: 'Root' });
+      expect(await service.validateAdminToken('t')).toBeNull();
+      expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should reject a token that does not verify', async () => {
+      jwtService.verify.mockImplementation(() => { throw new Error('bad signature'); });
+      expect(await service.validateAdminToken('t')).toBeNull();
+    });
+
+    it('should reject a token whose session was ended or has expired', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      prisma.session.findUnique.mockResolvedValue(null);
+      expect(await service.validateAdminToken('t')).toBeNull();
+
+      prisma.session.findUnique.mockResolvedValue({ ...liveSession, expiresAt: new Date(Date.now() - 1) });
+      expect(await service.validateAdminToken('t')).toBeNull();
+    });
+
+    it('should reject a session that belongs to someone else', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      prisma.session.findUnique.mockResolvedValue({ ...liveSession, superAdminId: 4 });
+      expect(await service.validateAdminToken('t')).toBeNull();
+    });
+
+    it('should reject a super admin who has since been disabled', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      prisma.session.findUnique.mockResolvedValue(liveSession);
+      prisma.superAdmin.findFirst.mockResolvedValue(null);
+      expect(await service.validateAdminToken('t')).toBeNull();
+    });
+  });
+
+  describe('adminLogout', () => {
+    it('should end only that session of that super admin', async () => {
+      logService.logPlatform = jest.fn().mockResolvedValue(undefined);
+      await service.adminLogout(3, 'admin-token');
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { superAdminId: 3, token: 'admin-token' } });
+      expect(logService.logPlatform).toHaveBeenCalledWith('LOGOUT', 'admin');
     });
   });
 

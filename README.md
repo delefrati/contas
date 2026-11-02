@@ -112,3 +112,20 @@ choose among all bands; in a band they also belong to, they sign in as that memb
 
 With a super admin in place, the band's first member is optional:
 `./scripts/create-band.sh maverick 'Maverick'`.
+
+### Admin panel
+
+Super admins also get an admin panel at `https://minhabanda.com/admin` (locally,
+`http://localhost:<frontend port>/admin`). They sign in with Google there, and from it they can:
+
+- create bands, with an optional first member, and rename, disable or re-enable them;
+- add, edit and disable the members of any band;
+- add and disable other super admins (but not themselves).
+
+A disabled band keeps its data, but its subdomain stops resolving: nobody can sign in, and it
+no longer gets a certificate. Changes made to a band show up in that band's log. Changes to
+the platform itself (super admins, admin sign-ins) are logged without a band (`band_id` NULL).
+
+Panel sessions are separate from band sessions: they last 8 hours, work only on the central
+host, and end as soon as the super admin logs out or is disabled. The scripts above still work,
+and you need `create-super-admin.sh` once to create the first super admin.

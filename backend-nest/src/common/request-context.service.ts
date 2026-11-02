@@ -25,6 +25,12 @@ export class RequestContextService {
     return { memberId: store?.memberId, superAdminId: store?.superAdminId };
   }
 
+  // Runs fn as if the request had come from the given band, keeping who is acting.
+  // Only for the admin panel, whose super admins work on bands chosen by id, not by host.
+  withBand<T>(bandId: number, fn: () => T): T {
+    return storage.run({ ...storage.getStore(), bandId }, fn);
+  }
+
   getBandId(): number | undefined {
     return storage.getStore()?.bandId;
   }

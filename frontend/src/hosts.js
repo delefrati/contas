@@ -27,3 +27,13 @@ export function bandCallbackUrl(slug, code, redirect) {
   const params = new URLSearchParams({ code, redirect: safeRedirectPath(redirect) })
   return `https://${slug}.${baseDomain}/auth/callback?${params}`
 }
+
+// The admin panel lives on the central host; locally, on the current one
+export function adminUrl(path = '/admin') {
+  return baseDomain ? `https://${baseDomain}${safeRedirectPath(path)}` : safeRedirectPath(path)
+}
+
+// Where a band is served; null locally, where every host is DEFAULT_BAND
+export function bandUrl(slug) {
+  return baseDomain ? `https://${slug}.${baseDomain}/` : null
+}
