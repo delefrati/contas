@@ -32,8 +32,11 @@ docker compose exec -T backend node -e 'console.log(require("jsonwebtoken").sign
   { memberId: 1, bandId: 1, name: "Ana" }, "your-secret-key-change-in-production", { expiresIn: "24h" }))'
 ```
 
-Use `{ superAdminId: <id>, ... }` for a super admin. Also insert a matching `sessions` row if the
-flow under test reads or deletes sessions (logout). Then call the API with
+Use `{ superAdminId: <id>, ... }` for a super admin. Always insert a matching `sessions` row
+(`member_id` or `super_admin_id`, the token, a future `expires_at`): every authenticated request
+checks it, along with the account still being active. For the admin panel, sign
+`{ scope: "platform", superAdminId, email, name }` instead (no `bandId`), add its `sessions` row,
+and set `localStorage.admin_token` (plus `admin_user`) before opening `/admin`. Then call the API with
 `Authorization: Bearer <token>`. For the UI, set `localStorage.auth_token` (plus
 `auth_member`) on `http://localhost:51731` and open `/dashboard`.
 

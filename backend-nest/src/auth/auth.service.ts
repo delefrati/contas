@@ -274,6 +274,29 @@ export class AuthService {
     return token;
   }
 
+  // Whether a band token still stands: its session hasn't ended or expired, it belongs to whoever
+  // the token names, and that member (of this band) or super admin is still active. Checked on
+  // every request, so logging out or disabling someone takes effect at once.
+  async isBandSessionLive(token: string, identity: Identity, bandId: number): Promise<boolean> {
+    const session = await this.prisma.session.findUnique({
+      where: { token },
+      include: {
+        member: { select: { active: true, bandId: true } },
+        superAdmin: { select: { active: true } },
+      },
+    });
+    if (!session || session.expiresAt < new Date()) return false;
+
+    if (identity.superAdminId) {
+      return session.superAdminId === identity.superAdminId && session.superAdmin?.active === true;
+    }
+    return (
+      session.memberId === identity.memberId &&
+      session.member?.active === true &&
+      session.member.bandId === bandId
+    );
+  }
+
   async validateToken(token: string): Promise<AuthPayload> {
     try {
       const payload = this.jwtService.verify<AuthPayload>(token);

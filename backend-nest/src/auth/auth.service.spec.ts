@@ -359,6 +359,65 @@ describe('AuthService', () => {
     });
   });
 
+  describe('isBandSessionLive', () => {
+    const future = new Date(Date.now() + 3600_000);
+    const memberSession = {
+      memberId: 1, superAdminId: null, expiresAt: future,
+      member: { active: true, bandId: 1 }, superAdmin: null,
+    };
+    const superAdminSession = {
+      memberId: null, superAdminId: 3, expiresAt: future,
+      member: null, superAdmin: { active: true },
+    };
+
+    it('should accept the live session of an active member of the band', async () => {
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+
+      expect(await service.isBandSessionLive('tok', { memberId: 1 }, 1)).toBe(true);
+      expect(prisma.session.findUnique).toHaveBeenCalledWith({
+        where: { token: 'tok' },
+        include: {
+          member: { select: { active: true, bandId: true } },
+          superAdmin: { select: { active: true } },
+        },
+      });
+    });
+
+    it('should accept the live session of an active super admin in any band', async () => {
+      prisma.session.findUnique.mockResolvedValue(superAdminSession);
+      expect(await service.isBandSessionLive('tok', { superAdminId: 3 }, 7)).toBe(true);
+    });
+
+    it('should reject a session that was ended (logout) or has expired', async () => {
+      prisma.session.findUnique.mockResolvedValue(null);
+      expect(await service.isBandSessionLive('tok', { memberId: 1 }, 1)).toBe(false);
+
+      prisma.session.findUnique.mockResolvedValue({ ...memberSession, expiresAt: new Date(Date.now() - 1) });
+      expect(await service.isBandSessionLive('tok', { memberId: 1 }, 1)).toBe(false);
+    });
+
+    it('should reject a member who has been disabled', async () => {
+      prisma.session.findUnique.mockResolvedValue({ ...memberSession, member: { active: false, bandId: 1 } });
+      expect(await service.isBandSessionLive('tok', { memberId: 1 }, 1)).toBe(false);
+    });
+
+    it('should reject a super admin who has been disabled', async () => {
+      prisma.session.findUnique.mockResolvedValue({ ...superAdminSession, superAdmin: { active: false } });
+      expect(await service.isBandSessionLive('tok', { superAdminId: 3 }, 1)).toBe(false);
+    });
+
+    it('should reject a session that belongs to someone else', async () => {
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+      expect(await service.isBandSessionLive('tok', { memberId: 2 }, 1)).toBe(false);
+      expect(await service.isBandSessionLive('tok', { superAdminId: 1 }, 1)).toBe(false);
+    });
+
+    it('should reject a member of another band', async () => {
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+      expect(await service.isBandSessionLive('tok', { memberId: 1 }, 2)).toBe(false);
+    });
+  });
+
   describe('validateToken', () => {
     it('should validate a valid token with active session', async () => {
       const payload = { memberId: 1, email: 'test@test.com', name: 'Test' };
