@@ -86,6 +86,13 @@ const songs = computed(() => blocks.value.flatMap((block, i) => block.songs.map(
 const lyricsNumber = ref(null)
 const lyricsSong = computed(() => (lyricsNumber.value === null ? null : songs.value[lyricsNumber.value - 1]))
 
+// Share of the songs reached: the one whose lyrics are open, or the end of the current
+// block, so that the last block fills the bar
+const progress = computed(() => {
+  const reached = lyricsSong.value?.number ?? blocks.value[index.value]?.songs.at(-1).number ?? 0
+  return (reached / songs.value.length) * 100
+})
+
 // Songs removed elsewhere while the view is open
 watch(() => blocks.value.length, (length) => {
   if (index.value >= length) index.value = Math.max(length - 1, 0)
@@ -334,6 +341,11 @@ onBeforeUnmount(() => {
       <span v-if="hasNext" class="stage-hint stage-hint-right"><i class="fa-solid fa-chevron-right"></i></span>
     </template>
 
+    <!-- The footer already says the position in words -->
+    <div v-if="songs.length > 0" class="stage-progress" aria-hidden="true">
+      <div class="stage-progress-fill" :style="{ width: `${progress}%` }"></div>
+    </div>
+
     <button v-if="lyricsSong" type="button" class="stage-footer" @click="onFooterClick">
       <span class="stage-position">
         {{ $t('repertoires.stageSong', { current: lyricsNumber, total: songs.length }) }}
@@ -538,6 +550,16 @@ onBeforeUnmount(() => {
 }
 .stage-hint-right {
   right: 4px;
+}
+.stage-progress {
+  flex: none;
+  height: 3px;
+  background: var(--stage-highlight);
+}
+.stage-progress-fill {
+  height: 100%;
+  background: var(--stage-muted);
+  transition: width 0.2s ease;
 }
 .stage-footer {
   display: flex;

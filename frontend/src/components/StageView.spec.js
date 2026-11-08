@@ -199,6 +199,28 @@ describe('StageView', () => {
     expect(titles(wrapper.find('.stage-block.is-current'))).toEqual(['Exagerado', 'Pro Dia Nascer Feliz'])
   })
 
+  it('should fill the progress bar by songs, up to the end of the current block', async () => {
+    const wrapper = createWrapper()
+    const progress = () => wrapper.find('.stage-progress-fill').element.style.width
+    expect(progress()).toBe('50%')
+    await tapRight(wrapper)
+    expect(progress()).toBe('75%')
+    await tapRight(wrapper)
+    expect(progress()).toBe('100%')
+  })
+
+  it('should follow the open song on the progress bar', async () => {
+    const wrapper = createWrapper()
+    await wrapper.find('[data-lyrics="1"]').trigger('click', { clientX: 900 })
+    expect(wrapper.find('.stage-progress-fill').element.style.width).toBe('25%')
+    await tapRight(wrapper)
+    expect(wrapper.find('.stage-progress-fill').element.style.width).toBe('50%')
+  })
+
+  it('should have no progress bar without songs', () => {
+    expect(createWrapper({ setlist: [] }).find('.stage-progress').exists()).toBe(false)
+  })
+
   it('should show artists only when asked to', () => {
     expect(createWrapper().find('.stage-artist').exists()).toBe(false)
     expect(createWrapper({ showArtists: true }).find('.stage-artist').text()).toBe('Cazuza')
