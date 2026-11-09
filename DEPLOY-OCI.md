@@ -6,14 +6,17 @@ This guide deploys the app on a single Oracle Cloud Always Free VM using Docker 
 
 1. Create an Ubuntu VM (Always Free shape).
 2. Assign a static public IP.
-3. Create DNS records:
+3. Create DNS records on Cloudflare, all set to **DNS only**:
   - `minhabanda.com` (A record `@`) -> VM public IP — central login page
   - `www.minhabanda.com` (CNAME -> `minhabanda.com`) — redirects to `minhabanda.com`
   - `*.minhabanda.com` (wildcard A record) -> VM public IP — one subdomain per band
+4. Create a Cloudflare API token limited to the `minhabanda.com` zone, with `Zone: Read` and
+  `DNS: Edit`.
 
   Every band is served at `<slug>.minhabanda.com`, with the API under `/api` on the same host.
-  Caddy issues each band's HTTPS certificate on its first visit (on-demand TLS), after checking
-  with the backend that the band exists.
+  Caddy uses the token to get one wildcard certificate for all bands (DNS challenge), so a new
+  band needs no DNS or certificate step. Addresses without an active band are sent to
+  `minhabanda.com` by the app.
 
 Open inbound ports in OCI and OS firewall:
 - TCP 22
@@ -49,6 +52,8 @@ Important values:
 - `BASE_DOMAIN=minhabanda.com`
 - `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` must match the same Google OAuth client
 - `BASE_DOMAIN` must match the wildcard DNS record
+- `CF_API_TOKEN` is the Cloudflare token from step 1; the deploy doesn't copy env files, so it
+  must be in both `.env.prod` (local) and `.env` (server)
 
 ## 4) Configure Google OAuth
 
@@ -71,7 +76,7 @@ bash scripts/sync-from-prod.sh
 ```
 
 The script does:
-1. Builds Docker images locally (`backend`, `frontend`)
+1. Builds Docker images locally (`backend`, `frontend`, `caddy`)
 2. Exports and compresses them (`docker save | gzip`)
 3. Uploads via rsync over SSH
 4. Syncs `docker-compose.prod.yml` and `Caddyfile` to the server

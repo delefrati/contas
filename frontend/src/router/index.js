@@ -13,6 +13,7 @@ import AdminBands from '../pages/admin/AdminBands.vue'
 import AdminBand from '../pages/admin/AdminBand.vue'
 import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
 import { adminUrl, centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
+import { loadBand } from '../composables/useBand'
 
 const routes = [
   {
@@ -134,6 +135,12 @@ router.beforeEach(async (to, from, next) => {
   }
   if (to.name === 'CentralLogin') {
     next({ name: 'Login', query: to.query })
+    return
+  }
+
+  // Must settle before the login redirect below, which would carry the unknown band along
+  if (currentBandSlug() && !(await loadBand())) {
+    next(false)
     return
   }
 

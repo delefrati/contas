@@ -20,9 +20,10 @@ anything below.
   server never holds source. `.env.prod` is git-ignored; never print or
   commit its contents.
 - Caddy serves `BASE_DOMAIN` (central login), redirects `www.`, and serves
-  `*.BASE_DOMAIN` with **on-demand TLS** gated by
-  `http://backend:3000/api/band/tls-check` — a band's certificate is issued
-  on its first visit, so a new band's first load can take a few seconds.
+  `*.BASE_DOMAIN` with one **wildcard certificate**, issued through the DNS
+  challenge (`caddy/Dockerfile` adds the Cloudflare plugin; `CF_API_TOKEN` must
+  be in `.env.prod` and in the server's `.env`). DNS is on Cloudflare; a new
+  band needs no DNS or certificate step.
 - Schema: Prisma Migrate (`backend-nest/prisma/migrations/`) is the source
   of truth and runs automatically on backend container start
   (`npx prisma migrate deploy && node dist/main`). `mysql/init/*.sql` only

@@ -8,8 +8,6 @@ import { LogService } from '../log/log.service';
 describe('BandController', () => {
   let controller: BandController;
   let bandService: {
-    slugFromHost: jest.Mock;
-    findBySlug: jest.Mock;
     findById: jest.Mock;
     getLogo: jest.Mock;
     setLogo: jest.Mock;
@@ -20,8 +18,6 @@ describe('BandController', () => {
 
   beforeEach(async () => {
     bandService = {
-      slugFromHost: jest.fn(),
-      findBySlug: jest.fn(),
       findById: jest.fn(),
       getLogo: jest.fn(),
       setLogo: jest.fn(),
@@ -70,33 +66,6 @@ describe('BandController', () => {
 
       await expect(controller.current()).rejects.toThrow(NotFoundException);
       expect(bandService.findById).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('tlsCheck', () => {
-    it('should return ok for an existing band domain', async () => {
-      bandService.slugFromHost.mockReturnValue('maverick');
-      bandService.findBySlug.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick' });
-
-      const result = await controller.tlsCheck('maverick.minhabanda.com');
-
-      expect(bandService.slugFromHost).toHaveBeenCalledWith('maverick.minhabanda.com');
-      expect(bandService.findBySlug).toHaveBeenCalledWith('maverick');
-      expect(result).toEqual({ status: 'ok' });
-    });
-
-    it('should throw NotFoundException for an unknown band', async () => {
-      bandService.slugFromHost.mockReturnValue('ghost');
-      bandService.findBySlug.mockResolvedValue(null);
-
-      await expect(controller.tlsCheck('ghost.minhabanda.com')).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException for a domain outside BASE_DOMAIN', async () => {
-      bandService.slugFromHost.mockReturnValue(undefined);
-
-      await expect(controller.tlsCheck('evil.example.com')).rejects.toThrow(NotFoundException);
-      expect(bandService.findBySlug).not.toHaveBeenCalled();
     });
   });
 

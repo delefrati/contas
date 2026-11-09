@@ -5,7 +5,6 @@ import {
   Get,
   NotFoundException,
   Put,
-  Query,
   Res,
   StreamableFile,
   UploadedFile,
@@ -60,15 +59,5 @@ export class BandController {
     const data = await this.bandService.removeLogo(this.requestContext.requireBandId());
     await this.logService.log('DELETE', 'band_logo', data.id);
     return { data };
-  }
-
-  // Caddy on-demand TLS "ask" endpoint: only issue certificates for existing bands.
-  @Get('tls-check')
-  async tlsCheck(@Query('domain') domain: string): Promise<{ status: string }> {
-    const slug = this.bandService.slugFromHost(domain);
-    if (!slug || !(await this.bandService.findBySlug(slug))) {
-      throw new NotFoundException('Unknown band domain');
-    }
-    return { status: 'ok' };
   }
 }

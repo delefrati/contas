@@ -37,10 +37,8 @@ authorized, defensive-security context (this is the project's own repo).
   (`findSuperAdmin` requires `email_verified`) and can act on any band.
   Anything that grants super-admin power on a weaker signal is a finding.
 - **Authorization**: band-data controllers use `@UseGuards(JwtAuthGuard)`.
-  Deliberately public: `/api/health`, `/api/band`, `/api/band/tls-check`
-  (Caddy's on-demand TLS `ask` — must only answer yes for existing slugs,
-  otherwise anyone can make the server request certificates for arbitrary
-  subdomains), and the login/exchange endpoints. A new unguarded endpoint
+  Deliberately public: `/api/health`, `/api/band`, and the login/exchange
+  endpoints. A new unguarded endpoint
   returning band data is a finding. There is no per-member role today: any
   active member of a band can write — flag new features that assume one.
 - **JWT secret**: `JWT_SECRET` falls back to a hardcoded default in

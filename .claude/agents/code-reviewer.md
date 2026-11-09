@@ -33,7 +33,7 @@ to apply fixes.
    and date/timezone handling on events and expenses.
 3. **Security.** Controllers handling band data must be behind
    `@UseGuards(JwtAuthGuard)`; only deliberately public endpoints
-   (`/api/health`, `/api/band`, `/api/band/tls-check`, the login/exchange
+   (`/api/health`, `/api/band`, the login/exchange
    endpoints in `auth.controller.ts`) may skip it. Flag any `$queryRaw` /
    `$executeRaw*` with interpolated input (use tagged templates/`Prisma.sql`).
    No secrets from `.env*` should ever be committed.

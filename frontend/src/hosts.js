@@ -23,6 +23,10 @@ export function centralLoginUrl(redirect) {
   return `https://${baseDomain}/entrar?${params}`
 }
 
+export function centralUrl() {
+  return `https://${baseDomain}/`
+}
+
 export function bandCallbackUrl(slug, code, redirect) {
   const params = new URLSearchParams({ code, redirect: safeRedirectPath(redirect) })
   return `https://${slug}.${baseDomain}/auth/callback?${params}`

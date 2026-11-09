@@ -27,7 +27,7 @@ cd "$LOCAL_DIR"
 COMPOSE_PROJECT_NAME=contas-app docker compose --env-file .env.prod -f docker-compose.prod.yml build
 
 echo "==> Exporting images..."
-docker save contas-app-backend contas-app-frontend | gzip > /tmp/contas-images.tar.gz
+docker save contas-app-backend contas-app-frontend contas-app-caddy | gzip > /tmp/contas-images.tar.gz
 
 echo "==> Uploading images to prod..."
 rsync -avz --progress \
