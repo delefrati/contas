@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWakeLock } from '../composables/useWakeLock'
 import { setlistBlocks } from '../utils/setlist'
+import { clearStagePosition, readStagePosition, saveStagePosition } from '../offline/stage'
 
 // Full-screen setlist for reading on a phone during a show: one block (songs up to a
 // pause) at a time in big letters, with a peek at the next one. Tapping the name of a
@@ -9,6 +10,7 @@ import { setlistBlocks } from '../utils/setlist'
 const props = defineProps({
   setlist: { type: Array, required: true },
   showArtists: { type: Boolean, default: false },
+  eventId: { type: Number, default: null },
 })
 const emit = defineEmits(['close'])
 
@@ -66,7 +68,14 @@ function changeFont(step) {
 }
 
 const blocks = computed(() => setlistBlocks(props.setlist))
-const index = ref(0)
+
+// Phones can kill a backgrounded app mid-show, and it should come back to the same place
+const restored = (() => {
+  const position = readStagePosition()
+  return position && position.eventId === props.eventId ? position : null
+})()
+
+const index = ref(restored && restored.index < blocks.value.length ? restored.index : 0)
 const showingAll = ref(false)
 const content = ref(null)
 
@@ -83,8 +92,14 @@ const isLast = computed(() => index.value === blocks.value.length - 1)
 const songs = computed(() => blocks.value.flatMap((block, i) => block.songs.map((song) => ({ ...song, block: i }))))
 
 // Number of the song whose lyrics are open, if any
-const lyricsNumber = ref(null)
+const lyricsNumber = ref(restored?.lyricsNumber <= songs.value.length ? restored?.lyricsNumber ?? null : null)
 const lyricsSong = computed(() => (lyricsNumber.value === null ? null : songs.value[lyricsNumber.value - 1]))
+
+watch([index, lyricsNumber], () => {
+  if (props.eventId !== null) {
+    saveStagePosition({ eventId: props.eventId, index: index.value, lyricsNumber: lyricsNumber.value })
+  }
+}, { immediate: true })
 
 // Share of the songs reached: the one whose lyrics are open, or the end of the current
 // block, so that the last block fills the bar
@@ -233,6 +248,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  // Runs for every way of leaving the view, but not when the phone kills the app
+  clearStagePosition()
   wakeLock.stop()
   window.removeEventListener('keydown', onKeydown)
   document.documentElement.style.overflow = previousOverflow

@@ -8,7 +8,7 @@ import { formatDate } from '../utils/date'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { handleUnauthorized, getAuthHeader, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const logs = ref([])
@@ -24,7 +24,7 @@ async function loadData() {
     const response = await fetch(`${apiBaseUrl}/api/logs?limit=100`, { headers: getAuthHeader() })
 
     if (response.status === 401) {
-      await logout()
+      await handleUnauthorized()
       await router.push({ path: '/login', query: { reason: 'expired' } })
       return
     }

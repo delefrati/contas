@@ -359,6 +359,107 @@ describe('AuthService', () => {
     });
   });
 
+  describe('getSessionState', () => {
+    const inOneHour = Math.floor(Date.now() / 1000) + 3600;
+    const anHourAgo = Math.floor(Date.now() / 1000) - 3600;
+    const memberToken = { memberId: 1, bandId: 1, exp: inOneHour };
+    const expiredToken = { ...memberToken, exp: anHourAgo };
+    const memberSession = {
+      memberId: 1, superAdminId: null, expiresAt: new Date(Date.now() + 3600_000),
+      member: { active: true, bandId: 1 }, superAdmin: null,
+    };
+    const expiredSession = { ...memberSession, expiresAt: new Date(Date.now() - 3600_000) };
+    const superAdminSession = {
+      memberId: null, superAdminId: 3, expiresAt: new Date(Date.now() - 3600_000),
+      member: null, superAdmin: { active: true },
+    };
+
+    it('should verify the signature while tolerating expiry', async () => {
+      jwtService.verify.mockReturnValue(memberToken);
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+
+      expect(await service.getSessionState('tok')).toBe('live');
+      expect(jwtService.verify).toHaveBeenCalledWith('tok', { ignoreExpiration: true });
+    });
+
+    it('should report a session past its expiry, by row or by token', async () => {
+      jwtService.verify.mockReturnValue(expiredToken);
+      prisma.session.findUnique.mockResolvedValue(expiredSession);
+      expect(await service.getSessionState('tok')).toBe('expired');
+
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+      expect(await service.getSessionState('tok')).toBe('expired');
+
+      jwtService.verify.mockReturnValue(memberToken);
+      prisma.session.findUnique.mockResolvedValue(expiredSession);
+      expect(await service.getSessionState('tok')).toBe('expired');
+    });
+
+    it('should report an expired super admin session as expired', async () => {
+      jwtService.verify.mockReturnValue({ superAdminId: 3, bandId: 1, exp: anHourAgo });
+      prisma.session.findUnique.mockResolvedValue(superAdminSession);
+
+      expect(await service.getSessionState('tok')).toBe('expired');
+    });
+
+    it('should treat a missing or forged token as revoked', async () => {
+      expect(await service.getSessionState(undefined)).toBe('revoked');
+
+      jwtService.verify.mockImplementation(() => {
+        throw new Error('bad signature');
+      });
+      expect(await service.getSessionState('tok')).toBe('revoked');
+      expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should treat a session that ended (logout) as revoked', async () => {
+      jwtService.verify.mockReturnValue(expiredToken);
+      prisma.session.findUnique.mockResolvedValue(null);
+
+      expect(await service.getSessionState('tok')).toBe('revoked');
+    });
+
+    it('should treat a disabled owner as revoked even after expiry', async () => {
+      jwtService.verify.mockReturnValue(expiredToken);
+      prisma.session.findUnique.mockResolvedValue({ ...expiredSession, member: { active: false, bandId: 1 } });
+      expect(await service.getSessionState('tok')).toBe('revoked');
+
+      jwtService.verify.mockReturnValue({ superAdminId: 3, bandId: 1, exp: anHourAgo });
+      prisma.session.findUnique.mockResolvedValue({ ...superAdminSession, superAdmin: { active: false } });
+      expect(await service.getSessionState('tok')).toBe('revoked');
+    });
+
+    it('should treat a token from another band as revoked', async () => {
+      jwtService.verify.mockReturnValue({ ...memberToken, bandId: 2 });
+
+      expect(await service.getSessionState('tok')).toBe('revoked');
+      expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should treat a member moved to another band as revoked', async () => {
+      jwtService.verify.mockReturnValue(memberToken);
+      prisma.session.findUnique.mockResolvedValue({ ...memberSession, member: { active: true, bandId: 2 } });
+
+      expect(await service.getSessionState('tok')).toBe('revoked');
+    });
+
+    it('should treat a session owned by someone else as revoked', async () => {
+      jwtService.verify.mockReturnValue({ ...memberToken, memberId: 2 });
+      prisma.session.findUnique.mockResolvedValue(memberSession);
+
+      expect(await service.getSessionState('tok')).toBe('revoked');
+    });
+
+    it('should treat a token with no owner, or a host with no band, as revoked', async () => {
+      jwtService.verify.mockReturnValue({ scope: 'platform', bandId: 1 });
+      expect(await service.getSessionState('tok')).toBe('revoked');
+
+      jwtService.verify.mockReturnValue(memberToken);
+      requestContext.getBandId.mockReturnValue(undefined);
+      expect(await service.getSessionState('tok')).toBe('revoked');
+    });
+  });
+
   describe('isBandSessionLive', () => {
     const future = new Date(Date.now() + 3600_000);
     const memberSession = {

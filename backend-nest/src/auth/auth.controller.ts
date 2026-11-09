@@ -5,10 +5,11 @@ import {
   UseGuards,
   Req,
   Get,
+  HttpCode,
   BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthService, CentralLoginResponse, LoginResponse } from './auth.service';
+import { AuthService, CentralLoginResponse, LoginResponse, SessionState } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthPayload } from './auth.service';
 
@@ -45,6 +46,15 @@ export class AuthController {
       throw new BadRequestException('User not found in request');
     }
     return { data: req.user };
+  }
+
+  // Deliberately without JwtAuthGuard: it has to answer for tokens past their expiry
+  @Post('session-state')
+  @HttpCode(200)
+  async sessionState(@Req() req: Request): Promise<{ data: { state: SessionState } }> {
+    const [scheme, token] = (req.headers.authorization ?? '').split(' ');
+    const state = await this.authService.getSessionState(scheme === 'Bearer' ? token : undefined);
+    return { data: { state } };
   }
 
   @Post('logout')

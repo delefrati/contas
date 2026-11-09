@@ -14,6 +14,7 @@ import AdminBand from '../pages/admin/AdminBand.vue'
 import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
 import { adminUrl, centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
 import { loadBand } from '../composables/useBand'
+import { connectionLost } from '../offline/connection'
 
 const routes = [
   {
@@ -62,19 +63,19 @@ const routes = [
     path: '/agenda',
     name: 'Agenda',
     component: Agenda,
-    meta: { requiresAuth: true, titleKey: 'agenda.title' },
+    meta: { requiresAuth: true, offline: true, titleKey: 'agenda.title' },
   },
   {
     path: '/agenda/:id(\\d+)',
     name: 'Event',
     component: EventDetail,
-    meta: { requiresAuth: true, titleKey: 'agenda.title' },
+    meta: { requiresAuth: true, offline: true, titleKey: 'agenda.title' },
   },
   {
     path: '/musicas',
     name: 'Songs',
     component: Songs,
-    meta: { requiresAuth: true, titleKey: 'songs.title' },
+    meta: { requiresAuth: true, offline: true, titleKey: 'songs.title' },
   },
   {
     // Former address of the songs and setlists page
@@ -138,13 +139,20 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
+  const { isLoggedIn, token, getCurrentUser, readCopy, revalidateSession, syncCopy } = useAuth()
+
+  // These screens open from the downloaded copy at once, whatever the signal is doing
+  if (to.meta.offline && (await readCopy())) {
+    revalidateSession().then(() => syncCopy())
+    next()
+    return
+  }
+
   // Must settle before the login redirect below, which would carry the unknown band along
   if (currentBandSlug() && !(await loadBand())) {
     next(false)
     return
   }
-
-  const { isLoggedIn, token, getCurrentUser } = useAuth()
 
   if (to.meta.requiresAuth) {
     if (!isLoggedIn.value) {
@@ -165,6 +173,7 @@ router.beforeEach(async (to, from, next) => {
       })
       return
     }
+    syncCopy()
   }
 
   if (to.name === 'Login' && isLoggedIn.value) {
@@ -174,6 +183,11 @@ router.beforeEach(async (to, from, next) => {
 
   // Band subdomains log in through the central host
   if (to.name === 'Login' && currentBandSlug()) {
+    // Without a connection, stay and let App explain instead of a browser error page
+    if (connectionLost.value) {
+      next()
+      return
+    }
     window.location.assign(centralLoginUrl(to.query.redirect))
     next(false)
     return

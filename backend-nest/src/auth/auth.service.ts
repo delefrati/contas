@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { MemberService } from '../member/member.service';
@@ -57,6 +58,15 @@ export interface LoginResponse {
     superAdmin?: boolean;
   };
 }
+
+export type SessionState = 'live' | 'expired' | 'revoked';
+
+type BandSession = Prisma.SessionGetPayload<{
+  include: {
+    member: { select: { active: true; bandId: true } };
+    superAdmin: { select: { active: true } };
+  };
+}>;
 
 @Injectable()
 export class AuthService {
@@ -278,15 +288,22 @@ export class AuthService {
   // the token names, and that member (of this band) or super admin is still active. Checked on
   // every request, so logging out or disabling someone takes effect at once.
   async isBandSessionLive(token: string, identity: Identity, bandId: number): Promise<boolean> {
-    const session = await this.prisma.session.findUnique({
+    const session = await this.findBandSession(token);
+    if (!session || session.expiresAt < new Date()) return false;
+    return this.ownerStillHasAccess(session, identity, bandId);
+  }
+
+  private findBandSession(token: string): Promise<BandSession | null> {
+    return this.prisma.session.findUnique({
       where: { token },
       include: {
         member: { select: { active: true, bandId: true } },
         superAdmin: { select: { active: true } },
       },
     });
-    if (!session || session.expiresAt < new Date()) return false;
+  }
 
+  private ownerStillHasAccess(session: BandSession, identity: Identity, bandId: number): boolean {
     if (identity.superAdminId) {
       return session.superAdminId === identity.superAdminId && session.superAdmin?.active === true;
     }
@@ -295,6 +312,35 @@ export class AuthService {
       session.member?.active === true &&
       session.member.bandId === bandId
     );
+  }
+
+  // Lets the offline app tell a session that merely ran out (keep the downloaded copy) from access
+  // that was taken away (delete it). The token may be past its expiry here, so this must only ever
+  // answer the state and never grant anything.
+  async getSessionState(token: string | undefined): Promise<SessionState> {
+    if (!token) return 'revoked';
+
+    let payload: AuthPayload & { exp?: number };
+    try {
+      payload = this.jwtService.verify(token, { ignoreExpiration: true });
+    } catch {
+      return 'revoked';
+    }
+
+    const bandId = this.requestContext.getBandId();
+    if (!bandId || payload?.bandId !== bandId || (!payload.memberId && !payload.superAdminId)) {
+      return 'revoked';
+    }
+    const identity = payload.superAdminId
+      ? { superAdminId: payload.superAdminId }
+      : { memberId: payload.memberId };
+
+    const session = await this.findBandSession(token);
+    if (!session || !this.ownerStillHasAccess(session, identity, bandId)) return 'revoked';
+
+    const now = Date.now();
+    const tokenExpired = payload.exp !== undefined && payload.exp * 1000 < now;
+    return tokenExpired || session.expiresAt.getTime() < now ? 'expired' : 'live';
   }
 
   async validateToken(token: string): Promise<AuthPayload> {
@@ -406,6 +452,8 @@ export class AuthService {
     await this.logService.logPlatform('LOGOUT', 'admin');
   }
 
+  // Not scheduled. If it ever is, keep rows for at least 14 days past expiry: getSessionState
+  // reads a missing row as revoked, which deletes the phone's offline copy.
   async cleanupExpiredSessions(): Promise<void> {
     await this.prisma.session.deleteMany({
       where: {

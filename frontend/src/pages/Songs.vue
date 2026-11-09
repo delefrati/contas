@@ -1,14 +1,15 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
+import { useOfflineCopy } from '../composables/useOfflineCopy'
 import AppHeader from '../components/AppHeader.vue'
 import Modal from '../components/Modal.vue'
+import OfflineBar from '../components/OfflineBar.vue'
 
 const { t } = useI18n()
-const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { getAuthHeader, scheduleCopySync } = useAuth()
+const { showingCopy, load } = useOfflineCopy()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const songs = ref([])
@@ -25,6 +26,15 @@ const savingSong = ref(false)
 // The list doesn't carry lyrics: they're fetched when a song is opened for editing
 const lyricsLoaded = ref(false)
 const songFilter = ref('')
+
+// Reading lyrics from the downloaded copy, where nothing can be edited
+const isLyricsModalOpen = ref(false)
+const viewingSong = ref(null)
+
+function openLyrics(song) {
+  viewingSong.value = song
+  isLyricsModalOpen.value = true
+}
 
 // Song import
 const isImportModalOpen = ref(false)
@@ -54,23 +64,24 @@ async function loadData() {
   loading.value = true
   error.value = ''
   try {
-    const authHeader = getAuthHeader()
-    const songsResponse = await fetch(`${apiBaseUrl}/api/songs`, { headers: authHeader })
-
-    if (songsResponse.status === 401) {
-      await logout()
-      await router.push({ path: '/login', query: { reason: 'expired' } })
-      return
+    const outcome = await load({
+      paths: ['/api/songs'],
+      paint(snapshot) {
+        songs.value = snapshot.songs
+      },
+      apply([liveSongs]) {
+        songs.value = liveSongs || []
+      },
+    })
+    if (outcome === 'superseded') return
+    if (outcome === 'copy') {
+      isSongModalOpen.value = false
+      isImportModalOpen.value = false
     }
-
-    if (!songsResponse.ok) {
-      throw new Error(t('songs.loadingError'))
-    }
-
-    songs.value = (await songsResponse.json()).data || []
+    if (outcome === 'offline' || outcome === 'failed') error.value = t('songs.loadingError')
+    loading.value = false
   } catch (exception) {
     handleError(exception)
-  } finally {
     loading.value = false
   }
 }
@@ -137,6 +148,7 @@ async function saveSong() {
     }
 
     isSongModalOpen.value = false
+    scheduleCopySync()
     showSuccess(editingSong.value ? t('songs.successUpdate') : t('songs.successCreate'))
     await loadData()
   } catch (exception) {
@@ -154,6 +166,7 @@ async function deleteSong(song) {
       headers: getAuthHeader(),
     })
     if (!response.ok) throw new Error(t('errors.genericError'))
+    scheduleCopySync()
     showSuccess(t('songs.successDelete'))
     await loadData()
   } catch (exception) {
@@ -190,6 +203,7 @@ async function submitImport() {
 
     const result = (await response.json()).data
     importResult.value = result
+    scheduleCopySync()
     showSuccess(t('songs.importSuccess', { created: result.created, skipped: result.skipped }))
     await loadData()
     if (result.skipped === 0) {
@@ -202,15 +216,7 @@ async function submitImport() {
   }
 }
 
-onMounted(async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    await router.push('/login')
-    return
-  }
-
-  loadData()
-})
+onMounted(loadData)
 </script>
 
 <template>
@@ -219,16 +225,17 @@ onMounted(async () => {
 
     <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
     <div v-if="error" class="alert alert-error">{{ error }}</div>
+    <OfflineBar />
 
     <div class="content">
       <section class="expenses-section">
         <div class="section-header">
           <div class="section-actions">
             <input type="text" v-model="songFilter" :placeholder="$t('songs.filterPlaceholder')" class="search-input" />
-            <button @click="openImport" class="btn-secondary">
+            <button @click="openImport" :disabled="showingCopy" class="btn-secondary">
               <i class="fa-solid fa-file-import"></i> {{ $t('songs.import') }}
             </button>
-            <button @click="openCreateSong" class="btn-primary">+ {{ $t('songs.addSong') }}</button>
+            <button @click="openCreateSong" :disabled="showingCopy" class="btn-primary">+ {{ $t('songs.addSong') }}</button>
             <button @click="loadData" :disabled="loading" class="btn-secondary">
               <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}
             </button>
@@ -260,7 +267,16 @@ onMounted(async () => {
               <td>{{ song.artist || '—' }}</td>
               <td>{{ song.notes || '—' }}</td>
               <td class="actions">
-                <div class="actions-desktop">
+                <button
+                  v-if="showingCopy && song.lyrics"
+                  @click="openLyrics(song)"
+                  class="btn-edit"
+                  :title="$t('offline.viewLyrics')"
+                  :aria-label="$t('offline.viewLyrics')"
+                >
+                  <i class="fa-solid fa-align-left"></i>
+                </button>
+                <div v-if="!showingCopy" class="actions-desktop">
                   <button @click="openEditSong(song)" class="btn-edit" :title="$t('actions.edit')">
                     <i class="fa-solid fa-pencil"></i>
                   </button>
@@ -307,6 +323,10 @@ onMounted(async () => {
           </button>
         </div>
       </form>
+    </Modal>
+
+    <Modal v-model="isLyricsModalOpen" :title="viewingSong?.title || ''">
+      <p class="lyrics-reader">{{ viewingSong?.lyrics }}</p>
     </Modal>
 
     <!-- Import songs modal -->
@@ -366,6 +386,11 @@ onMounted(async () => {
 }
 .lyrics-textarea {
   resize: vertical;
+  line-height: 1.5;
+}
+.lyrics-reader {
+  margin: 0;
+  white-space: pre-line;
   line-height: 1.5;
 }
 .lyrics-mark {

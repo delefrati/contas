@@ -37,7 +37,7 @@ describe('useBand', () => {
     const { band, location } = await loadBand({
       baseDomain: 'minhabanda.com',
       hostname: 'xyz.minhabanda.com',
-      response: { ok: false, status: 404 },
+      response: { ok: false, status: 404, json: async () => ({ message: 'Band not found' }) },
     })
 
     expect(location.replace).toHaveBeenCalledWith('https://minhabanda.com/')
@@ -48,7 +48,7 @@ describe('useBand', () => {
     await loadBand({
       baseDomain: 'minhabanda.com',
       hostname: 'xyz.minhabanda.com',
-      response: { ok: false, status: 404 },
+      response: { ok: false, status: 404, json: async () => ({ message: 'Band not found' }) },
     })
 
     const useBandModule = await import('./useBand')
@@ -65,11 +65,21 @@ describe('useBand', () => {
     expect(location.replace).not.toHaveBeenCalled()
   })
 
+  it('stays when a 404 did not come from our server', async () => {
+    const { location } = await loadBand({
+      baseDomain: 'minhabanda.com',
+      hostname: 'maverick.minhabanda.com',
+      response: { ok: false, status: 404, json: async () => { throw new SyntaxError('<html>') } },
+    })
+
+    expect(location.replace).not.toHaveBeenCalled()
+  })
+
   it('never redirects in local development', async () => {
     const { location } = await loadBand({
       baseDomain: '',
       hostname: 'localhost',
-      response: { ok: false, status: 404 },
+      response: { ok: false, status: 404, json: async () => ({ message: 'Band not found' }) },
     })
 
     expect(location.replace).not.toHaveBeenCalled()

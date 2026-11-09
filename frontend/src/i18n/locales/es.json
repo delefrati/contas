@@ -340,5 +340,25 @@
       "added": "¡Super admin agregado!",
       "confirmDisable": "¿Desactivar a {name}? Pierde el acceso a este panel de inmediato."
     }
+  },
+  "offline": {
+    "noCopy": "Sin conexión, y todavía no se descargó nada en este dispositivo.",
+    "offline": "Sin conexión. Mostrando los datos de {when}.",
+    "expired": "Tu sesión expiró. Mostrando los datos de {when}.",
+    "saved": "Disponible sin internet. Actualizado {when}.",
+    "stale": "Pueden estar desactualizados.",
+    "installHint": "Añádela a la pantalla de inicio para conservar los datos.",
+    "downloadAgain": "Descargar de nuevo",
+    "downloadFailed": "No se pudo descargar ahora.",
+    "signIn": "Entrar para actualizar",
+    "notDownloaded": "Este evento no se descargó para usar sin internet.",
+    "monthNotDownloaded": "Este mes no se descargó para usar sin internet.",
+    "viewLyrics": "Ver letra",
+    "backToStage": "Volver a la vista en el móvil",
+    "noticeTitle": "Esta pantalla necesita internet",
+    "noticeText": "La agenda, las canciones y las letras descargadas siguen disponibles sin conexión.",
+    "goToAgenda": "Ir a la agenda",
+    "retry": "Reintentar",
+    "confirmLogout": "Al salir, los datos descargados se borrarán de este dispositivo y solo se recuperan con internet. ¿Salir de todos modos?"
   }
 }

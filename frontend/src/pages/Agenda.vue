@@ -4,17 +4,22 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useBand } from '../composables/useBand'
+import { useOfflineCopy } from '../composables/useOfflineCopy'
 import AppHeader from '../components/AppHeader.vue'
+import OfflineBar from '../components/OfflineBar.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import EventTypesModal from '../components/EventTypesModal.vue'
 import { formatDate as formatLocalDate, localeTag, monthGrid, parseDate, todayISO } from '../utils/date'
 import { eventName, typeStyle } from '../utils/events'
+import { copyInfo, readSnapshot } from '../offline/snapshot'
+import { readStagePosition } from '../offline/stage'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { getAuthHeader, handleUnauthorized, scheduleCopySync } = useAuth()
 const { band } = useBand()
+const { showingCopy, load } = useOfflineCopy()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const events = ref([])
@@ -26,6 +31,9 @@ const successMessage = ref('')
 const isEventModalOpen = ref(false)
 const isTypesModalOpen = ref(false)
 const newEventDate = ref('')
+
+// Left behind only when the phone killed the app in the middle of a show
+const stageToResume = readStagePosition()
 
 // Types unchecked in the filter, remembered per browser. Storing the hidden ones
 // means newly created types show up without touching the filter.
@@ -116,41 +124,52 @@ function goToToday() {
   router.replace({ query })
 }
 
+// The months the downloaded copy doesn't reach are simply unknown, not empty
+const monthNotDownloaded = computed(() => {
+  const window = showingCopy.value && copyInfo.value?.window
+  return Boolean(window) &&
+    (monthPrefix.value < window.from.slice(0, 7) || monthPrefix.value > window.to.slice(0, 7))
+})
+
 async function loadEvents() {
   loading.value = true
   error.value = ''
+  const from = weeks.value[0][0]
+  const to = weeks.value[weeks.value.length - 1][6]
   try {
-    const from = weeks.value[0][0]
-    const to = weeks.value[weeks.value.length - 1][6]
-    const authHeader = getAuthHeader()
-    const [eventsResponse, typesResponse] = await Promise.all([
-      fetch(`${apiBaseUrl}/api/events?from=${from}&to=${to}`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/event-types`, { headers: authHeader }),
-    ])
-
-    if (eventsResponse.status === 401 || typesResponse.status === 401) {
-      await logout()
-      await router.push({ path: '/login', query: { reason: 'expired' } })
-      return
+    const outcome = await load({
+      paths: [`/api/events?from=${from}&to=${to}`, '/api/event-types'],
+      paint(snapshot) {
+        events.value = snapshot.events.filter((event) => event.date >= from && event.date <= to)
+        types.value = snapshot.eventTypes
+      },
+      apply([liveEvents, liveTypes]) {
+        events.value = liveEvents || []
+        types.value = liveTypes || []
+      },
+    })
+    if (outcome === 'superseded') return
+    if (outcome === 'copy') {
+      isEventModalOpen.value = false
+      isTypesModalOpen.value = false
     }
-    if (!eventsResponse.ok || !typesResponse.ok) throw new Error(t('agenda.loadingError'))
-
-    events.value = (await eventsResponse.json()).data || []
-    types.value = (await typesResponse.json()).data || []
+    if (outcome === 'offline' || outcome === 'failed') error.value = t('agenda.loadingError')
+    loading.value = false
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : t('errors.genericError')
-  } finally {
     loading.value = false
   }
 }
 
 function openCreateEvent(date = '') {
+  if (showingCopy.value) return
   newEventDate.value = date || (monthPrefix.value === today.slice(0, 7) ? today : `${monthPrefix.value}-01`)
   isEventModalOpen.value = true
 }
 
 // Go straight to the new event so its setlist can be built
 function onEventSaved(event) {
+  scheduleCopySync()
   router.push(`/agenda/${event.id}`)
 }
 
@@ -213,16 +232,22 @@ function shareAgenda() {
 async function shareUpcoming() {
   error.value = ''
   try {
-    const response = await fetch(`${apiBaseUrl}/api/events?from=${today}`, { headers: getAuthHeader() })
-    if (response.status === 401) {
-      await logout()
-      await router.push({ path: '/login', query: { reason: 'expired' } })
-      return
+    let upcoming
+    if (showingCopy.value) {
+      const snapshot = await readSnapshot()
+      upcoming = (snapshot?.events || []).filter((event) => event.date >= today)
+    } else {
+      const response = await fetch(`${apiBaseUrl}/api/events?from=${today}`, { headers: getAuthHeader() })
+      if (response.status === 401) {
+        await handleUnauthorized()
+        await router.push({ path: '/login', query: { reason: 'expired' } })
+        return
+      }
+      if (!response.ok) throw new Error(t('agenda.loadingError'))
+      upcoming = (await response.json()).data || []
     }
-    if (!response.ok) throw new Error(t('agenda.loadingError'))
 
-    const upcoming = ((await response.json()).data || [])
-      .filter((event) => !hiddenTypeIds.value.includes(event.typeId))
+    upcoming = upcoming.filter((event) => !hiddenTypeIds.value.includes(event.typeId))
     if (upcoming.length === 0) {
       error.value = t('agenda.noUpcoming')
       return
@@ -247,15 +272,12 @@ function formatWeekday(date) {
 
 watch(monthPrefix, loadEvents)
 
-onMounted(async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    await router.push('/login')
-    return
-  }
-
+function onTypesChanged() {
+  scheduleCopySync()
   loadEvents()
-})
+}
+
+onMounted(loadEvents)
 </script>
 
 <template>
@@ -264,6 +286,14 @@ onMounted(async () => {
 
     <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
     <div v-if="error" class="alert alert-error">{{ error }}</div>
+    <OfflineBar />
+    <router-link
+      v-if="stageToResume"
+      :to="{ path: `/agenda/${stageToResume.eventId}`, query: { visualizar: '1' } }"
+      class="btn-primary resume-stage"
+    >
+      <i class="fa-solid fa-mobile-screen"></i> {{ $t('offline.backToStage') }}
+    </router-link>
 
     <div class="content">
       <section class="expenses-section">
@@ -286,10 +316,10 @@ onMounted(async () => {
             <button @click="shareUpcoming" class="btn-secondary" :title="$t('agenda.shareUpcomingHint')">
               <i class="fa-solid fa-list-ul"></i> {{ $t('agenda.shareUpcoming') }}
             </button>
-            <button @click="isTypesModalOpen = true" class="btn-secondary" :title="$t('agenda.typesTitle')">
+            <button @click="isTypesModalOpen = true" :disabled="showingCopy" class="btn-secondary" :title="$t('agenda.typesTitle')">
               <i class="fa-solid fa-tags"></i> {{ $t('agenda.manageTypes') }}
             </button>
-            <button @click="openCreateEvent()" class="btn-primary">+ {{ $t('agenda.newEvent') }}</button>
+            <button @click="openCreateEvent()" :disabled="showingCopy" class="btn-primary">+ {{ $t('agenda.newEvent') }}</button>
           </div>
         </div>
 
@@ -352,7 +382,9 @@ onMounted(async () => {
 
       <section class="expenses-section">
         <h2 class="list-title">{{ $t('agenda.monthEvents') }}</h2>
-        <p v-if="!loading && monthEvents.length === 0" class="empty-state">{{ $t('agenda.noEvents') }}</p>
+        <p v-if="!loading && monthEvents.length === 0" class="empty-state">
+          {{ monthNotDownloaded ? $t('offline.monthNotDownloaded') : $t('agenda.noEvents') }}
+        </p>
         <ul v-else class="event-list">
           <li v-for="event in monthEvents" :key="event.id">
             <router-link :to="`/agenda/${event.id}`" class="event-row" :class="{ 'is-past': event.date < today }">
@@ -379,11 +411,18 @@ onMounted(async () => {
     </div>
 
     <EventFormModal v-model="isEventModalOpen" :default-date="newEventDate" :types="types" @saved="onEventSaved" />
-    <EventTypesModal v-model="isTypesModalOpen" :types="types" @changed="loadEvents" />
+    <EventTypesModal v-model="isTypesModalOpen" :types="types" @changed="onTypesChanged" />
   </div>
 </template>
 
 <style scoped>
+.resume-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
 .calendar-toolbar {
   display: flex;
   justify-content: space-between;

@@ -12,6 +12,11 @@ global.fetch = mockFetch
 // Mock useAuth
 vi.mock('../composables/useAuth', () => ({
   useAuth: () => ({
+    isLoggedIn: { value: true },
+    sessionExpired: { value: false },
+    handleUnauthorized: vi.fn().mockResolvedValue('expired'),
+    syncCopy: vi.fn(),
+    scheduleCopySync: vi.fn(),
     logout: vi.fn(),
     getCurrentUser: vi.fn().mockResolvedValue({ memberId: 1, name: 'Test User' }),
     getAuthHeader: () => ({ Authorization: 'Bearer fake-token' }),

@@ -100,6 +100,16 @@ export class SongService {
     return songs.map((song) => this.mapToDto(song));
   }
 
+  // For the offline download only: a phone needs every lyric without opening each song
+  async findAllWithLyrics(): Promise<SongWithLyricsDto[]> {
+    const songs = await this.prisma.song.findMany({
+      where: { bandId: this.requestContext.requireBandId(), deletedAt: null },
+      orderBy: { title: 'asc' },
+    });
+
+    return songs.map((song) => this.mapToDtoWithLyrics(song));
+  }
+
   async findOne(id: number): Promise<SongWithLyricsDto> {
     const song = await this.prisma.song.findFirst({
       where: { id, bandId: this.requestContext.requireBandId(), deletedAt: null },

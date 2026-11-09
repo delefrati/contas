@@ -3,7 +3,9 @@ import { onMounted, onBeforeUnmount, ref, computed, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
+import { useOfflineCopy } from '../composables/useOfflineCopy'
 import AppHeader from '../components/AppHeader.vue'
+import OfflineBar from '../components/OfflineBar.vue'
 import Modal from '../components/Modal.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import StageView from '../components/StageView.vue'
@@ -13,7 +15,8 @@ import { eventName, typeStyle } from '../utils/events'
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { getAuthHeader, scheduleCopySync } = useAuth()
+const { showingCopy, load } = useOfflineCopy()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const event = ref(null)
@@ -147,38 +150,56 @@ function handleError(exception) {
   error.value = exception instanceof Error ? exception.message : t('errors.genericError')
 }
 
+// Songs mustn't shift under someone reading them on stage: fresh data waits for the view to close
+let refreshAfterStage = false
+
+watch(isStageOpen, (open) => {
+  if (open || !refreshAfterStage) return
+  refreshAfterStage = false
+  loadData()
+})
+
 async function loadData() {
   loading.value = true
   error.value = ''
+  const id = eventId.value
   try {
-    const authHeader = getAuthHeader()
-    const responses = await Promise.all([
-      fetch(`${apiBaseUrl}/api/events/${eventId.value}`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/songs`, { headers: authHeader }),
-      fetch(`${apiBaseUrl}/api/event-types`, { headers: authHeader }),
-    ])
-    const [eventResponse, songsResponse, typesResponse] = responses
-
-    if (responses.some((response) => response.status === 401)) {
-      await logout()
-      await router.push({ path: '/login', query: { reason: 'expired' } })
-      return
+    const outcome = await load({
+      paths: [`/api/events/${id}`, '/api/songs', '/api/event-types'],
+      paint(snapshot) {
+        const copy = snapshot.events.find((candidate) => candidate.id === id)
+        if (!copy) return false
+        event.value = copy
+        songs.value = snapshot.songs
+        types.value = snapshot.eventTypes
+      },
+      apply([liveEvent, liveSongs, liveTypes]) {
+        if (isStageOpen.value && event.value) {
+          refreshAfterStage = true
+          return false
+        }
+        event.value = liveEvent
+        songs.value = liveSongs || []
+        types.value = liveTypes || []
+      },
+    })
+    if (outcome === 'superseded') return
+    if (outcome === 'copy') {
+      isEventModalOpen.value = false
+      isCopyModalOpen.value = false
     }
-
-    if (eventResponse.status === 404) {
+    if (outcome === 'notFound') {
       event.value = null
-      throw new Error(t('agenda.notFound'))
+      error.value = t('agenda.notFound')
+    } else if (outcome === 'offline') {
+      event.value = null
+      error.value = t('offline.notDownloaded')
+    } else if (outcome === 'failed') {
+      error.value = t('agenda.loadingError')
     }
-    if (responses.some((response) => !response.ok)) {
-      throw new Error(t('agenda.loadingError'))
-    }
-
-    event.value = (await eventResponse.json()).data
-    songs.value = (await songsResponse.json()).data || []
-    types.value = (await typesResponse.json()).data || []
+    loading.value = false
   } catch (exception) {
     handleError(exception)
-  } finally {
     loading.value = false
   }
 }
@@ -186,10 +207,12 @@ async function loadData() {
 // ---- Event ----
 function onEventSaved(saved) {
   event.value = saved
+  scheduleCopySync()
   showSuccess(t('agenda.successUpdate'))
 }
 
 async function deleteEvent() {
+  if (showingCopy.value) return
   if (!confirm(t('agenda.confirmDelete', { name: eventName(event.value), date: formatDate(event.value.date) }))) return
   try {
     const response = await fetch(`${apiBaseUrl}/api/events/${event.value.id}`, {
@@ -197,6 +220,7 @@ async function deleteEvent() {
       headers: getAuthHeader(),
     })
     if (!response.ok) throw new Error(t('errors.genericError'))
+    scheduleCopySync()
     await router.push(agendaLink.value)
   } catch (exception) {
     handleError(exception)
@@ -214,8 +238,9 @@ function setlistItems(setlist) {
   )
 }
 
+// Saves the whole setlist, so it must never run from an old copy
 async function persistOrder() {
-  if (!event.value) return
+  if (!event.value || showingCopy.value) return
   savingSongs.value = true
   error.value = ''
   try {
@@ -229,17 +254,18 @@ async function persistOrder() {
       throw new Error(body?.message || t('errors.genericError'))
     }
     event.value = (await response.json()).data
+    scheduleCopySync()
   } catch (exception) {
-    handleError(exception)
-    // Reload authoritative state on failure
+    // Reload authoritative state on failure; loading clears errors, so report after it
     await loadData()
+    handleError(exception)
   } finally {
     savingSongs.value = false
   }
 }
 
 function addSong(song) {
-  if (!event.value) return
+  if (!event.value || showingCopy.value) return
   event.value.setlist.push({
     id: tempKeySeq--,
     type: 'song',
@@ -253,7 +279,7 @@ function addSong(song) {
 }
 
 function addPause() {
-  if (!event.value) return
+  if (!event.value || showingCopy.value) return
   event.value.setlist.push({
     id: tempKeySeq--,
     type: 'pause',
@@ -268,13 +294,13 @@ function addPause() {
 }
 
 function removeSong(index) {
-  if (!event.value) return
+  if (!event.value || showingCopy.value) return
   event.value.setlist.splice(index, 1)
   persistOrder()
 }
 
 function moveSong(index, delta) {
-  if (!event.value) return
+  if (!event.value || showingCopy.value) return
   const list = event.value.setlist
   const target = index + delta
   if (target < 0 || target >= list.length) return
@@ -291,7 +317,7 @@ function onDragStart(index) {
 }
 
 function onDrop(index) {
-  if (dragIndex.value === null || dragIndex.value === index) {
+  if (showingCopy.value || dragIndex.value === null || dragIndex.value === index) {
     dragIndex.value = null
     return
   }
@@ -304,6 +330,7 @@ function onDrop(index) {
 
 // ---- Copy setlist to another date ----
 function openCopy() {
+  if (showingCopy.value) return
   copyDate.value = ''
   copyTargets.value = []
   copyTargetId.value = 'new'
@@ -368,6 +395,7 @@ async function submitCopy() {
 
     const copied = (await response.json()).data
     isCopyModalOpen.value = false
+    scheduleCopySync()
     await router.push(`/agenda/${copied.id}`)
     showSuccess(t('repertoires.copySuccess'))
   } catch (exception) {
@@ -451,17 +479,13 @@ function onAfterPrint() {
 
 // Copying navigates to another event without leaving this page
 watch(eventId, () => {
+  // The builder must never sit there showing the previous event's setlist
+  event.value = null
   songFilter.value = ''
   loadData()
 })
 
-onMounted(async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    await router.push('/login')
-    return
-  }
-
+onMounted(() => {
   loadData()
   window.addEventListener('beforeprint', setPrintedAt)
   window.addEventListener('afterprint', onAfterPrint)
@@ -504,6 +528,7 @@ onBeforeUnmount(() => {
         class="no-print"
         :setlist="event.setlist"
         :show-artists="showArtists"
+        :event-id="eventId"
         @close="closeStage"
       />
     </Teleport>
@@ -511,6 +536,7 @@ onBeforeUnmount(() => {
     <div class="no-print">
     <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
     <div v-if="error" class="alert alert-error">{{ error }}</div>
+    <OfflineBar />
 
     <div class="content">
       <router-link :to="agendaLink" class="back-link">
@@ -529,10 +555,10 @@ onBeforeUnmount(() => {
               <h2>{{ eventName(event) }}</h2>
             </div>
             <div class="section-actions">
-              <button @click="isEventModalOpen = true" class="btn-secondary" :title="$t('actions.edit')">
+              <button @click="isEventModalOpen = true" :disabled="showingCopy" class="btn-secondary" :title="$t('actions.edit')">
                 <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
               </button>
-              <button @click="deleteEvent" class="btn-delete" :title="$t('actions.delete')" :aria-label="$t('actions.delete')">
+              <button @click="deleteEvent" :disabled="showingCopy" class="btn-delete" :title="$t('actions.delete')" :aria-label="$t('actions.delete')">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -577,7 +603,7 @@ onBeforeUnmount(() => {
               <button @click="openStage" :disabled="event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.stageViewHint')">
                 <i class="fa-solid fa-mobile-screen"></i> {{ $t('repertoires.stageView') }}
               </button>
-              <button @click="openCopy" :disabled="event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.copy')">
+              <button @click="openCopy" :disabled="showingCopy || event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.copy')">
                 <i class="fa-solid fa-copy"></i> {{ $t('repertoires.copy') }}
               </button>
               <button @click="shareRepertoire" class="btn-secondary" :title="$t('repertoires.shareText')">
@@ -589,7 +615,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="builder-columns">
+          <fieldset class="builder-columns" :disabled="showingCopy">
             <!-- Current setlist (ordered, reorderable) -->
             <div class="builder-panel">
               <div class="panel-head">
@@ -605,7 +631,7 @@ onBeforeUnmount(() => {
                   :key="song.id"
                   class="song-order-item"
                   :class="{ 'is-pause': song.type === 'pause' }"
-                  draggable="true"
+                  :draggable="!showingCopy"
                   @dragstart="onDragStart(index)"
                   @dragover.prevent
                   @drop="onDrop(index)"
@@ -661,7 +687,7 @@ onBeforeUnmount(() => {
                 </li>
               </ul>
             </div>
-          </div>
+          </fieldset>
         </section>
       </template>
     </div>
@@ -825,10 +851,13 @@ onBeforeUnmount(() => {
   color: var(--text-h, #1a202c);
 }
 .builder-columns {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: none;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-top: 16px;
 }
 @media (max-width: 768px) {
   .builder-columns {

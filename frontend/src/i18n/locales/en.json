@@ -340,5 +340,25 @@
       "added": "Super admin added!",
       "confirmDisable": "Disable {name}? They lose access to this panel right away."
     }
+  },
+  "offline": {
+    "noCopy": "No connection, and nothing has been downloaded to this device yet.",
+    "offline": "No connection. Showing data from {when}.",
+    "expired": "Your session has expired. Showing data from {when}.",
+    "saved": "Available offline. Updated {when}.",
+    "stale": "It may be out of date.",
+    "installHint": "Add it to your home screen to keep the data stored.",
+    "downloadAgain": "Download again",
+    "downloadFailed": "Couldn't download right now.",
+    "signIn": "Sign in to update",
+    "notDownloaded": "This event wasn't downloaded for offline use.",
+    "monthNotDownloaded": "This month wasn't downloaded for offline use.",
+    "viewLyrics": "View lyrics",
+    "backToStage": "Back to the phone view",
+    "noticeTitle": "This screen needs internet",
+    "noticeText": "The calendar, songs and downloaded lyrics stay available offline.",
+    "goToAgenda": "Go to the calendar",
+    "retry": "Try again",
+    "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?"
   }
 }

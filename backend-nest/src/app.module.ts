@@ -12,10 +12,11 @@ import { EventModule } from './event/event.module';
 import { EventTypeModule } from './event-type/event-type.module';
 import { BandModule } from './band/band.module';
 import { AdminModule } from './admin/admin.module';
+import { OfflineModule } from './offline/offline.module';
 import { RequestContextMiddleware } from './common/request-context.middleware';
 
 @Module({
-  imports: [PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, EventModule, EventTypeModule, BandModule, AdminModule],
+  imports: [PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, EventModule, EventTypeModule, BandModule, AdminModule, OfflineModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

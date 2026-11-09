@@ -64,6 +64,17 @@ describe('SongService', () => {
     expect(songs[0]).not.toHaveProperty('lyrics');
   });
 
+  it('should include every lyric in the offline listing, only for current songs of the band', async () => {
+    prisma.song.findMany.mockResolvedValue([{ ...baseSong, lyrics: 'Amor da minha vida' }]);
+
+    const songs = await service.findAllWithLyrics();
+
+    expect(songs[0].lyrics).toBe('Amor da minha vida');
+    expect(prisma.song.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { bandId: 1, deletedAt: null } }),
+    );
+  });
+
   it('should return the lyrics of a single song of the band', async () => {
     prisma.song.findFirst.mockResolvedValue({ ...baseSong, lyrics: 'Amor da minha vida' });
 

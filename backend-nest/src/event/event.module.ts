@@ -9,5 +9,6 @@ import { CommonModule } from '../common/common.module';
   imports: [PrismaModule, LogModule, CommonModule],
   controllers: [EventController],
   providers: [EventService],
+  exports: [EventService],
 })
 export class EventModule {}

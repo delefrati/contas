@@ -119,6 +119,14 @@ bash scripts/sync-from-prod.sh
 
 Note: The server does not have the source code — images are always built locally and uploaded.
 
+Phones that installed the app pick up a new version the next time the app is closed and reopened,
+never while it is open.
+
+If a release breaks the installed app, add `selfDestroying: true` to the `VitePWA` options in
+`frontend/vite.config.js` and deploy. The next time each phone opens the app, the service worker
+removes itself and the app goes back to loading from the network. Remove the option once a fixed
+version is ready.
+
 ## 7) Backup database (optional)
 
 ```bash

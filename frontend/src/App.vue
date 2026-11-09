@@ -1,11 +1,15 @@
 <script setup>
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useBand } from './composables/useBand'
+import OfflineNotice from './components/OfflineNotice.vue'
+import { connectionLost } from './offline/connection'
+import { accessRevoked } from './offline/snapshot'
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const { band, logoUrl } = useBand()
 
 watch([locale, () => route.meta.titleKey, band], () => {
@@ -21,10 +25,21 @@ watch(logoUrl, (url) => {
   icon.href = url || '/favicon.svg'
   icon.type = url ? '' : 'image/svg+xml'
 }, { immediate: true })
+
+// Screens that need the server say so, instead of a pile of failed requests
+const needsConnection = computed(() =>
+  connectionLost.value && (route.name === 'Login' || (route.meta.requiresAuth && !route.meta.offline)),
+)
+
+// Once the server says access is gone there's nothing left to show, but a show isn't interrupted
+watch([accessRevoked, () => route.query.visualizar], ([revoked, stage]) => {
+  if (revoked && stage !== '1') router.replace({ path: '/login', query: { reason: 'expired' } })
+})
 </script>
 
 <template>
-  <router-view />
+  <OfflineNotice v-if="needsConnection" />
+  <router-view v-else />
 </template>
 
 <style>

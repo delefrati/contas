@@ -147,6 +147,34 @@ describe('EventService', () => {
     });
   });
 
+  describe('findAllWithSetlists', () => {
+    const setlist = [
+      { id: 1, type: 'song', songId: 3, label: null, position: 0, song: { title: 'Exagerado', artist: 'Cazuza', notes: null, lyrics: 'Amor da minha vida' } },
+      { id: 2, type: 'pause', songId: null, label: 'BIS', position: 1, song: null },
+    ];
+
+    it('should only read current events of the band in the date range', async () => {
+      prisma.event.findMany.mockResolvedValue([]);
+
+      await service.findAllWithSetlists('2026-10-01', '2027-11-09');
+
+      expect(prisma.event.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { bandId: 1, deletedAt: null, date: { gte: '2026-10-01', lte: '2027-11-09' } },
+        }),
+      );
+    });
+
+    it('should return events exactly as findOne does', async () => {
+      prisma.event.findMany.mockResolvedValue([{ ...baseEvent, setlist }]);
+      prisma.event.findFirst.mockResolvedValue({ ...baseEvent, setlist });
+
+      const [listed] = await service.findAllWithSetlists('2026-10-01', '2027-11-09');
+
+      expect(listed).toEqual(await service.findOne(5));
+    });
+  });
+
   describe('create', () => {
     beforeEach(() => {
       prisma.event.create.mockImplementation(({ data }) => Promise.resolve({ ...baseEvent, ...data, id: 9 }));

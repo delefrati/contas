@@ -1,15 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import 'fake-indexeddb/auto'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { ref } from 'vue'
 import EventDetail from './EventDetail.vue'
+import { deleteRecord, writeRecord } from '../offline/db'
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 vi.mock('../composables/useAuth', () => ({
   useAuth: () => ({
+    isLoggedIn: { value: true },
+    sessionExpired: { value: false },
+    handleUnauthorized: vi.fn().mockResolvedValue('expired'),
+    syncCopy: vi.fn(),
+    readCopy: async () => (await import('../offline/snapshot')).readSnapshot(),
+    scheduleCopySync: vi.fn(),
     logout: vi.fn(),
     getCurrentUser: vi.fn().mockResolvedValue({ memberId: 1, name: 'Test User' }),
     getAuthHeader: () => ({ Authorization: 'Bearer fake-token' }),
@@ -70,6 +78,8 @@ async function createWrapper() {
       },
     },
   })
+  // The downloaded copy is read from IndexedDB, which takes more than a promise tick
+  await vi.waitFor(() => expect(wrapper.vm.$.setupState.loading).toBe(false))
   await flushPromises()
   return { wrapper, router }
 }
@@ -90,6 +100,54 @@ describe('EventDetail', () => {
       if (options.method === 'POST') return respond({ ...show, id: 20 })
       if (options.method === 'PATCH') return respond({ ...show, id: 21 })
       return respond(show)
+    })
+  })
+
+  describe('without a connection', () => {
+    beforeEach(async () => {
+      await writeRecord({ owner: 'm:1', savedAt: Date.now(), data: { window: {}, events: [show], songs: [], eventTypes: [showType] } })
+      mockFetch.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')))
+    })
+
+    afterEach(() => deleteRecord())
+
+    it('should show the downloaded setlist', async () => {
+      const { wrapper } = await createWrapper()
+
+      expect(wrapper.find('.event-heading').text()).toContain('Bar do Zé')
+      expect(wrapper.findAll('.song-order-item')).toHaveLength(3)
+      expect(wrapper.find('.alert-error').exists()).toBe(false)
+    })
+
+    it('should not let an old copy be edited', async () => {
+      const { wrapper } = await createWrapper()
+
+      expect(wrapper.find('fieldset.builder-columns').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('.song-order-item').attributes('draggable')).toBe('false')
+      await wrapper.vm.$.setupState.removeSong(0)
+      wrapper.vm.$.setupState.onDragStart(0)
+      await wrapper.vm.$.setupState.onDrop(1)
+
+      expect(wrapper.findAll('.song-order-item')).toHaveLength(3)
+      expect(mockFetch.mock.calls.filter(([, options]) => options?.method === 'PATCH')).toHaveLength(0)
+    })
+
+    it('should not leave the previous setlist on screen when moving to an event not downloaded', async () => {
+      const { wrapper, router } = await createWrapper()
+      expect(wrapper.findAll('.song-order-item')).toHaveLength(3)
+
+      await router.push('/agenda/999')
+      await vi.waitFor(() => expect(wrapper.find('.alert-error').exists()).toBe(true))
+
+      expect(wrapper.find('.song-order-item').exists()).toBe(false)
+    })
+
+    it('should say when this event was not downloaded', async () => {
+      await writeRecord({ owner: 'm:1', savedAt: Date.now(), data: { window: {}, events: [], songs: [], eventTypes: [] } })
+
+      const { wrapper } = await createWrapper()
+
+      expect(wrapper.find('.alert-error').text()).toBe('offline.notDownloaded')
     })
   })
 

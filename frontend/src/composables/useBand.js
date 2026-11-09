@@ -1,5 +1,8 @@
 import { computed, ref } from 'vue'
 import { centralUrl, currentBandSlug, isCentralHost } from '../hosts'
+import { fetchJson } from '../offline/connection'
+import { readSnapshot, wipeCopy } from '../offline/snapshot'
+import { isStageOpen } from '../offline/stage'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
@@ -9,18 +12,20 @@ let request = null
 
 async function fetchBand() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/band`)
+    const response = await fetchJson(`${API_BASE_URL}/api/band`)
     // Every subdomain reaches the app, including ones no active band uses
     if (response.status === 404 && currentBandSlug()) {
+      // Also how a disabled band shows up: its copy goes, but never in the middle of a show
+      await wipeCopy()
+      if (isStageOpen()) return true
       window.location.replace(centralUrl())
       return false
     }
-    if (response.ok) {
-      const body = await response.json()
-      band.value = body.data ?? null
-    }
+    if (response.ok) band.value = response.body?.data ?? null
   } catch {
-    // Band name is cosmetic; the app works without it
+    // Without a connection the downloaded copy still knows the name and logo
+    const snapshot = await readSnapshot()
+    if (snapshot) band.value = snapshot.band
   }
   return true
 }

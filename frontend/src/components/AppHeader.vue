@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import LanguageSelector from './LanguageSelector.vue'
 import { adminUrl } from '../hosts'
+import { connectionLost } from '../offline/connection'
+import { copyInfo } from '../offline/snapshot'
 
 defineProps({
   icon: { type: String, required: true },
@@ -20,13 +22,13 @@ const emit = defineEmits(['edit-logo'])
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { logout, member } = useAuth()
+const { logout, member, sessionExpired } = useAuth()
 const showLanguageSelector = ref(false)
 
 const sections = [
   { path: '/dashboard', icon: 'fa-house', titleKey: 'home.title' },
-  { path: '/agenda', icon: 'fa-calendar-days', titleKey: 'agenda.title' },
-  { path: '/musicas', icon: 'fa-music', titleKey: 'songs.title' },
+  { path: '/agenda', icon: 'fa-calendar-days', titleKey: 'agenda.title', offline: true },
+  { path: '/musicas', icon: 'fa-music', titleKey: 'songs.title', offline: true },
   { path: '/financeiro', icon: 'fa-coins', titleKey: 'finance.title' },
   { path: '/integrantes', icon: 'fa-users', titleKey: 'members.title' },
   { path: '/registros', icon: 'fa-clock-rotate-left', titleKey: 'logs.title' },
@@ -34,8 +36,15 @@ const sections = [
 
 const otherSections = computed(() => sections.filter((s) => s.path !== route.path))
 
+const unavailableOffline = computed(() => connectionLost.value || sessionExpired.value)
+
+// Leaving deletes the download, and without a connection it can't be fetched again
+function confirmLogoutMessage() {
+  return unavailableOffline.value && copyInfo.value ? t('offline.confirmLogout') : t('app.confirmLogout')
+}
+
 async function handleLogout() {
-  if (confirm(t('app.confirmLogout'))) {
+  if (confirm(confirmLogoutMessage())) {
     await logout()
     router.push('/login')
   }
@@ -68,6 +77,7 @@ async function handleLogout() {
             :key="section.path"
             :to="section.path"
             class="nav-link"
+            :class="{ 'is-unavailable': unavailableOffline && !section.offline }"
             :title="$t(section.titleKey)"
             :aria-label="$t(section.titleKey)"
           >
@@ -163,6 +173,9 @@ async function handleLogout() {
   color: var(--accent);
   text-decoration: none;
   transition: background 0.15s;
+}
+.nav-link.is-unavailable {
+  opacity: 0.4;
 }
 .nav-link:hover {
   background: var(--accent-light);

@@ -9,5 +9,6 @@ import { CommonModule } from '../common/common.module';
   imports: [PrismaModule, LogModule, CommonModule],
   controllers: [SongController],
   providers: [SongService],
+  exports: [SongService],
 })
 export class SongModule {}

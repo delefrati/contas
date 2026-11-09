@@ -11,7 +11,7 @@ import { eventName } from '../utils/events'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { logout, getAuthHeader, member, getCurrentUser } = useAuth()
+const { handleUnauthorized, getAuthHeader, member, getCurrentUser } = useAuth()
 const { band, logoUrl } = useBand()
 const isLogoModalOpen = ref(false)
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
@@ -63,7 +63,7 @@ async function loadData() {
     ])
 
     if (responses.some((response) => response.status === 401)) {
-      await logout()
+      await handleUnauthorized()
       await router.push({ path: '/login', query: { reason: 'expired' } })
       return
     }

@@ -8,7 +8,7 @@ import Modal from '../components/Modal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { handleUnauthorized, getAuthHeader, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const members = ref([])
@@ -41,7 +41,7 @@ async function loadData() {
     const response = await fetch(`${apiBaseUrl}/api/members`, { headers: getAuthHeader() })
 
     if (response.status === 401) {
-      await logout()
+      await handleUnauthorized()
       await router.push({ path: '/login', query: { reason: 'expired' } })
       return
     }

@@ -52,6 +52,52 @@ describe('StageView', () => {
     mounted = []
   })
 
+  describe('coming back after the phone killed the app', () => {
+    function savedPosition(position) {
+      localStorage.setItem('stage_view_position', JSON.stringify({ savedAt: Date.now(), ...position }))
+    }
+
+    it('should reopen on the same block', () => {
+      savedPosition({ eventId: 7, index: 1, lyricsNumber: null })
+
+      const wrapper = createWrapper({ eventId: 7 })
+
+      expect(wrapper.text()).toContain('Malandragem')
+      expect(wrapper.text()).not.toContain('Exagerado')
+    })
+
+    it('should reopen on the same lyrics', () => {
+      savedPosition({ eventId: 7, index: 0, lyricsNumber: 1 })
+
+      expect(createWrapper({ eventId: 7 }).text()).toContain('Amor da minha vida')
+    })
+
+    it('should ignore the place in another event, or one that no longer exists', () => {
+      savedPosition({ eventId: 8, index: 1, lyricsNumber: null })
+      expect(createWrapper({ eventId: 7 }).text()).toContain('Exagerado')
+
+      savedPosition({ eventId: 7, index: 99, lyricsNumber: 99 })
+      expect(createWrapper({ eventId: 7 }).text()).toContain('Exagerado')
+    })
+
+    it('should ignore a place from a previous day', () => {
+      savedPosition({ eventId: 7, index: 1, lyricsNumber: null, savedAt: Date.now() - 9 * 3600_000 })
+
+      expect(createWrapper({ eventId: 7 }).text()).toContain('Exagerado')
+    })
+
+    it('should remember the place while open and forget it when closed', async () => {
+      const wrapper = createWrapper({ eventId: 7 })
+      await tapRight(wrapper)
+
+      expect(JSON.parse(localStorage.getItem('stage_view_position'))).toMatchObject({ eventId: 7, index: 1 })
+
+      wrapper.unmount()
+      mounted = mounted.filter((w) => w !== wrapper)
+      expect(localStorage.getItem('stage_view_position')).toBeNull()
+    })
+  })
+
   it('should show the first block and a peek at the next one', () => {
     const wrapper = createWrapper()
     const sections = wrapper.findAll('.stage-block')

@@ -192,7 +192,8 @@ describe('useAuth', () => {
       const { loginWithGoogle, getCurrentUser, isLoggedIn } = useAuth()
       await loginWithGoogle('cred')
 
-      mockFetch.mockResolvedValueOnce({ ok: false, status: 401 })
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401, json: () => Promise.resolve({}) })
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({ data: { state: 'expired' } }) })
       await getCurrentUser()
 
       expect(isLoggedIn.value).toBe(false)

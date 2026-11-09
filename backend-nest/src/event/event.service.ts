@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
@@ -78,6 +79,16 @@ type EventFields = {
   location?: string | null;
   notes?: string | null;
 };
+
+const WITH_SETLIST = {
+  type: true,
+  setlist: {
+    include: { song: true },
+    orderBy: { position: 'asc' as const },
+  },
+};
+
+type EventWithSetlist = Prisma.EventGetPayload<{ include: typeof WITH_SETLIST }>;
 
 @Injectable()
 export class EventService {
@@ -238,22 +249,7 @@ export class EventService {
     }));
   }
 
-  async findOne(id: number): Promise<EventDto> {
-    const event = await this.prisma.event.findFirst({
-      where: { id, bandId: this.requestContext.requireBandId() },
-      include: {
-        type: true,
-        setlist: {
-          include: { song: true },
-          orderBy: { position: 'asc' },
-        },
-      },
-    });
-
-    if (!event || event.deletedAt) {
-      throw new NotFoundException('Event not found.');
-    }
-
+  private mapToDtoWithSetlist(event: EventWithSetlist): EventDto {
     return {
       ...this.mapToDto(event),
       songCount: event.setlist.filter((entry) => entry.type === 'song').length,
@@ -269,6 +265,34 @@ export class EventService {
         position: entry.position,
       })),
     };
+  }
+
+  async findOne(id: number): Promise<EventDto> {
+    const event = await this.prisma.event.findFirst({
+      where: { id, bandId: this.requestContext.requireBandId() },
+      include: WITH_SETLIST,
+    });
+
+    if (!event || event.deletedAt) {
+      throw new NotFoundException('Event not found.');
+    }
+
+    return this.mapToDtoWithSetlist(event);
+  }
+
+  // Same shape as findOne, in one query: phones download a whole date range for offline use
+  async findAllWithSetlists(from: string, to: string): Promise<EventDto[]> {
+    const events = await this.prisma.event.findMany({
+      where: {
+        bandId: this.requestContext.requireBandId(),
+        deletedAt: null,
+        date: { gte: from, lte: to },
+      },
+      include: WITH_SETLIST,
+      orderBy: [{ date: 'asc' }, { time: 'asc' }, { id: 'asc' }],
+    });
+
+    return events.map((event) => this.mapToDtoWithSetlist(event));
   }
 
   async create(dto: CreateEventDto): Promise<EventDto> {

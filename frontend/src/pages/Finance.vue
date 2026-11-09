@@ -10,7 +10,7 @@ import { formatDate as formatLocalDate, localeTag, todayISO } from '../utils/dat
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { logout, getAuthHeader, getCurrentUser } = useAuth()
+const { handleUnauthorized, getAuthHeader, getCurrentUser } = useAuth()
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const health = ref('loading...')
@@ -196,7 +196,7 @@ async function loadData() {
 
     const responses = [healthResponse, expensesResponse, membersResponse, reportResponse, typesResponse]
     if (responses.some((response) => response.status === 401)) {
-      await logout()
+      await handleUnauthorized()
       await router.push({ path: '/login', query: { reason: 'expired' } })
       return
     }
