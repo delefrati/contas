@@ -397,5 +397,11 @@
     "intro": "How to use minhabanda.com, screen by screen. Pick a part:",
     "onlyPortuguese": "For now the manual is only available in Portuguese.",
     "loginHelp": "Can't sign in? See the help"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This address does not exist on minhabanda.com. It may have been mistyped, or the page has moved.",
+    "home": "Go to the start",
+    "help": "See the help"
   }
 }

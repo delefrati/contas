@@ -397,5 +397,11 @@
     "intro": "Cómo usar minhabanda.com, pantalla por pantalla. Elige una parte:",
     "onlyPortuguese": "Por ahora el manual solo está disponible en portugués.",
     "loginHelp": "¿No puedes entrar? Mira la ayuda"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "text": "Esta dirección no existe en minhabanda.com. Puede que se haya escrito mal o que la página haya cambiado de lugar.",
+    "home": "Ir al inicio",
+    "help": "Ver la ayuda"
   }
 }

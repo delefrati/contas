@@ -10,6 +10,7 @@ import Agenda from '../pages/Agenda.vue'
 import EventDetail from '../pages/EventDetail.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
 import Manual from '../pages/Manual.vue'
+import NotFound from '../pages/NotFound.vue'
 import AdminBands from '../pages/admin/AdminBands.vue'
 import AdminBand from '../pages/admin/AdminBand.vue'
 import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
@@ -113,6 +114,13 @@ const routes = [
     path: '/',
     redirect: '/dashboard',
   },
+  // Any other address, on every host: like the manual, it needs no band, session or connection
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFound,
+    meta: { requiresAuth: false, notFound: true, titleKey: 'notFound.title' },
+  },
 ]
 
 const router = createRouter({
@@ -122,9 +130,9 @@ const router = createRouter({
 
 // Navigation guard to check authentication
 router.beforeEach(async (to, from, next) => {
-  // Static text bundled with the app: no band, session or connection to wait for, so someone
-  // who can't sign in, or has no signal, can still read it
-  if (to.meta.manual) {
+  // Static text bundled with the app (the manual, the not found page): no band, session or
+  // connection to wait for, so someone who can't sign in, or has no signal, can still read it
+  if (to.meta.manual || to.meta.notFound) {
     next()
     return
   }

@@ -397,5 +397,11 @@
     "intro": "Como usar o minhabanda.com, tela por tela. Escolha uma parte:",
     "onlyPortuguese": "Por enquanto o manual existe só em português.",
     "loginHelp": "Não consegue entrar? Veja a ajuda"
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "text": "Este endereço não existe no minhabanda.com. Pode ter sido digitado errado ou a página mudou de lugar.",
+    "home": "Ir para o início",
+    "help": "Ver a ajuda"
   }
 }
