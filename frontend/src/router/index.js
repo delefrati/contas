@@ -9,6 +9,7 @@ import Songs from '../pages/Songs.vue'
 import Agenda from '../pages/Agenda.vue'
 import EventDetail from '../pages/EventDetail.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
+import Manual from '../pages/Manual.vue'
 import AdminBands from '../pages/admin/AdminBands.vue'
 import AdminBand from '../pages/admin/AdminBand.vue'
 import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
@@ -101,6 +102,13 @@ const routes = [
     component: AdminSuperAdmins,
     meta: { admin: true, titleKey: 'admin.superAdmins.title' },
   },
+  // The user manual, the same on every host: it opens signed out and offline (see the guard)
+  {
+    path: '/ajuda/:part?',
+    name: 'Manual',
+    component: Manual,
+    meta: { requiresAuth: false, offline: true, manual: true, titleKey: 'manual.title' },
+  },
   {
     path: '/',
     redirect: '/dashboard',
@@ -114,6 +122,13 @@ const router = createRouter({
 
 // Navigation guard to check authentication
 router.beforeEach(async (to, from, next) => {
+  // Static text bundled with the app: no band, session or connection to wait for, so someone
+  // who can't sign in, or has no signal, can still read it
+  if (to.meta.manual) {
+    next()
+    return
+  }
+
   if (to.meta.admin) {
     // Band subdomains don't serve the admin panel
     if (currentBandSlug()) {

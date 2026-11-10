@@ -388,5 +388,14 @@
     "goToAgenda": "Go to the calendar",
     "retry": "Try again",
     "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?"
+  },
+  "manual": {
+    "title": "Help",
+    "open": "Help",
+    "back": "Back",
+    "index": "Contents",
+    "intro": "How to use minhabanda.com, screen by screen. Pick a part:",
+    "onlyPortuguese": "For now the manual is only available in Portuguese.",
+    "loginHelp": "Can't sign in? See the help"
   }
 }

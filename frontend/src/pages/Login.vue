@@ -31,6 +31,9 @@
 
       <div class="login-info">
         <p>{{ t('login.info') }}</p>
+        <router-link to="/ajuda/entrar" class="login-help">
+          <i class="fa-solid fa-circle-question"></i> {{ t('manual.loginHelp') }}
+        </router-link>
       </div>
     </div>
   </div>
@@ -202,6 +205,20 @@ h1 {
   font-size: 13px;
   margin: 0;
   line-height: 1.5;
+}
+
+.login-help {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 0;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.login-help:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 480px) {

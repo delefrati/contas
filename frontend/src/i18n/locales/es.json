@@ -388,5 +388,14 @@
     "goToAgenda": "Ir a la agenda",
     "retry": "Reintentar",
     "confirmLogout": "Al salir, los datos descargados se borrarán de este dispositivo y solo se recuperan con internet. ¿Salir de todos modos?"
+  },
+  "manual": {
+    "title": "Ayuda",
+    "open": "Ayuda",
+    "back": "Volver",
+    "index": "Índice",
+    "intro": "Cómo usar minhabanda.com, pantalla por pantalla. Elige una parte:",
+    "onlyPortuguese": "Por ahora el manual solo está disponible en portugués.",
+    "loginHelp": "¿No puedes entrar? Mira la ayuda"
   }
 }

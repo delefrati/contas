@@ -388,5 +388,14 @@
     "goToAgenda": "Ir para a agenda",
     "retry": "Tentar de novo",
     "confirmLogout": "Ao sair, os dados baixados serão apagados deste aparelho e só voltam com internet. Sair mesmo assim?"
+  },
+  "manual": {
+    "title": "Ajuda",
+    "open": "Ajuda",
+    "back": "Voltar",
+    "index": "Índice",
+    "intro": "Como usar o minhabanda.com, tela por tela. Escolha uma parte:",
+    "onlyPortuguese": "Por enquanto o manual existe só em português.",
+    "loginHelp": "Não consegue entrar? Veja a ajuda"
   }
 }

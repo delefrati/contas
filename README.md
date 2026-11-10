@@ -15,6 +15,15 @@ Band management app ([minhabanda.com](https://minhabanda.com)) — calendar of s
 - `/mysql/init`: database initialization scripts
 - `docker-compose.yml`: service orchestration
 
+## User manual
+
+The manual for members and super admins, in Portuguese, is in
+[`frontend/src/manual/`](frontend/src/manual), one markdown file per part, starting with
+[`entrar.md`](frontend/src/manual/entrar.md). The app shows it at `/ajuda`, signed out and
+offline too, with a Help link on every screen; its screenshots are in
+[`frontend/public/manual/`](frontend/public/manual). When a screen changes, update its part and
+retake its screenshot from a local stack with made-up data (see the `/verify` skill).
+
 ## Tickets
 
 Work is planned in [`tickets/`](tickets), one markdown file per ticket, read by

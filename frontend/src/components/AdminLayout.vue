@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useAdmin } from '../composables/useAdmin'
 import { renderGoogleButton } from '../utils/googleSignIn'
 import LanguageSelector from './LanguageSelector.vue'
+import { helpPath } from '../manual'
 
 defineProps({
   icon: { type: String, required: true },
@@ -91,6 +92,14 @@ onMounted(async () => {
               :aria-label="$t(section.titleKey)"
             >
               <i class="fa-solid" :class="section.icon"></i>
+            </router-link>
+            <router-link
+              :to="helpPath('AdminBands')"
+              class="nav-link"
+              :title="$t('manual.open')"
+              :aria-label="$t('manual.open')"
+            >
+              <i class="fa-solid fa-circle-question"></i>
             </router-link>
           </nav>
           <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">

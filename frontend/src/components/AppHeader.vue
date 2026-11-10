@@ -7,6 +7,7 @@ import LanguageSelector from './LanguageSelector.vue'
 import { adminUrl } from '../hosts'
 import { connectionLost } from '../offline/connection'
 import { copyInfo } from '../offline/snapshot'
+import { helpPath } from '../manual'
 
 defineProps({
   icon: { type: String, required: true },
@@ -35,6 +36,9 @@ const sections = [
 ]
 
 const otherSections = computed(() => sections.filter((s) => s.path !== route.path))
+
+// Opens the manual on the part about this screen; it's bundled, so it works offline too
+const help = computed(() => helpPath(route.name))
 
 const unavailableOffline = computed(() => connectionLost.value || sessionExpired.value)
 
@@ -82,6 +86,14 @@ async function handleLogout() {
             :aria-label="$t(section.titleKey)"
           >
             <i class="fa-solid" :class="section.icon"></i>
+          </router-link>
+          <router-link
+            :to="help"
+            class="nav-link"
+            :title="$t('manual.open')"
+            :aria-label="$t('manual.open')"
+          >
+            <i class="fa-solid fa-circle-question"></i>
           </router-link>
           <a
             v-if="member?.superAdmin"
@@ -187,6 +199,12 @@ async function handleLogout() {
   .nav-link {
     width: 30px;
     height: 30px;
+  }
+}
+/* Seven icons on an event's page (every section, plus help) fit a 360px phone */
+@media (max-width: 400px) {
+  .nav-link {
+    width: 26px;
   }
 }
 </style>

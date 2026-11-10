@@ -100,7 +100,7 @@ describe('Members', () => {
     const wrapper = await createWrapper()
     await flushPromises()
     const links = wrapper.findAll('.nav-link').map((a) => a.attributes('href'))
-    expect(links).toEqual(['/dashboard', '/agenda', '/musicas', '/financeiro', '/registros'])
+    expect(links).toEqual(['/dashboard', '/agenda', '/musicas', '/financeiro', '/registros', '/ajuda/integrantes'])
   })
 
   it('should toggle a member', async () => {
