@@ -1,1 +1,5 @@
-[]
+- number: 1
+  start: 2026-11-10
+  end: 2026-11-23
+  state: active
+  goal: Manual do sistema no app, e a autenticação sem as brechas mais simples

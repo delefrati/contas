@@ -2,7 +2,7 @@
 id: MB-1
 title: "Refuse to start without a strong JWT_SECRET"
 status: todo
-sprint: backlog
+sprint: 1
 points: 1
 epic: security
 ---

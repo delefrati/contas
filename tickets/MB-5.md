@@ -2,7 +2,7 @@
 id: MB-5
 title: "Run npm audit in CI"
 status: todo
-sprint: backlog
+sprint: 1
 points: 1
 epic: security
 ---
