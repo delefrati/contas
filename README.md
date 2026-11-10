@@ -15,6 +15,13 @@ Band management app ([minhabanda.com](https://minhabanda.com)) — calendar of s
 - `/mysql/init`: database initialization scripts
 - `docker-compose.yml`: service orchestration
 
+## Tickets
+
+Work is planned in [`tickets/`](tickets), one markdown file per ticket, read by
+[sprintdown](https://github.com/delefrati/sprintdown). With `sprintdown` on your `PATH`, run
+`sprintdown serve` here for the board, and `sprintdown check` to validate the tickets. How to
+write one is in [`tickets/INSTRUCTIONS.md`](tickets/INSTRUCTIONS.md).
+
 ## Getting Started
 
 Create the environment file in the project root:

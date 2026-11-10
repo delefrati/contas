@@ -1,0 +1,15 @@
+# sprintdown settings for minhabanda.com. See
+# https://github.com/delefrati/sprintdown-docs/blob/main/docs/design.md#configuration
+tickets_dir: tickets
+sprints_file: tickets/sprints.yml
+id_prefix: MB
+statuses: [todo, in-progress, done]
+done_statuses: [done]
+branch: main
+remote: origin
+avatar_url: https://github.com/{owner}.png?size=64
+people: [delefrati]
+# The rules for tickets, as tickets/INSTRUCTIONS.md sets them out
+required_fields: [points, epic]
+required_text: ["**Done when:**"]
+allowed_points: [1, 2, 3, 5, 8]
