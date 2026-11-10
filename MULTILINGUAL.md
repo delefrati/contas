@@ -66,6 +66,20 @@ This project now supports **Portuguese (PT)**, **English (EN)**, and **Spanish (
    - Saves the preference to localStorage
    - Persists across page reloads
 
+### The Browser Doesn't Translate the App
+
+Chrome, Edge and Safari offer to translate a page, and some people have them do it
+automatically. The app opts out: `index.html` has `<html translate="no">` and
+`<meta name="google" content="notranslate">`, so no screen is translated, the installed app
+included. Members switch language with the app's own selector instead.
+
+- **Why:** a browser translation rewrites song titles, lyrics, setlists and people's names, and
+  Google Translate wraps text in `<font>` tags that Vue doesn't know about, which can break the
+  page (a blank screen, `removeChild` errors) when Vue next updates it.
+- **The page's language:** `<html lang>` starts as `pt-BR`, like `manifest.webmanifest`, and
+  `frontend/src/i18n/index.js` keeps it in step with the app's language (`pt-BR`, `en`, `es`),
+  so the browser never takes a Portuguese page for an English one.
+
 ### Adding New Translations
 
 1. Add keys to all three translation files: `pt.json`, `en.json`, `es.json`

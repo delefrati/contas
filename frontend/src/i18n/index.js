@@ -1,4 +1,6 @@
+import { watch } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { localeTag } from '../utils/date'
 import pt from './locales/pt.json'
 import en from './locales/en.json'
 import es from './locales/es.json'
@@ -26,5 +28,11 @@ const i18n = createI18n({
     es,
   },
 })
+
+// The page says which language it's in, so the browser doesn't take Portuguese for another
+// language and offer to translate it
+watch(i18n.global.locale, (locale) => {
+  document.documentElement.lang = localeTag(locale)
+}, { immediate: true, flush: 'sync' })
 
 export default i18n
