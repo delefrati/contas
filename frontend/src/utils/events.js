@@ -6,6 +6,12 @@ export function eventName(event) {
   return event?.title || event?.type?.name || ''
 }
 
+// "21:00–23:30", "21:00" without an end, '' for events without a time
+export function eventTime(event) {
+  if (!event?.time) return ''
+  return event.endTime ? `${event.time}–${event.endTime}` : event.time
+}
+
 // Exposes the type color to CSS as --type-color
 export function typeStyle(type) {
   return { '--type-color': type?.color || TYPE_COLORS[0] }

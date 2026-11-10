@@ -38,6 +38,7 @@ describe('EventService', () => {
     title: 'Bar do Zé',
     date: '2026-10-24',
     time: '21:00',
+    endTime: '',
     location: 'Centro',
     notes: null,
     deletedAt: null,
@@ -100,6 +101,7 @@ describe('EventService', () => {
           title: 'Bar do Zé',
           date: '2026-10-24',
           time: '21:00',
+          endTime: '',
           location: 'Centro',
           notes: null,
           createdAt: createdAt.toISOString(),
@@ -197,12 +199,36 @@ describe('EventService', () => {
           title: '',
           date: '2026-10-28',
           time: '',
+          endTime: '',
           location: null,
           notes: null,
         },
       });
       expect(prisma.eventSong.deleteMany).not.toHaveBeenCalled();
       expect(logService.log).toHaveBeenCalledWith('CREATE', 'event', 9, expect.any(Object));
+    });
+
+    it('should store an end time, even one after midnight', async () => {
+      await service.create({ typeId: 1, date: '2026-10-28', time: '22:00', endTime: '02:00' });
+
+      expect(prisma.event.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ time: '22:00', endTime: '02:00' }),
+      });
+    });
+
+    it('should drop an end time equal to the start', async () => {
+      await service.create({ typeId: 1, date: '2026-10-28', time: '22:00', endTime: '22:00' });
+
+      expect(prisma.event.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ time: '22:00', endTime: '' }),
+      });
+    });
+
+    it('should reject an end time without a start time', async () => {
+      await expect(service.create({ typeId: 1, date: '2026-10-28', endTime: '23:00' })).rejects.toThrow(
+        'An end time needs a start time.',
+      );
+      expect(prisma.event.create).not.toHaveBeenCalled();
     });
 
     it('should copy a setlist given as items, keeping only band songs', async () => {
@@ -260,6 +286,49 @@ describe('EventService', () => {
       });
       expect(prisma.eventSong.deleteMany).toHaveBeenCalledWith({ where: { eventId: 5 } });
       expect(prisma.eventSong.createMany).not.toHaveBeenCalled();
+    });
+
+    it('should set an end time after the start', async () => {
+      prisma.event.findFirst
+        .mockResolvedValueOnce(baseEvent)
+        .mockResolvedValueOnce({ ...baseEvent, setlist: [] });
+
+      await service.update(5, { endTime: '23:30' });
+
+      expect(prisma.event.update).toHaveBeenCalledWith({ where: { id: 5 }, data: { endTime: '23:30' } });
+    });
+
+    it('should clear the end time along with the start time', async () => {
+      prisma.event.findFirst
+        .mockResolvedValueOnce({ ...baseEvent, endTime: '23:30' })
+        .mockResolvedValueOnce({ ...baseEvent, setlist: [] });
+
+      await service.update(5, { time: '' });
+
+      expect(prisma.event.update).toHaveBeenCalledWith({ where: { id: 5 }, data: { time: '', endTime: '' } });
+    });
+
+    it('should keep the end time when only the start changes', async () => {
+      prisma.event.findFirst
+        .mockResolvedValueOnce({ ...baseEvent, endTime: '23:30' })
+        .mockResolvedValueOnce({ ...baseEvent, setlist: [] });
+
+      await service.update(5, { time: '20:00' });
+
+      expect(prisma.event.update).toHaveBeenCalledWith({ where: { id: 5 }, data: { time: '20:00' } });
+    });
+
+    it('should reject an end time on an event without a start time', async () => {
+      prisma.event.findFirst.mockResolvedValueOnce({ ...baseEvent, time: '' });
+
+      await expect(service.update(5, { endTime: '23:00' })).rejects.toThrow('An end time needs a start time.');
+      expect(prisma.event.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject a malformed end time', async () => {
+      prisma.event.findFirst.mockResolvedValueOnce(baseEvent);
+
+      await expect(service.update(5, { endTime: '25:00' })).rejects.toThrow('Invalid end time format.');
     });
 
     it('should change the type only to a current type of the band', async () => {

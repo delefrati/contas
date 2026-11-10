@@ -7,9 +7,33 @@ export class BandDto {
   name!: string;
   // Versioned URL of the uploaded logo, or null when the band has none
   logoUrl!: string | null;
+  // IANA zone the band's event times are in, e.g. America/Sao_Paulo
+  timeZone!: string;
+  // How long calendar apps show an event that has a start time but no end
+  defaultEventMinutes!: number;
+}
+
+export interface CalendarSettings {
+  timeZone?: string;
+  defaultEventMinutes?: number;
 }
 
 export const MAX_LOGO_BYTES = 1024 * 1024;
+
+// From 15 minutes to a whole day
+export const MIN_EVENT_MINUTES = 15;
+export const MAX_EVENT_MINUTES = 24 * 60;
+
+// Any zone the runtime's time zone database knows
+export function isValidTimeZone(timeZone: string): boolean {
+  if (!timeZone || timeZone.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Subdomains that can never be a band
 const RESERVED_SLUGS = ['www', 'api', 'app', 'admin', 'mail', 'static'];
@@ -28,14 +52,30 @@ const LOGO_SIGNATURES: { type: string; matches: (b: Buffer) => boolean }[] = [
 ];
 
 // Everything but the logo bytes, which only the logo endpoint needs
-const BAND_FIELDS = { id: true, slug: true, name: true, logoUpdatedAt: true } as const;
+const BAND_FIELDS = {
+  id: true,
+  slug: true,
+  name: true,
+  logoUpdatedAt: true,
+  timeZone: true,
+  defaultEventMinutes: true,
+} as const;
 
-function toBandDto(band: { id: number; slug: string; name: string; logoUpdatedAt: Date | null }): BandDto {
+function toBandDto(band: {
+  id: number;
+  slug: string;
+  name: string;
+  logoUpdatedAt: Date | null;
+  timeZone: string;
+  defaultEventMinutes: number;
+}): BandDto {
   return {
     id: band.id,
     slug: band.slug,
     name: band.name,
     logoUrl: band.logoUpdatedAt ? `/api/band/logo?v=${band.logoUpdatedAt.getTime()}` : null,
+    timeZone: band.timeZone,
+    defaultEventMinutes: band.defaultEventMinutes,
   };
 }
 
@@ -98,6 +138,29 @@ export class BandService {
       data: { logo: data, logoType: type, logoUpdatedAt: new Date() },
       select: BAND_FIELDS,
     });
+    return toBandDto(band);
+  }
+
+  async updateCalendarSettings(id: number, settings: CalendarSettings): Promise<BandDto> {
+    const data: { timeZone?: string; defaultEventMinutes?: number } = {};
+    if (settings.timeZone !== undefined) {
+      const timeZone = typeof settings.timeZone === 'string' ? settings.timeZone.trim() : '';
+      if (!isValidTimeZone(timeZone)) {
+        throw new BadRequestException('Unknown time zone');
+      }
+      data.timeZone = timeZone;
+    }
+    if (settings.defaultEventMinutes !== undefined) {
+      const minutes = Number(settings.defaultEventMinutes);
+      if (!Number.isInteger(minutes) || minutes < MIN_EVENT_MINUTES || minutes > MAX_EVENT_MINUTES) {
+        throw new BadRequestException(
+          `Default duration must be from ${MIN_EVENT_MINUTES} to ${MAX_EVENT_MINUTES} minutes`,
+        );
+      }
+      data.defaultEventMinutes = minutes;
+    }
+
+    const band = await this.prisma.band.update({ where: { id }, data, select: BAND_FIELDS });
     return toBandDto(band);
   }
 

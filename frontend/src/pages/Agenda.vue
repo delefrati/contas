@@ -9,8 +9,9 @@ import AppHeader from '../components/AppHeader.vue'
 import OfflineBar from '../components/OfflineBar.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import EventTypesModal from '../components/EventTypesModal.vue'
+import CalendarFeedModal from '../components/CalendarFeedModal.vue'
 import { formatDate as formatLocalDate, localeTag, monthGrid, parseDate, todayISO } from '../utils/date'
-import { eventName, typeStyle } from '../utils/events'
+import { eventName, eventTime, typeStyle } from '../utils/events'
 import { copyInfo, readSnapshot } from '../offline/snapshot'
 import { readStagePosition } from '../offline/stage'
 
@@ -30,6 +31,7 @@ const successMessage = ref('')
 
 const isEventModalOpen = ref(false)
 const isTypesModalOpen = ref(false)
+const isCalendarModalOpen = ref(false)
 const newEventDate = ref('')
 
 // Left behind only when the phone killed the app in the middle of a show
@@ -152,6 +154,7 @@ async function loadEvents() {
     if (outcome === 'copy') {
       isEventModalOpen.value = false
       isTypesModalOpen.value = false
+      isCalendarModalOpen.value = false
     }
     if (outcome === 'offline' || outcome === 'failed') error.value = t('agenda.loadingError')
     loading.value = false
@@ -191,7 +194,7 @@ function shareHeading(subtitle) {
 
 function eventLine(event) {
   const day = parseDate(event.date).toLocaleDateString(localeTag(locale.value), { day: '2-digit', month: '2-digit' })
-  const when = [formatWeekday(event.date), day, event.time].filter(Boolean).join(' ')
+  const when = [formatWeekday(event.date), day, eventTime(event)].filter(Boolean).join(' ')
   const place = event.location ? ` (${event.location})` : ''
   return `*${when}* — ${eventName(event)}${place}`
 }
@@ -316,6 +319,9 @@ onMounted(loadEvents)
             <button @click="shareUpcoming" class="btn-secondary" :title="$t('agenda.shareUpcomingHint')">
               <i class="fa-solid fa-list-ul"></i> {{ $t('agenda.shareUpcoming') }}
             </button>
+            <button @click="isCalendarModalOpen = true" :disabled="showingCopy" class="btn-secondary" :title="$t('calendarFeed.buttonHint')">
+              <i class="fa-solid fa-calendar-plus"></i> {{ $t('calendarFeed.button') }}
+            </button>
             <button @click="isTypesModalOpen = true" :disabled="showingCopy" class="btn-secondary" :title="$t('agenda.typesTitle')">
               <i class="fa-solid fa-tags"></i> {{ $t('agenda.manageTypes') }}
             </button>
@@ -369,7 +375,7 @@ onMounted(loadEvents)
                 :to="`/agenda/${event.id}`"
                 class="event-chip"
                 :style="typeStyle(event.type)"
-                :title="[event.time, eventName(event)].filter(Boolean).join(' ')"
+                :title="[eventTime(event), eventName(event)].filter(Boolean).join(' ')"
                 @click.stop
               >
                 <span v-if="event.time" class="event-chip-time">{{ event.time }}</span>
@@ -398,7 +404,7 @@ onMounted(loadEvents)
                   {{ eventName(event) }}
                 </span>
                 <span class="event-meta">
-                  <span v-if="event.time"><i class="fa-regular fa-clock"></i> {{ event.time }}</span>
+                  <span v-if="event.time"><i class="fa-regular fa-clock"></i> {{ eventTime(event) }}</span>
                   <span v-if="event.location"><i class="fa-solid fa-location-dot"></i> {{ event.location }}</span>
                   <span><i class="fa-solid fa-list-ol"></i> {{ $t('agenda.songCount', event.songCount) }}</span>
                 </span>
@@ -412,6 +418,7 @@ onMounted(loadEvents)
 
     <EventFormModal v-model="isEventModalOpen" :default-date="newEventDate" :types="types" @saved="onEventSaved" />
     <EventTypesModal v-model="isTypesModalOpen" :types="types" @changed="onTypesChanged" />
+    <CalendarFeedModal v-model="isCalendarModalOpen" />
   </div>
 </template>
 

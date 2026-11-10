@@ -7,7 +7,7 @@ import { useBand } from '../composables/useBand'
 import AppHeader from '../components/AppHeader.vue'
 import BandLogoModal from '../components/BandLogoModal.vue'
 import { formatDate as formatLocalDate, todayISO } from '../utils/date'
-import { eventName } from '../utils/events'
+import { eventName, eventTime } from '../utils/events'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -91,7 +91,7 @@ function formatDate(dateStr) {
 }
 
 function formatEvent(event) {
-  const when = [formatDate(event.date), event.time].filter(Boolean).join(' ')
+  const when = [formatDate(event.date), eventTime(event)].filter(Boolean).join(' ')
   return `${eventName(event)} · ${when}`
 }
 

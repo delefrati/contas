@@ -40,6 +40,8 @@ export class EventDto {
   title!: string;
   date!: string;
   time!: string;
+  // '' when the event has no set end
+  endTime!: string;
   location!: string | null;
   notes!: string | null;
   createdAt!: string;
@@ -52,6 +54,7 @@ export class CreateEventDto {
   title?: string;
   date!: string;
   time?: string;
+  endTime?: string;
   location?: string;
   notes?: string;
   items?: SetlistItemInput[];
@@ -62,6 +65,7 @@ export class UpdateEventDto {
   title?: string;
   date?: string;
   time?: string;
+  endTime?: string;
   location?: string;
   notes?: string;
   items?: SetlistItemInput[];
@@ -76,6 +80,7 @@ type EventFields = {
   title?: string;
   date?: string;
   time?: string;
+  endTime?: string;
   location?: string | null;
   notes?: string | null;
 };
@@ -121,6 +126,14 @@ export class EventService {
       data.time = time;
     }
 
+    if (dto.endTime !== undefined) {
+      const endTime = String(dto.endTime).trim();
+      if (endTime && !TIME_PATTERN.test(endTime)) {
+        throw new BadRequestException('Invalid end time format.');
+      }
+      data.endTime = endTime;
+    }
+
     if (dto.location !== undefined) {
       data.location = String(dto.location).trim().slice(0, 255) || null;
     }
@@ -130,6 +143,14 @@ export class EventService {
     }
 
     return data;
+  }
+
+  // An end needs a start; the same time as the start is no end at all
+  private checkEndTime(time: string, endTime: string): string {
+    if (endTime && !time) {
+      throw new BadRequestException('An end time needs a start time.');
+    }
+    return endTime === time ? '' : endTime;
   }
 
   // Only the band's current types can be picked
@@ -207,6 +228,7 @@ export class EventService {
     title: string;
     date: string;
     time: string;
+    endTime: string;
     location: string | null;
     notes: string | null;
     createdAt: Date;
@@ -218,6 +240,7 @@ export class EventService {
       title: event.title,
       date: event.date,
       time: event.time,
+      endTime: event.endTime,
       location: event.location,
       notes: event.notes,
       createdAt: event.createdAt.toISOString(),
@@ -301,6 +324,7 @@ export class EventService {
     }
 
     const fields = this.parseFields(dto);
+    const time = fields.time ?? '';
     const typeId = await this.parseTypeId(dto.typeId);
     const event = await this.prisma.event.create({
       data: {
@@ -308,7 +332,8 @@ export class EventService {
         typeId,
         title: fields.title ?? '',
         date: fields.date!,
-        time: fields.time ?? '',
+        time,
+        endTime: this.checkEndTime(time, fields.endTime ?? ''),
         location: fields.location ?? null,
         notes: fields.notes ?? null,
       },
@@ -336,6 +361,13 @@ export class EventService {
     }
 
     const data: EventFields & { typeId?: number } = this.parseFields(dto);
+    if (data.time !== undefined || data.endTime !== undefined) {
+      const time = data.time ?? existing.time;
+      // Clearing the start time clears the end too, which can't stand alone
+      const endTime = this.checkEndTime(time, data.endTime ?? (time ? existing.endTime : ''));
+      if (endTime !== existing.endTime) data.endTime = endTime;
+      else delete data.endTime;
+    }
     // Keeping the current type is fine even if it was deleted meanwhile
     if (dto.typeId !== undefined && Number(dto.typeId) !== existing.typeId) {
       data.typeId = await this.parseTypeId(dto.typeId);

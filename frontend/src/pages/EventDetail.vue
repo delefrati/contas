@@ -10,7 +10,7 @@ import Modal from '../components/Modal.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import StageView from '../components/StageView.vue'
 import { formatDate as formatLocalDate, localeTag, parseDate } from '../utils/date'
-import { eventName, typeStyle } from '../utils/events'
+import { eventName, eventTime, typeStyle } from '../utils/events'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -419,7 +419,7 @@ function formatLongDate(dateStr) {
 function formatEventTarget(target) {
   const parts = [target.type.name]
   if (target.title) parts.push(target.title)
-  if (target.time) parts.push(target.time)
+  if (target.time) parts.push(eventTime(target))
   return `${parts.join(' · ')} (${t('agenda.songCount', target.songCount)})`
 }
 
@@ -427,7 +427,7 @@ let originalTitle = ''
 
 function buildRepertoireText(current) {
   const lines = [eventName(current)]
-  lines.push([formatDate(current.date), current.time].filter(Boolean).join(' · '))
+  lines.push([formatDate(current.date), eventTime(current)].filter(Boolean).join(' · '))
   if (current.location) lines.push(current.location)
   lines.push('')
 
@@ -565,7 +565,7 @@ onBeforeUnmount(() => {
           </div>
           <ul class="event-facts">
             <li><i class="fa-regular fa-calendar"></i> {{ formatLongDate(event.date) }}</li>
-            <li v-if="event.time"><i class="fa-regular fa-clock"></i> {{ event.time }}</li>
+            <li v-if="event.time"><i class="fa-regular fa-clock"></i> {{ eventTime(event) }}</li>
             <li v-if="event.location"><i class="fa-solid fa-location-dot"></i> {{ event.location }}</li>
           </ul>
           <p v-if="event.notes" class="event-notes">{{ event.notes }}</p>

@@ -12,6 +12,7 @@ describe('BandController', () => {
     getLogo: jest.Mock;
     setLogo: jest.Mock;
     removeLogo: jest.Mock;
+    updateCalendarSettings: jest.Mock;
   };
   let logService: { log: jest.Mock };
   let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
@@ -22,6 +23,7 @@ describe('BandController', () => {
       getLogo: jest.fn(),
       setLogo: jest.fn(),
       removeLogo: jest.fn(),
+      updateCalendarSettings: jest.fn(),
     };
     logService = { log: jest.fn().mockResolvedValue({}) };
     requestContext = {
@@ -115,6 +117,30 @@ describe('BandController', () => {
       expect(bandService.removeLogo).toHaveBeenCalledWith(1);
       expect(logService.log).toHaveBeenCalledWith('DELETE', 'band_logo', 1);
       expect(result.data.logoUrl).toBeNull();
+    });
+  });
+
+  describe('updateCalendarSettings', () => {
+    it('should update the current band and log the new settings', async () => {
+      const band = { id: 1, slug: 'maverick', name: 'Maverick', logoUrl: null, timeZone: 'Europe/Lisbon', defaultEventMinutes: 90 };
+      bandService.updateCalendarSettings.mockResolvedValue(band);
+
+      const result = await controller.updateCalendarSettings({
+        timeZone: 'Europe/Lisbon',
+        defaultEventMinutes: 90,
+        name: 'Renamed',
+      } as never);
+
+      // Only the calendar settings get through, never the name or other band fields
+      expect(bandService.updateCalendarSettings).toHaveBeenCalledWith(1, {
+        timeZone: 'Europe/Lisbon',
+        defaultEventMinutes: 90,
+      });
+      expect(logService.log).toHaveBeenCalledWith('UPDATE', 'band_calendar', 1, {
+        timeZone: 'Europe/Lisbon',
+        defaultEventMinutes: 90,
+      });
+      expect(result).toEqual({ data: band });
     });
   });
 });

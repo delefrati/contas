@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
   NotFoundException,
+  Patch,
   Put,
   Res,
   StreamableFile,
@@ -13,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { BandDto, BandService, MAX_LOGO_BYTES } from './band.service';
+import { BandDto, BandService, CalendarSettings, MAX_LOGO_BYTES } from './band.service';
 import { RequestContextService } from '../common/request-context.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LogService } from '../log/log.service';
@@ -41,6 +43,21 @@ export class BandController {
     // Only the image itself may be cached for good, never the 404
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return new StreamableFile(logo.data, { type: logo.type, length: logo.data.length });
+  }
+
+  // Time zone and default event length, used by the members' calendar feeds
+  @Patch('calendar')
+  @UseGuards(JwtAuthGuard)
+  async updateCalendarSettings(@Body() body: CalendarSettings): Promise<{ data: BandDto }> {
+    const data = await this.bandService.updateCalendarSettings(this.requestContext.requireBandId(), {
+      timeZone: body?.timeZone,
+      defaultEventMinutes: body?.defaultEventMinutes,
+    });
+    await this.logService.log('UPDATE', 'band_calendar', data.id, {
+      timeZone: data.timeZone,
+      defaultEventMinutes: data.defaultEventMinutes,
+    });
+    return { data };
   }
 
   @Put('logo')

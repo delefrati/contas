@@ -40,6 +40,7 @@ function resetForm() {
     title: event?.title || '',
     date: event?.date || props.defaultDate || todayISO(),
     time: event?.time || '',
+    endTime: event?.endTime || '',
     location: event?.location || '',
     notes: event?.notes || '',
   }
@@ -74,6 +75,8 @@ async function save() {
         title: form.value.title.trim(),
         date: form.value.date,
         time: form.value.time,
+        // An end needs a start
+        endTime: form.value.time ? form.value.endTime : '',
         location: form.value.location.trim(),
         notes: form.value.notes.trim(),
       }),
@@ -124,7 +127,7 @@ async function save() {
         <label>{{ $t('agenda.eventTitle') }}</label>
         <input type="text" v-model="form.title" :placeholder="$t('agenda.titlePlaceholder')" maxlength="255" />
       </div>
-      <div class="form-row-2">
+      <div class="form-row-3">
         <div class="form-group">
           <label>{{ $t('agenda.date') }} *</label>
           <input type="date" v-model="form.date" required />
@@ -132,6 +135,15 @@ async function save() {
         <div class="form-group">
           <label>{{ $t('agenda.time') }}</label>
           <input type="time" v-model="form.time" />
+        </div>
+        <div class="form-group">
+          <label>{{ $t('agenda.endTime') }}</label>
+          <input
+            type="time"
+            v-model="form.endTime"
+            :disabled="!form.time"
+            :title="form.time ? $t('agenda.endTimeHint') : $t('agenda.endTimeNeedsStart')"
+          />
         </div>
       </div>
       <div class="form-group">
@@ -167,10 +179,18 @@ async function save() {
   font-size: 0.95rem;
   font-family: inherit;
 }
-.form-row-2 {
+.form-row-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 1fr;
   gap: 12px;
+}
+@media (max-width: 480px) {
+  .form-row-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form-row-3 .form-group:first-child {
+    grid-column: 1 / -1;
+  }
 }
 .type-options {
   display: flex;

@@ -23,6 +23,10 @@ model Band {
   logoType      String?   @map("logo_type") @db.VarChar(20)
   logoUpdatedAt DateTime? @map("logo_updated_at")
 
+  // Calendar feeds give event times in this IANA zone; events without an end time last defaultEventMinutes
+  timeZone            String @default("America/Sao_Paulo") @map("time_zone") @db.VarChar(64)
+  defaultEventMinutes Int    @default(120) @map("default_event_minutes")
+
   members      Member[]
   expenseTypes ExpenseType[]
   expenses     Expense[]
@@ -35,12 +39,14 @@ model Band {
 }
 
 model Member {
-  id      Int     @id @default(autoincrement())
-  bandId  Int     @map("band_id")
-  name    String  @db.VarChar(255)
-  email   String? @db.VarChar(255)
-  oidcSub String? @map("oidc_sub") @db.VarChar(255)
-  active  Boolean @default(true)
+  id            Int     @id @default(autoincrement())
+  bandId        Int     @map("band_id")
+  name          String  @db.VarChar(255)
+  email         String? @db.VarChar(255)
+  oidcSub       String? @map("oidc_sub") @db.VarChar(255)
+  active        Boolean @default(true)
+  // Secret in the member's calendar subscription URL (calendar apps can't sign in); null until they ask for one
+  calendarToken String? @unique @map("calendar_token") @db.VarChar(64)
 
   band           Band            @relation(fields: [bandId], references: [id])
   expenseMembers ExpenseMember[]
@@ -194,6 +200,8 @@ model Event {
   title     String    @default("") @db.VarChar(255)
   date      String    @db.VarChar(10)
   time      String    @default("") @db.VarChar(5)
+  // Optional, and only with a start time; earlier than time means it ends after midnight
+  endTime   String    @default("") @map("end_time") @db.VarChar(5)
   location  String?   @db.VarChar(255)
   notes     String?   @db.Text
   deletedAt DateTime? @map("deleted_at")

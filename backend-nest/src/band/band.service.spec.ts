@@ -1,10 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
-import { BandService, isValidSlug } from './band.service';
+import { BandService, isValidSlug, isValidTimeZone } from './band.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 // The per-request band lookup must never load the logo bytes
-const BAND_SELECT = { id: true, slug: true, name: true, logoUpdatedAt: true };
+const BAND_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  logoUpdatedAt: true,
+  timeZone: true,
+  defaultEventMinutes: true,
+};
+const CALENDAR = { timeZone: 'America/Sao_Paulo', defaultEventMinutes: 120 };
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
@@ -128,7 +136,7 @@ describe('BandService', () => {
 
   describe('findBySlug', () => {
     it('should return the active band dto when found', async () => {
-      prisma.band.findFirst.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null });
+      prisma.band.findFirst.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null, ...CALENDAR });
 
       const result = await service.findBySlug('maverick');
 
@@ -136,7 +144,7 @@ describe('BandService', () => {
         where: { slug: 'maverick', active: true },
         select: BAND_SELECT,
       });
-      expect(result).toEqual({ id: 1, slug: 'maverick', name: 'Maverick', logoUrl: null });
+      expect(result).toEqual({ id: 1, slug: 'maverick', name: 'Maverick', logoUrl: null, ...CALENDAR });
     });
 
     it('should return null when not found', async () => {
@@ -147,17 +155,17 @@ describe('BandService', () => {
 
   describe('findById', () => {
     it('should return the band dto when found', async () => {
-      prisma.band.findUnique.mockResolvedValue({ id: 2, slug: 'other', name: 'Other', logoUpdatedAt: null });
+      prisma.band.findUnique.mockResolvedValue({ id: 2, slug: 'other', name: 'Other', logoUpdatedAt: null, ...CALENDAR });
 
       const result = await service.findById(2);
 
       expect(prisma.band.findUnique).toHaveBeenCalledWith({ where: { id: 2 }, select: BAND_SELECT });
-      expect(result).toEqual({ id: 2, slug: 'other', name: 'Other', logoUrl: null });
+      expect(result).toEqual({ id: 2, slug: 'other', name: 'Other', logoUrl: null, ...CALENDAR });
     });
 
     it('should version the logo URL with its upload time', async () => {
       prisma.band.findUnique.mockResolvedValue({
-        id: 2, slug: 'other', name: 'Other', logoUpdatedAt: new Date(1700000000000),
+        id: 2, slug: 'other', name: 'Other', logoUpdatedAt: new Date(1700000000000), ...CALENDAR,
       });
 
       expect((await service.findById(2))?.logoUrl).toBe('/api/band/logo?v=1700000000000');
@@ -189,7 +197,7 @@ describe('BandService', () => {
   describe('setLogo', () => {
     beforeEach(() => {
       prisma.band.update.mockResolvedValue({
-        id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: new Date(1700000000000),
+        id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: new Date(1700000000000), ...CALENDAR,
       });
     });
 
@@ -224,9 +232,64 @@ describe('BandService', () => {
     });
   });
 
+  describe('isValidTimeZone', () => {
+    it('should accept IANA zones', () => {
+      expect(isValidTimeZone('America/Sao_Paulo')).toBe(true);
+      expect(isValidTimeZone('Europe/Lisbon')).toBe(true);
+      expect(isValidTimeZone('UTC')).toBe(true);
+    });
+
+    it('should reject unknown zones', () => {
+      expect(isValidTimeZone('')).toBe(false);
+      expect(isValidTimeZone('Mars/Olympus')).toBe(false);
+      expect(isValidTimeZone('x'.repeat(65))).toBe(false);
+    });
+  });
+
+  describe('updateCalendarSettings', () => {
+    beforeEach(() => {
+      prisma.band.update.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null, ...CALENDAR, ...data }),
+      );
+    });
+
+    it('should store the time zone and default duration', async () => {
+      const result = await service.updateCalendarSettings(1, { timeZone: ' Europe/Lisbon ', defaultEventMinutes: 90 });
+
+      expect(prisma.band.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { timeZone: 'Europe/Lisbon', defaultEventMinutes: 90 },
+        select: BAND_SELECT,
+      });
+      expect(result).toMatchObject({ timeZone: 'Europe/Lisbon', defaultEventMinutes: 90 });
+    });
+
+    it('should change only what is given', async () => {
+      await service.updateCalendarSettings(1, { defaultEventMinutes: 180 });
+
+      expect(prisma.band.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { defaultEventMinutes: 180 } }),
+      );
+    });
+
+    it('should reject an unknown time zone', async () => {
+      await expect(service.updateCalendarSettings(1, { timeZone: 'Mars/Olympus' })).rejects.toThrow(
+        'Unknown time zone',
+      );
+      expect(prisma.band.update).not.toHaveBeenCalled();
+    });
+
+    it.each([0, 14, 1441, 90.5, 'abc'])('should reject a default duration of %p minutes', async (minutes) => {
+      await expect(
+        service.updateCalendarSettings(1, { defaultEventMinutes: minutes as number }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.band.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('removeLogo', () => {
     it('should clear the logo', async () => {
-      prisma.band.update.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null });
+      prisma.band.update.mockResolvedValue({ id: 1, slug: 'maverick', name: 'Maverick', logoUpdatedAt: null, ...CALENDAR });
 
       const result = await service.removeLogo(1);
 
