@@ -189,7 +189,9 @@ export class EventService {
         where: {
           id: { in: songIdCandidates },
           bandId: this.requestContext.requireBandId(),
-          deletedAt: null,
+          // A deleted song stays in the setlists it was already in, so saving or copying
+          // one keeps it; it just can't be added anew
+          OR: [{ deletedAt: null }, { events: { some: {} } }],
         },
         select: { id: true },
       });

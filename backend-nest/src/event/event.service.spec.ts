@@ -246,7 +246,7 @@ describe('EventService', () => {
       });
 
       expect(prisma.song.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: { in: [3, 99, 3] }, bandId: 1, deletedAt: null } }),
+        expect.objectContaining({ where: { id: { in: [3, 99, 3] }, bandId: 1, OR: [{ deletedAt: null }, { events: { some: {} } }] } }),
       );
       expect(prisma.eventSong.createMany).toHaveBeenCalledWith({
         data: [
