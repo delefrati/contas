@@ -76,54 +76,56 @@ onMounted(async () => {
           <p>{{ $t('logs.noLogs') }}</p>
         </div>
 
-        <table v-else class="expenses-table logs-table">
-          <thead>
-            <tr>
-              <th class="id">#</th>
-              <th>{{ $t('logs.action') }}</th>
-              <th>{{ $t('logs.resource') }}</th>
-              <th class="log-resource-id">{{ $t('logs.resourceId') }}</th>
-              <th>{{ $t('logs.user') }}</th>
-              <th class="log-details">{{ $t('logs.details') }}</th>
-              <th class="date">{{ $t('logs.createdAt') }}</th>
-              <th class="log-details-btn"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="log in logs" :key="log.id">
-              <tr class="expense-row">
-                <td class="id">{{ log.id }}</td>
-                <td class="description">
-                  <span class="action-badge" :class="'action-' + log.action.toLowerCase()">
-                    {{ log.action }}
-                  </span>
-                </td>
-                <td class="type">{{ log.resource }}</td>
-                <td class="log-resource-id">{{ log.resourceId || '-' }}</td>
-                <td>{{ log.userName || '-' }}</td>
-                <td class="log-details" style="font-size: 0.85rem; word-break: break-word;">
-                  <code v-if="log.details">{{ log.details.substring(0, 100) }}{{ log.details.length > 100 ? '...' : '' }}</code>
-                  <span v-else>-</span>
-                </td>
-                <td class="date">{{ formatDate(log.createdAt, locale) }}</td>
-                <td class="log-details-btn">
-                  <button class="btn-dots" @click="expandedLogId = expandedLogId === log.id ? null : log.id" :title="$t('logs.details')">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                  </button>
-                </td>
+        <div class="table-scroll" v-else>
+          <table class="expenses-table logs-table">
+            <thead>
+              <tr>
+                <th class="id">#</th>
+                <th>{{ $t('logs.action') }}</th>
+                <th>{{ $t('logs.resource') }}</th>
+                <th class="log-resource-id">{{ $t('logs.resourceId') }}</th>
+                <th>{{ $t('logs.user') }}</th>
+                <th class="log-details">{{ $t('logs.details') }}</th>
+                <th class="date">{{ $t('logs.createdAt') }}</th>
+                <th class="log-details-btn"></th>
               </tr>
-              <tr v-if="expandedLogId === log.id" class="log-expanded-row">
-                <td :colspan="5">
-                  <div class="log-expanded-details">
-                    <div><strong>{{ $t('logs.resourceId') }}:</strong> {{ log.resourceId || '-' }}</div>
-                    <div><strong>{{ $t('logs.createdAt') }}:</strong> {{ formatDate(log.createdAt, locale) }}</div>
-                    <div v-if="log.details"><strong>{{ $t('logs.details') }}:</strong> <code>{{ log.details }}</code></div>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <template v-for="log in logs" :key="log.id">
+                <tr class="expense-row">
+                  <td class="id">{{ log.id }}</td>
+                  <td class="description">
+                    <span class="action-badge" :class="'action-' + log.action.toLowerCase()">
+                      {{ log.action }}
+                    </span>
+                  </td>
+                  <td class="type">{{ log.resource }}</td>
+                  <td class="log-resource-id">{{ log.resourceId || '-' }}</td>
+                  <td>{{ log.userName || '-' }}</td>
+                  <td class="log-details" style="font-size: 0.85rem; word-break: break-word;">
+                    <code v-if="log.details">{{ log.details.substring(0, 100) }}{{ log.details.length > 100 ? '...' : '' }}</code>
+                    <span v-else>-</span>
+                  </td>
+                  <td class="date">{{ formatDate(log.createdAt, locale) }}</td>
+                  <td class="log-details-btn">
+                    <button class="btn-dots" @click="expandedLogId = expandedLogId === log.id ? null : log.id" :title="$t('logs.details')">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="expandedLogId === log.id" class="log-expanded-row">
+                  <td :colspan="5">
+                    <div class="log-expanded-details">
+                      <div><strong>{{ $t('logs.resourceId') }}:</strong> {{ log.resourceId || '-' }}</div>
+                      <div><strong>{{ $t('logs.createdAt') }}:</strong> {{ formatDate(log.createdAt, locale) }}</div>
+                      <div v-if="log.details"><strong>{{ $t('logs.details') }}:</strong> <code>{{ log.details }}</code></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   </div>

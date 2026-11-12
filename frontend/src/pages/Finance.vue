@@ -602,69 +602,71 @@ onMounted(async () => {
             </button>
           </div>
 
-          <table class="expenses-table">
-            <thead>
-              <tr>
-                <th class="select-col no-print">
-                  <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAll" :title="$t('expenses.selectAll')" />
-                </th>
-                <th class="id">#</th>
-                <th class="description">{{ $t('form.description') }}</th>
-                <th class="type">{{ $t('form.type') }}</th>
-                <th class="member">{{ $t('form.members') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-                <th class="paid">{{ $t('form.paid') }}</th>
-                <th class="date">{{ $t('expenses.date') }}</th>
-                <th class="actions"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row" :class="{ 'is-selected': selectedExpenseIds.includes(expense.id) }">
-                <td class="select-col no-print">
-                  <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
-                </td>
-                <td class="id">{{ expense.id }}</td>
-                <td class="description">{{ expense.description }}</td>
-                <td class="type">
-                  <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
-                    <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
-                    <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
-                  </span>
-                </td>
-                <td class="member">{{ getMemberNames(expense) }}</td>
-                <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
-                <td class="paid">
-                  <span class="status-badge" :class="expense.paid ? 'is-active' : 'is-inactive'">
-                    {{ expense.paid ? $t('expenses.paid') : $t('expenses.unpaid') }}
-                  </span>
-                </td>
-                <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
-                <td class="actions">
-                  <div class="actions-desktop">
-                    <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
-                      <i class="fa-solid fa-xmark"></i>
-                    </button>
-                  </div>
-                  <div class="actions-mobile">
-                    <button @click="toggleActionMenu(expense.id)" class="btn-dots">
-                      <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <div v-if="openActionMenuId === expense.id" class="action-dropdown">
-                      <button @click="openEditModal(expense); openActionMenuId = null">
-                        <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+          <div class="table-scroll">
+            <table class="expenses-table">
+              <thead>
+                <tr>
+                  <th class="select-col no-print">
+                    <input type="checkbox" :checked="allFilteredSelected" @change="toggleSelectAll" :title="$t('expenses.selectAll')" />
+                  </th>
+                  <th class="id">#</th>
+                  <th class="description">{{ $t('form.description') }}</th>
+                  <th class="type">{{ $t('form.type') }}</th>
+                  <th class="member">{{ $t('form.members') }}</th>
+                  <th class="amount">{{ $t('form.amount') }}</th>
+                  <th class="paid">{{ $t('form.paid') }}</th>
+                  <th class="date">{{ $t('expenses.date') }}</th>
+                  <th class="actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="expense in filteredExpenses" :key="expense.id" class="expense-row" :class="{ 'is-selected': selectedExpenseIds.includes(expense.id) }">
+                  <td class="select-col no-print">
+                    <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
+                  </td>
+                  <td class="id">{{ expense.id }}</td>
+                  <td class="description">{{ expense.description }}</td>
+                  <td class="type">
+                    <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
+                      <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
+                      <span class="type-letter">{{ getTypeName(expense.typeId ?? expense.type).charAt(0) }}</span>
+                    </span>
+                  </td>
+                  <td class="member">{{ getMemberNames(expense) }}</td>
+                  <td class="amount" :class="{ 'amount-negative': parseFloat(expense.amount) < 0 }">R$ {{ parseFloat(expense.amount).toFixed(2) }}</td>
+                  <td class="paid">
+                    <span class="status-badge" :class="expense.paid ? 'is-active' : 'is-inactive'">
+                      {{ expense.paid ? $t('expenses.paid') : $t('expenses.unpaid') }}
+                    </span>
+                  </td>
+                  <td class="date">{{ formatDate(expense.date || expense.createdAt) }}</td>
+                  <td class="actions">
+                    <div class="actions-desktop">
+                      <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
+                        <i class="fa-solid fa-pencil"></i>
                       </button>
-                      <button @click="deleteExpense(expense.id); openActionMenuId = null">
-                        <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                      <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
+                        <i class="fa-solid fa-xmark"></i>
                       </button>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    <div class="actions-mobile">
+                      <button @click="toggleActionMenu(expense.id)" class="btn-dots">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                      <div v-if="openActionMenuId === expense.id" class="action-dropdown">
+                        <button @click="openEditModal(expense); openActionMenuId = null">
+                          <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+                        </button>
+                        <button @click="deleteExpense(expense.id); openActionMenuId = null">
+                          <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </template>
 
         <div class="summary" v-if="filteredExpenses.length > 0">
@@ -852,59 +854,63 @@ onMounted(async () => {
         <!-- Summary -->
         <section class="report-section">
           <h2>{{ $t('report.summary') }}</h2>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>{{ $t('report.description') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{{ $t('report.totalInflows') }}</td>
-                <td class="amount">R$ {{ totalInflows.toFixed(2) }}</td>
-              </tr>
-              <tr>
-                <td>{{ $t('report.totalExpenses') }}</td>
-                <td class="amount amount-negative">R$ {{ totalOutflows.toFixed(2) }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="summary-row">
-                <td><strong>{{ $t('report.netBalance') }}</strong></td>
-                <td class="amount" :class="{ 'amount-negative': netBalance < 0 }">
-                  <strong>R$ {{ netBalance.toFixed(2) }}</strong>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+          <div class="table-scroll">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>{{ $t('report.description') }}</th>
+                  <th class="amount">{{ $t('form.amount') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ $t('report.totalInflows') }}</td>
+                  <td class="amount">R$ {{ totalInflows.toFixed(2) }}</td>
+                </tr>
+                <tr>
+                  <td>{{ $t('report.totalExpenses') }}</td>
+                  <td class="amount amount-negative">R$ {{ totalOutflows.toFixed(2) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="summary-row">
+                  <td><strong>{{ $t('report.netBalance') }}</strong></td>
+                  <td class="amount" :class="{ 'amount-negative': netBalance < 0 }">
+                    <strong>R$ {{ netBalance.toFixed(2) }}</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </section>
 
         <!-- Settlement per member -->
         <section class="report-section">
           <h2>{{ $t('report.settlement') }}</h2>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th class="name">{{ $t('report.member') }}</th>
-                <th>{{ $t('report.status') }}</th>
-                <th class="amount">{{ $t('form.amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in report" :key="item.id" class="report-row">
-                <td class="name">{{ item.name }}</td>
-                <td>
-                  <span class="status-badge" :class="item.active ? 'is-active' : 'is-inactive'">
-                    {{ item.active ? $t('report.active') : $t('report.inactive') }}
-                  </span>
-                </td>
-                <td class="amount" :class="{ 'amount-negative': parseFloat(item.total) < 0 }">
-                  R$ {{ parseFloat(item.total).toFixed(2) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th class="name">{{ $t('report.member') }}</th>
+                  <th>{{ $t('report.status') }}</th>
+                  <th class="amount">{{ $t('form.amount') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in report" :key="item.id" class="report-row">
+                  <td class="name">{{ item.name }}</td>
+                  <td>
+                    <span class="status-badge" :class="item.active ? 'is-active' : 'is-inactive'">
+                      {{ item.active ? $t('report.active') : $t('report.inactive') }}
+                    </span>
+                  </td>
+                  <td class="amount" :class="{ 'amount-negative': parseFloat(item.total) < 0 }">
+                    R$ {{ parseFloat(item.total).toFixed(2) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </template>
     </div>

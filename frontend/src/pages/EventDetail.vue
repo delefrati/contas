@@ -860,12 +860,13 @@ onBeforeUnmount(() => {
   padding: 0;
   border: none;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, ...) so a long song name can't make a column wider than the screen */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
 }
 @media (max-width: 768px) {
   .builder-columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .builder-panel h3 {
@@ -922,6 +923,7 @@ onBeforeUnmount(() => {
 }
 .pause-label-input {
   flex: 1;
+  min-width: 0;
   font-weight: 600;
   letter-spacing: 0.04em;
   font-size: 0.85rem;
@@ -957,6 +959,8 @@ onBeforeUnmount(() => {
 }
 .song-name {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--text-h, #1a202c);
 }
 .song-name small {
@@ -965,6 +969,7 @@ onBeforeUnmount(() => {
 }
 .order-actions {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
 }
 .available-list {

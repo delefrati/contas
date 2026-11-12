@@ -119,9 +119,17 @@
   color-scheme: light;
 }
 
+// Nothing may make the page pan sideways: Safari on the iPhone does that when an element is a
+// few pixels too wide, even with overflow-x: hidden on body alone. clip doesn't make html a
+// scroll container, so sticky elements and the page's own scrolling keep working.
+html,
+body {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
 body {
   margin: $space-0;
-  overflow-x: hidden;
 }
 
 *,
@@ -853,6 +861,12 @@ code {
       width: 100%;
     }
   }
+}
+
+// Wide tables scroll on their own on a phone, instead of the page
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .expenses-table {

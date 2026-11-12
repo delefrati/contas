@@ -70,7 +70,7 @@ async function handleLogout() {
           <i v-else class="fa-solid" :class="icon"></i>
           <span v-if="logoEditable" class="header-logo-edit"><i class="fa-solid fa-camera"></i></span>
         </component>
-        {{ title }}
+        <span class="header-title">{{ title }}</span>
       </h1>
       <div class="header-controls">
         <nav class="header-nav">
@@ -128,6 +128,25 @@ async function handleLogout() {
 </template>
 
 <style scoped>
+/* The title gives way, with an ellipsis, when the icons need the room: on an iPhone the system
+   font is wider and a long band name would push the logout button off the screen */
+.header-top h1 {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.header-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-logo {
+  flex-shrink: 0;
+}
+.header-controls {
+  flex-shrink: 0;
+}
 .header-logo {
   position: relative;
   display: inline-flex;
