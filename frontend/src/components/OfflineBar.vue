@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { connectionLost } from '../offline/connection'
 import { copyInfo, STALE_COPY_AGE_MS } from '../offline/snapshot'
-import { localeTag } from '../utils/date'
+import { formatTimeAgo } from '../utils/date'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -43,14 +43,7 @@ const isStale = computed(() =>
   state.value !== 'saved' && copyInfo.value && Date.now() - copyInfo.value.savedAt > STALE_COPY_AGE_MS,
 )
 
-const savedWhen = computed(() => {
-  if (!copyInfo.value) return ''
-  const minutes = Math.round((copyInfo.value.savedAt - Date.now()) / 60_000)
-  const format = new Intl.RelativeTimeFormat(localeTag(locale.value), { numeric: 'auto' })
-  if (minutes > -60) return format.format(minutes, 'minute')
-  if (minutes > -24 * 60) return format.format(Math.round(minutes / 60), 'hour')
-  return format.format(Math.round(minutes / (24 * 60)), 'day')
-})
+const savedWhen = computed(() => (copyInfo.value ? formatTimeAgo(copyInfo.value.savedAt, locale.value) : ''))
 
 const message = computed(() => {
   if (downloading.value) return t('actions.loading')

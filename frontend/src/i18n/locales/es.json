@@ -417,5 +417,33 @@
     "available": "Hay una versión nueva de la app.",
     "apply": "Actualizar",
     "dataStale": "Los datos de este dispositivo pueden estar desactualizados."
+  },
+  "settings": {
+    "title": "Configuración",
+    "open": "Configuración",
+    "profile": "Mis datos",
+    "name": "Nombre",
+    "email": "Correo",
+    "emailHint": "Es el correo de la cuenta de Google con la que entras, por eso no se cambia aquí.",
+    "noEmail": "Sin correo registrado",
+    "superAdminHint": "Los datos de super admin se cambian en el panel del administrador.",
+    "saved": "Datos guardados.",
+    "needsConnection": "Sin conexión: para cambiar tus datos hace falta internet.",
+    "appearance": "Apariencia",
+    "theme": "Tema",
+    "themes": {
+      "system": "Predeterminado del sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "language": "Idioma",
+    "offlineData": "Datos en el dispositivo",
+    "offlineIntro": "La agenda, los repertorios y las letras se guardan en este dispositivo para usarlos sin internet.",
+    "savedAt": "Actualizados {when}.",
+    "noCopy": "Todavía no se descargó nada en este dispositivo.",
+    "refresh": "Actualizar datos ahora",
+    "refreshed": "Datos actualizados.",
+    "refreshFailed": "No se pudo descargar ahora. Revisa la conexión e inténtalo de nuevo.",
+    "expired": "Tu sesión expiró. Vuelve a entrar para actualizar los datos."
   }
 }

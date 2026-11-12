@@ -29,6 +29,7 @@ async function headerOn(path) {
       { path: '/registros', name: 'Logs', component: Page },
       { path: '/outra', name: 'Other', component: Page },
       { path: '/ajuda/:part?', name: 'Manual', component: Page },
+      { path: '/configuracoes', name: 'Settings', component: Page },
     ],
   })
   await router.push(path)
@@ -38,7 +39,11 @@ async function headerOn(path) {
     global: { plugins: [i18n, router] },
   })
   await flushPromises()
-  return wrapper.find(`a[aria-label="${pt.manual.open}"]`)
+  return wrapper
+}
+
+async function helpLinkOn(path) {
+  return (await headerOn(path)).find(`a[aria-label="${pt.manual.open}"]`)
 }
 
 describe('AppHeader help link', () => {
@@ -51,12 +56,27 @@ describe('AppHeader help link', () => {
     ['/integrantes', '/ajuda/integrantes'],
     ['/registros', '/ajuda/registros'],
   ])('on %s opens %s', async (path, help) => {
-    const link = await headerOn(path)
+    const link = await helpLinkOn(path)
     expect(link.attributes('href')).toBe(help)
   })
 
   it('opens the index on a screen without a part of its own', async () => {
-    const link = await headerOn('/outra')
+    const link = await helpLinkOn('/outra')
     expect(link.attributes('href')).toBe('/ajuda')
+  })
+})
+
+describe('AppHeader settings', () => {
+  it('opens the settings from the gear and from the name', async () => {
+    const wrapper = await headerOn('/dashboard')
+    expect(wrapper.find(`a[aria-label="${pt.settings.open}"]`).attributes('href')).toBe('/configuracoes')
+    const name = wrapper.find('a.user-info')
+    expect(name.text()).toContain('Ana')
+    expect(name.attributes('href')).toBe('/configuracoes')
+  })
+
+  it('leaves the gear out on the settings page itself', async () => {
+    const wrapper = await headerOn('/configuracoes')
+    expect(wrapper.find(`a[aria-label="${pt.settings.open}"]`).exists()).toBe(false)
   })
 })

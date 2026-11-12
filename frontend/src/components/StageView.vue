@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWakeLock } from '../composables/useWakeLock'
 import { setlistBlocks } from '../utils/setlist'
 import { clearStagePosition, readStagePosition, saveStagePosition } from '../offline/stage'
+import { theme as appTheme } from '../theme'
 
 // Full-screen setlist for reading on a phone during a show: one block (songs up to a
 // pause) at a time in big letters, with a peek at the next one. Tapping the name of a
@@ -21,8 +22,10 @@ function readTheme() {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved === 'dark' || saved === 'light') return saved
   } catch {
-    // Fall back to the system preference
+    // Fall back to the app's theme
   }
+  // The theme chosen in Configurações, or else dark unless the system is light
+  if (appTheme.value !== 'system') return appTheme.value
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 

@@ -15,7 +15,7 @@ const ORDER = [
   'registros',
   'permissoes',
   'celular',
-  'idioma',
+  'configuracoes',
   'admin',
 ]
 
@@ -51,6 +51,7 @@ const PART_BY_ROUTE = {
   Finance: 'financeiro',
   Members: 'integrantes',
   Logs: 'registros',
+  Settings: 'configuracoes',
   AdminBands: 'admin',
   AdminBand: 'admin',
   AdminSuperAdmins: 'admin',

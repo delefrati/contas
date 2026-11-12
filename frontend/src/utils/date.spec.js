@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, monthGrid, parseDate, todayISO } from './date'
+import { formatDate, formatTimeAgo, monthGrid, parseDate, todayISO } from './date'
 
 describe('date utils', () => {
   it('should read plain dates as local dates', () => {
@@ -23,6 +23,13 @@ describe('date utils', () => {
 
   it('should return invalid values unchanged', () => {
     expect(formatDate('not a date', 'pt')).toBe('not a date')
+  })
+
+  it('should say how long ago something was saved, in minutes, hours or days', () => {
+    const now = new Date(2026, 10, 12, 12, 0).getTime()
+    expect(formatTimeAgo(now - 5 * 60_000, 'en', now)).toBe('5 minutes ago')
+    expect(formatTimeAgo(now - 3 * 60 * 60_000, 'en', now)).toBe('3 hours ago')
+    expect(formatTimeAgo(now - 2 * 24 * 60 * 60_000, 'pt', now)).toBe('anteontem')
   })
 
   it('should give today in local time', () => {

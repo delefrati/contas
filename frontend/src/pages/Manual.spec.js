@@ -48,7 +48,7 @@ describe('Manual', () => {
   it('has every part of the app, each with a title and text', () => {
     expect(parts.map((p) => p.slug)).toEqual([
       'entrar', 'inicio', 'agenda', 'evento', 'musicas', 'financeiro', 'integrantes',
-      'registros', 'permissoes', 'celular', 'idioma', 'admin',
+      'registros', 'permissoes', 'celular', 'configuracoes', 'admin',
     ])
     for (const part of parts) {
       expect(part.title).not.toBe('')

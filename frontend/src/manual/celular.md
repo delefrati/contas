@@ -38,7 +38,8 @@ topo da tela diz como estão os dados:
   Depois de um dia, ela avisa que os dados **podem estar desatualizados**.
 - **Sem conexão, e nada foi baixado neste aparelho ainda.**: abra o app uma vez com internet.
 
-Toque na faixa **Disponível sem internet** para baixar tudo de novo na hora. Quando termina, ela
+Toque na faixa **Disponível sem internet**, ou em **Atualizar dados agora** nas
+[Configurações](/ajuda/configuracoes), para baixar tudo de novo na hora. Quando termina, ela
 mostra **Atualizado este minuto** e some por uma hora, para não ocupar espaço. Os avisos de
 sem conexão continuam aparecendo sempre. Antes de um show, abra a agenda e o evento com internet
 e toque na faixa para ter certeza de que está tudo baixado.

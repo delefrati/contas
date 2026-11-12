@@ -22,8 +22,8 @@ describe('AuthService', () => {
   let jwtService: { sign: jest.Mock; verify: jest.Mock };
   let prisma: {
     session: { create: jest.Mock; findUnique: jest.Mock; deleteMany: jest.Mock };
-    member: { findMany: jest.Mock; findFirst: jest.Mock };
-    superAdmin: { findFirst: jest.Mock };
+    member: { findMany: jest.Mock; findFirst: jest.Mock; findUnique: jest.Mock };
+    superAdmin: { findFirst: jest.Mock; findUnique: jest.Mock };
     band: { findMany: jest.Mock };
   };
   let requestContext: { requireBandId: jest.Mock; getBandId: jest.Mock; getIdentity: jest.Mock };
@@ -38,8 +38,8 @@ describe('AuthService', () => {
         findUnique: jest.fn(),
         deleteMany: jest.fn(),
       },
-      member: { findMany: jest.fn(), findFirst: jest.fn() },
-      superAdmin: { findFirst: jest.fn().mockResolvedValue(null) },
+      member: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
+      superAdmin: { findFirst: jest.fn().mockResolvedValue(null), findUnique: jest.fn() },
       band: { findMany: jest.fn() },
     };
     requestContext = {
@@ -694,6 +694,36 @@ describe('AuthService', () => {
       await service.adminLogout(3, 'admin-token');
       expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { superAdminId: 3, token: 'admin-token' } });
       expect(logService.logPlatform).toHaveBeenCalledWith('LOGOUT', 'admin');
+    });
+  });
+
+  describe('currentAccount', () => {
+    const memberPayload = { memberId: 1, bandId: 1, name: 'Old name', email: 'old@test.com' };
+
+    it('should give a member the name and email they have now', async () => {
+      prisma.member.findUnique.mockResolvedValue({ name: 'New name', email: null });
+      expect(await service.currentAccount(memberPayload)).toEqual({
+        memberId: 1,
+        bandId: 1,
+        name: 'New name',
+        email: undefined,
+      });
+      expect(prisma.member.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { name: true, email: true },
+      });
+    });
+
+    it('should look a super admin up among super admins', async () => {
+      prisma.superAdmin.findUnique.mockResolvedValue({ name: 'Root', email: 'root@test.com' });
+      const result = await service.currentAccount({ superAdminId: 3, bandId: 1, name: 'R' });
+      expect(result).toEqual({ superAdminId: 3, bandId: 1, name: 'Root', email: 'root@test.com' });
+      expect(prisma.member.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to the token when the account is gone', async () => {
+      prisma.member.findUnique.mockResolvedValue(null);
+      expect(await service.currentAccount(memberPayload)).toBe(memberPayload);
     });
   });
 

@@ -314,6 +314,21 @@ export class AuthService {
     );
   }
 
+  // The token keeps the name and email from sign-in; the person may have changed them since
+  async currentAccount(payload: AuthPayload): Promise<AuthPayload> {
+    const account = payload.superAdminId
+      ? await this.prisma.superAdmin.findUnique({
+          where: { id: payload.superAdminId },
+          select: { name: true, email: true },
+        })
+      : await this.prisma.member.findUnique({
+          where: { id: payload.memberId },
+          select: { name: true, email: true },
+        });
+    if (!account) return payload;
+    return { ...payload, name: account.name, email: account.email ?? undefined };
+  }
+
   // Lets the offline app tell a session that merely ran out (keep the downloaded copy) from access
   // that was taken away (delete it). The token may be past its expiry here, so this must only ever
   // answer the state and never grant anything.

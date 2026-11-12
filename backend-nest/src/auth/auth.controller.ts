@@ -45,7 +45,7 @@ export class AuthController {
     if (!req.user) {
       throw new BadRequestException('User not found in request');
     }
-    return { data: req.user };
+    return { data: await this.authService.currentAccount(req.user) };
   }
 
   // Deliberately without JwtAuthGuard: it has to answer for tokens past their expiry

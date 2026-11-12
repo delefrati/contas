@@ -18,8 +18,8 @@ O **Início** é a primeira tela depois de entrar: um resumo do que está aconte
 
 Em todas as telas da banda, o cabeçalho tem ícones para ir às outras telas: Início, Agenda,
 Músicas, Financeiro, Integrantes e Registros. Ao lado ficam o ícone de ajuda (o ponto de
-interrogação), que abre a parte deste manual sobre a tela em que você está, o globo para
-trocar o [idioma](/ajuda/idioma), o seu nome e o botão de sair.
+interrogação), que abre a parte deste manual sobre a tela em que você está, a engrenagem e o
+seu nome, que abrem as [Configurações](/ajuda/configuracoes), e o botão de sair.
 
 ## Trocar o logo da banda
 

@@ -10,6 +10,7 @@ import Agenda from '../pages/Agenda.vue'
 import EventDetail from '../pages/EventDetail.vue'
 import AuthCallback from '../pages/AuthCallback.vue'
 import Manual from '../pages/Manual.vue'
+import Settings from '../pages/Settings.vue'
 import NotFound from '../pages/NotFound.vue'
 import AdminBands from '../pages/admin/AdminBands.vue'
 import AdminBand from '../pages/admin/AdminBand.vue'
@@ -78,6 +79,14 @@ const routes = [
     name: 'Songs',
     component: Songs,
     meta: { requiresAuth: true, offline: true, titleKey: 'songs.title' },
+  },
+  {
+    // Opens offline too: the theme, the language and updating the downloaded data work without
+    // the server (the page says when changing one's details needs it)
+    path: '/configuracoes',
+    name: 'Settings',
+    component: Settings,
+    meta: { requiresAuth: true, offline: true, titleKey: 'settings.title' },
   },
   {
     // Former address of the songs and setlists page

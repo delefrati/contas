@@ -417,5 +417,33 @@
     "available": "A new version of the app is available.",
     "apply": "Update",
     "dataStale": "The data on this device may be out of date."
+  },
+  "settings": {
+    "title": "Settings",
+    "open": "Settings",
+    "profile": "My details",
+    "name": "Name",
+    "email": "Email",
+    "emailHint": "This is the Google account you sign in with, so it can't be changed here.",
+    "noEmail": "No email on record",
+    "superAdminHint": "Super admin details are changed in the admin panel.",
+    "saved": "Details saved.",
+    "needsConnection": "No connection: changing your details needs internet.",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themes": {
+      "system": "System default",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "language": "Language",
+    "offlineData": "Data on this device",
+    "offlineIntro": "The calendar, setlists and lyrics are kept on this device for use without internet.",
+    "savedAt": "Updated {when}.",
+    "noCopy": "Nothing has been downloaded on this device yet.",
+    "refresh": "Update data now",
+    "refreshed": "Data updated.",
+    "refreshFailed": "Couldn't download right now. Check the connection and try again.",
+    "expired": "Your session expired. Sign in again to update the data."
   }
 }

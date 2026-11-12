@@ -10,6 +10,15 @@ export function parseDate(value) {
   return DATE_ONLY.test(value) ? new Date(`${value}T00:00:00`) : new Date(value)
 }
 
+// "5 minutes ago", "2 hours ago", "3 days ago", for when something was saved
+export function formatTimeAgo(timestamp, locale, now = Date.now()) {
+  const minutes = Math.round((timestamp - now) / 60_000)
+  const format = new Intl.RelativeTimeFormat(localeTag(locale), { numeric: 'auto' })
+  if (minutes > -60) return format.format(minutes, 'minute')
+  if (minutes > -24 * 60) return format.format(Math.round(minutes / 60), 'hour')
+  return format.format(Math.round(minutes / (24 * 60)), 'day')
+}
+
 export function formatDate(value, locale, empty = '-') {
   if (!value) return empty
   const date = parseDate(value)

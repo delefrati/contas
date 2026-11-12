@@ -38,22 +38,25 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #{$color-text-dark};
-    --text-light: #{$color-text-light-dark};
-    --text-h: #{$color-text-heading-dark};
-    --bg: #{$color-bg-dark};
-    --bg-white: #{$color-bg-white-dark};
-    --border: #{$color-border-dark};
-    --accent: #{$color-accent-dark};
-    --accent-light: #{$color-accent-light-dark};
-    --success: #{$color-success-dark};
-    --error: #{$color-error-dark};
-    --shadow: #{$shadow-sm-dark};
-    --shadow-lg: #{$shadow-lg-dark};
-  }
+// Dark colors apply when chosen in Configurações (data-theme="dark" on <html>, see theme.js),
+// or when the system is dark and light wasn't chosen
+@mixin dark-colors {
+  --text: #{$color-text-dark};
+  --text-light: #{$color-text-light-dark};
+  --text-h: #{$color-text-heading-dark};
+  --bg: #{$color-bg-dark};
+  --bg-white: #{$color-bg-white-dark};
+  --border: #{$color-border-dark};
+  --accent: #{$color-accent-dark};
+  --accent-light: #{$color-accent-light-dark};
+  --success: #{$color-success-dark};
+  --error: #{$color-error-dark};
+  --shadow: #{$shadow-sm-dark};
+  --shadow-lg: #{$shadow-lg-dark};
+}
 
+// :where() keeps these rules as specific as they were without the theme switch
+@mixin dark-rules {
   #social .button-icon {
     filter: invert(1) brightness(1.5);
   }
@@ -91,6 +94,29 @@
       border-color: var(--accent);
     }
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-colors;
+  }
+
+  :where(:root:not([data-theme='light'])) {
+    @include dark-rules;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  @include dark-colors;
+}
+
+:where(:root[data-theme='dark']) {
+  @include dark-rules;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 body {

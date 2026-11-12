@@ -5,10 +5,16 @@ import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: { loginWithGoogle: jest.Mock; logout: jest.Mock; logoutAll: jest.Mock };
+  let authService: {
+    loginWithGoogle: jest.Mock;
+    logout: jest.Mock;
+    logoutAll: jest.Mock;
+    currentAccount: jest.Mock;
+  };
 
   beforeEach(async () => {
     authService = {
+      currentAccount: jest.fn(),
       loginWithGoogle: jest.fn(),
       logout: jest.fn(),
       logoutAll: jest.fn(),
@@ -35,13 +41,16 @@ describe('AuthController', () => {
   });
 
   describe('getMe', () => {
-    it('should return user from request', async () => {
+    it('should return the account as it is now, not as it was at sign-in', async () => {
       const user = { memberId: 1, name: 'Test', email: 'test@test.com' };
+      const current = { ...user, name: 'Renamed' };
+      authService.currentAccount.mockResolvedValue(current);
       const req = { user } as any;
 
       const result = await controller.getMe(req);
 
-      expect(result).toEqual({ data: user });
+      expect(authService.currentAccount).toHaveBeenCalledWith(user);
+      expect(result).toEqual({ data: current });
     });
 
     it('should throw when user not in request', async () => {

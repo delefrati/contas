@@ -1,9 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
-import LanguageSelector from './LanguageSelector.vue'
 import { adminUrl } from '../hosts'
 import { connectionLost } from '../offline/connection'
 import { copyInfo } from '../offline/snapshot'
@@ -24,7 +23,6 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { logout, member, sessionExpired } = useAuth()
-const showLanguageSelector = ref(false)
 
 const sections = [
   { path: '/dashboard', icon: 'fa-house', titleKey: 'home.title' },
@@ -106,14 +104,21 @@ async function handleLogout() {
           </a>
         </nav>
         <slot />
-        <button @click="showLanguageSelector = !showLanguageSelector" class="btn-secondary btn-lang-toggle" :title="$t('app.language')">
-          <i class="fa-solid fa-globe"></i>
-        </button>
-        <LanguageSelector v-if="showLanguageSelector" />
-        <div v-if="member" class="user-info">
+        <!-- Theme, language, one's own details and the downloaded data. Like the sections, not on
+             its own page, where every section's icon already shows -->
+        <router-link
+          v-if="route.name !== 'Settings'"
+          to="/configuracoes"
+          class="btn-settings"
+          :title="$t('settings.open')"
+          :aria-label="$t('settings.open')"
+        >
+          <i class="fa-solid fa-gear"></i>
+        </router-link>
+        <router-link v-if="member" to="/configuracoes" class="user-info" :title="$t('settings.open')">
           <span class="user-name">{{ member.name }}</span>
           <span v-if="member.superAdmin" class="super-admin-badge">{{ $t('app.superAdmin') }}</span>
-        </div>
+        </router-link>
         <button @click="handleLogout" class="btn-logout" :title="$t('app.logout')">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
@@ -169,6 +174,27 @@ async function handleLogout() {
   font-size: 0.7rem;
   font-weight: 600;
   white-space: nowrap;
+}
+.btn-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: 16px;
+  color: var(--text-light);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn-settings:hover {
+  color: var(--accent);
+  transform: scale(1.1);
+}
+.user-info {
+  color: inherit;
+  text-decoration: none;
+}
+.user-info:hover .user-name {
+  color: var(--accent);
 }
 .header-nav {
   display: flex;
