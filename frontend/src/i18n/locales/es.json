@@ -381,7 +381,6 @@
     "noCopy": "Sin conexión, y todavía no se descargó nada en este dispositivo.",
     "offline": "Sin conexión. Mostrando los datos de {when}.",
     "expired": "Tu sesión expiró. Mostrando los datos de {when}.",
-    "saved": "Disponible sin internet. Actualizado {when}.",
     "stale": "Pueden estar desactualizados.",
     "installHint": "Añádela a la pantalla de inicio para conservar los datos.",
     "downloadFailed": "No se pudo descargar ahora.",
@@ -395,8 +394,7 @@
     "goToAgenda": "Ir a la agenda",
     "retry": "Reintentar",
     "confirmLogout": "Al salir, los datos descargados se borrarán de este dispositivo y solo se recuperan con internet. ¿Salir de todos modos?",
-    "listPartial": "Sin internet, la lista muestra solo los eventos descargados, del {from} al {to}.",
-    "tapToUpdate": "Toca para actualizar"
+    "listPartial": "Sin internet, la lista muestra solo los eventos descargados, del {from} al {to}."
   },
   "manual": {
     "title": "Ayuda",

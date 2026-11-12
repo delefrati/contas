@@ -32,19 +32,18 @@ internet.
 ## Quando os dados são baixados
 
 O app baixa os dados sozinho: quando você entra, enquanto usa (no máximo a cada 15 minutos),
-logo depois de uma mudança na agenda ou nas músicas e quando a conexão volta. Uma faixa no
-topo da tela diz como estão os dados:
+logo depois de uma mudança na agenda ou nas músicas e quando a conexão volta. Quando está tudo
+certo, nada aparece. Na Agenda, nas Músicas e nos eventos, uma faixa no topo da tela avisa
+quando há um problema:
 
-- **Disponível sem internet. Atualizado...**: tudo certo.
 - **Sem conexão. Mostrando os dados de...**: você está sem internet, vendo o que foi baixado.
   Depois de um dia, ela avisa que os dados **podem estar desatualizados**.
 - **Sem conexão, e nada foi baixado neste aparelho ainda.**: abra o app uma vez com internet.
+- **Sua sessão expirou. Mostrando os dados de...**: toque em **Entrar para atualizar**.
 
-Toque na faixa **Disponível sem internet**, ou em **Atualizar dados agora** nas
-[Configurações](/ajuda/configuracoes), para baixar tudo de novo na hora. Quando termina, ela
-mostra **Atualizado este minuto** e some por uma hora, para não ocupar espaço. Os avisos de
-sem conexão continuam aparecendo sempre. Antes de um show, abra a agenda e o evento com internet
-e toque na faixa para ter certeza de que está tudo baixado.
+Para saber quando os dados foram baixados, ou para baixar tudo de novo na hora, toque em
+**Atualizar dados agora** nas [Configurações](/ajuda/configuracoes). Antes de um show, abra a
+agenda e o evento com internet e faça isso para ter certeza de que está tudo baixado.
 
 Se os dados pararem de ser baixados mesmo com internet, aparece no pé da tela **Os dados deste
 aparelho podem estar desatualizados.** Toque em **Atualizar** para baixar de novo.

@@ -44,4 +44,7 @@ Mostra quando os dados guardados para usar [sem internet](/ajuda/celular) foram 
 show, ou quando a internet voltar depois de um tempo sem conexão. Se não der certo, aparece **Não
 foi possível baixar agora**: confira a conexão e tente de novo.
 
+No iPhone, enquanto o app não está [instalado](/ajuda/celular), aparece aqui a dica de
+adicioná-lo à Tela de Início: instalado, ele guarda os dados muito melhor que uma aba do Safari.
+
 Se a sua sessão expirou, toque em **Entrar para atualizar** e entre de novo.

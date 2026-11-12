@@ -381,7 +381,6 @@
     "noCopy": "No connection, and nothing has been downloaded to this device yet.",
     "offline": "No connection. Showing data from {when}.",
     "expired": "Your session has expired. Showing data from {when}.",
-    "saved": "Available offline. Updated {when}.",
     "stale": "It may be out of date.",
     "installHint": "Add it to your home screen to keep the data stored.",
     "downloadFailed": "Couldn't download right now.",
@@ -395,8 +394,7 @@
     "goToAgenda": "Go to the calendar",
     "retry": "Try again",
     "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?",
-    "listPartial": "Offline, the list shows only the downloaded events, from {from} to {to}.",
-    "tapToUpdate": "Tap to update"
+    "listPartial": "Offline, the list shows only the downloaded events, from {from} to {to}."
   },
   "manual": {
     "title": "Help",

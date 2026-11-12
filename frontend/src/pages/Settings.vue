@@ -95,6 +95,9 @@ async function refreshData() {
   refreshing.value = false
 }
 
+// Installed apps on iPhones keep their data much better than a Safari tab does
+const shouldSuggestInstall = /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone
+
 function signIn() {
   router.push({ path: '/login', query: { redirect: route.fullPath } })
 }
@@ -183,6 +186,7 @@ function signIn() {
         <h2><i class="fa-solid fa-cloud-arrow-down"></i> {{ $t('settings.offlineData') }}</h2>
         <div class="form">
           <p class="settings-hint">{{ $t('settings.offlineIntro') }}</p>
+          <p v-if="shouldSuggestInstall" class="settings-hint">{{ $t('offline.installHint') }}</p>
           <p class="settings-copy-state" aria-live="polite">
             {{ copyInfo ? $t('settings.savedAt', { when: savedWhen }) : $t('settings.noCopy') }}
           </p>

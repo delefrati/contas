@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { ref } from 'vue'
 import OfflineBar from './OfflineBar.vue'
@@ -19,9 +19,8 @@ vi.mock('../offline/snapshot', async () => {
 })
 
 const sessionExpired = ref(false)
-const syncCopy = vi.fn()
 vi.mock('../composables/useAuth', () => ({
-  useAuth: () => ({ sessionExpired, syncCopy }),
+  useAuth: () => ({ sessionExpired }),
 }))
 
 vi.mock('vue-router', () => ({
@@ -31,13 +30,12 @@ vi.mock('vue-router', () => ({
 
 const messages = {
   en: {
-    actions: { loading: 'Loading...' },
     offline: {
-      saved: 'Available offline. Updated {when}.',
       offline: 'Offline. Showing data from {when}.',
-      downloadFailed: 'Could not download now.',
-      tapToUpdate: 'Tap to update',
+      expired: 'Your session expired. Showing data from {when}.',
+      noCopy: 'Offline, and nothing was downloaded on this device yet.',
       stale: 'May be out of date.',
+      signIn: 'Sign in to update',
     },
   },
 }
@@ -49,63 +47,38 @@ function mountBar() {
 
 describe('OfflineBar', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
-    vi.clearAllMocks()
-    localStorage.clear()
     sessionExpired.value = false
     state.connectionLost.value = false
     state.copyInfo.value = { savedAt: Date.now() - 10 * 60_000 }
-    syncCopy.mockImplementation(async () => {
-      state.copyInfo.value = { savedAt: Date.now() }
-      return 'saved'
-    })
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('should download again when tapped, show it worked, then hide for a while', async () => {
-    const wrapper = mountBar()
-    const strip = wrapper.find('button.offline-bar')
-    expect(strip.text()).toContain('Tap to update')
-
-    await strip.trigger('click')
-    await flushPromises()
-    expect(syncCopy).toHaveBeenCalledWith({ force: true })
-    expect(wrapper.find('.offline-bar').text()).toContain('Updated')
-
-    vi.advanceTimersByTime(2000)
-    await flushPromises()
-    expect(wrapper.find('.offline-bar').exists()).toBe(false)
-
-    // Still hidden on the next screen, back after an hour
+  it('stays out of the way while everything is fine', () => {
     expect(mountBar().find('.offline-bar').exists()).toBe(false)
-    vi.advanceTimersByTime(59 * 60 * 1000)
-    expect(mountBar().find('.offline-bar').exists()).toBe(false)
-    vi.advanceTimersByTime(60 * 1000)
-    expect(mountBar().find('.offline-bar').exists()).toBe(true)
   })
 
-  it('should stay, with the error, when the download fails', async () => {
-    syncCopy.mockResolvedValue('failed')
-    const wrapper = mountBar()
-
-    await wrapper.find('button.offline-bar').trigger('click')
-    await flushPromises()
-    vi.advanceTimersByTime(5000)
-    await flushPromises()
-    const strip = wrapper.find('button.offline-bar')
-    expect(strip.text()).toContain('Could not download now.')
-    expect(strip.classes()).toContain('is-warning')
-    expect(strip.attributes('disabled')).toBeUndefined()
-  })
-
-  it('should keep showing the offline warning, which is not tappable', async () => {
-    localStorage.setItem('offline_bar_hidden_until', String(Date.now() + 60_000))
+  it('says the data shown is the downloaded copy when there is no connection', () => {
     state.connectionLost.value = true
-    const wrapper = mountBar()
-    expect(wrapper.find('div.offline-bar').text()).toContain('Offline.')
-    expect(wrapper.find('button.offline-bar').exists()).toBe(false)
+    const text = mountBar().find('.offline-bar').text()
+    expect(text).toContain('Offline. Showing data from 10 minutes ago.')
+    expect(text).not.toContain('May be out of date.')
+  })
+
+  it('warns when that copy is more than a day old', () => {
+    state.connectionLost.value = true
+    state.copyInfo.value = { savedAt: Date.now() - 2 * 24 * 60 * 60_000 }
+    expect(mountBar().find('.offline-bar').text()).toContain('May be out of date.')
+  })
+
+  it('says when nothing was downloaded yet', () => {
+    state.connectionLost.value = true
+    state.copyInfo.value = null
+    expect(mountBar().find('.offline-bar').text()).toContain('nothing was downloaded')
+  })
+
+  it('offers to sign in again when the session expired', () => {
+    sessionExpired.value = true
+    const bar = mountBar().find('.offline-bar')
+    expect(bar.text()).toContain('Your session expired.')
+    expect(bar.find('button').text()).toBe('Sign in to update')
   })
 })
