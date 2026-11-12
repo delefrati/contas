@@ -384,7 +384,6 @@
     "saved": "Available offline. Updated {when}.",
     "stale": "It may be out of date.",
     "installHint": "Add it to your home screen to keep the data stored.",
-    "downloadAgain": "Download again",
     "downloadFailed": "Couldn't download right now.",
     "signIn": "Sign in to update",
     "notDownloaded": "This event wasn't downloaded for offline use.",
@@ -396,7 +395,8 @@
     "goToAgenda": "Go to the calendar",
     "retry": "Try again",
     "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?",
-    "listPartial": "Offline, the list shows only the downloaded events, from {from} to {to}."
+    "listPartial": "Offline, the list shows only the downloaded events, from {from} to {to}.",
+    "tapToUpdate": "Tap to update"
   },
   "manual": {
     "title": "Help",
@@ -412,5 +412,10 @@
     "text": "This address does not exist on minhabanda.com. It may have been mistyped, or the page has moved.",
     "home": "Go to the start",
     "help": "See the help"
+  },
+  "update": {
+    "available": "A new version of the app is available.",
+    "apply": "Update",
+    "dataStale": "The data on this device may be out of date."
   }
 }

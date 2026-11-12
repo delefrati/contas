@@ -384,7 +384,6 @@
     "saved": "Disponível sem internet. Atualizado {when}.",
     "stale": "Podem estar desatualizados.",
     "installHint": "Adicione à tela inicial para manter os dados guardados.",
-    "downloadAgain": "Baixar de novo",
     "downloadFailed": "Não foi possível baixar agora.",
     "signIn": "Entrar para atualizar",
     "notDownloaded": "Este evento não foi baixado para uso sem internet.",
@@ -396,7 +395,8 @@
     "goToAgenda": "Ir para a agenda",
     "retry": "Tentar de novo",
     "confirmLogout": "Ao sair, os dados baixados serão apagados deste aparelho e só voltam com internet. Sair mesmo assim?",
-    "listPartial": "Sem internet, a lista mostra só os eventos baixados, de {from} a {to}."
+    "listPartial": "Sem internet, a lista mostra só os eventos baixados, de {from} a {to}.",
+    "tapToUpdate": "Toque para atualizar"
   },
   "manual": {
     "title": "Ajuda",
@@ -412,5 +412,10 @@
     "text": "Este endereço não existe no minhabanda.com. Pode ter sido digitado errado ou a página mudou de lugar.",
     "home": "Ir para o início",
     "help": "Ver a ajuda"
+  },
+  "update": {
+    "available": "Há uma versão nova do app.",
+    "apply": "Atualizar",
+    "dataStale": "Os dados deste aparelho podem estar desatualizados."
   }
 }

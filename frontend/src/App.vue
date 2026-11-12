@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useBand } from './composables/useBand'
 import OfflineNotice from './components/OfflineNotice.vue'
+import UpdateBar from './components/UpdateBar.vue'
 import { connectionLost } from './offline/connection'
 import { accessRevoked } from './offline/snapshot'
 
@@ -40,6 +41,8 @@ watch([accessRevoked, () => route.query.visualizar], ([revoked, stage]) => {
 <template>
   <OfflineNotice v-if="needsConnection" />
   <router-view v-else />
+  <!-- Never over the stage view: a show isn't the time to update -->
+  <UpdateBar v-if="route.query.visualizar !== '1'" />
 </template>
 
 <style>

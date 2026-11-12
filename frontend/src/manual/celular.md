@@ -38,8 +38,13 @@ topo da tela diz como estão os dados:
   Depois de um dia, ela avisa que os dados **podem estar desatualizados**.
 - **Sem conexão, e nada foi baixado neste aparelho ainda.**: abra o app uma vez com internet.
 
-**Baixar de novo** força uma atualização. Antes de um show, abra a agenda e o evento com
-internet para ter certeza de que está tudo baixado.
+Toque na faixa **Disponível sem internet** para baixar tudo de novo na hora. Quando termina, ela
+mostra **Atualizado este minuto** e some por uma hora, para não ocupar espaço. Os avisos de
+sem conexão continuam aparecendo sempre. Antes de um show, abra a agenda e o evento com internet
+e toque na faixa para ter certeza de que está tudo baixado.
+
+Se os dados pararem de ser baixados mesmo com internet, aparece no pé da tela **Os dados deste
+aparelho podem estar desatualizados.** Toque em **Atualizar** para baixar de novo.
 
 Os dados guardados são apagados quando você sai do sistema, quando é desativado, quando a
 banda é desativada ou depois de 14 dias sem atualizar. Se outra pessoa entrar no mesmo
@@ -47,8 +52,13 @@ celular, ela começa do zero.
 
 ## Atualizações do app
 
-Uma versão nova do app só é usada depois que você fecha e abre o app de novo. Ela nunca troca
-no meio de um show.
+Quando sai uma versão nova, o app baixa sozinho e mostra **Há uma versão nova do app.**, no pé
+da tela. Toque em **Atualizar** para usar a versão nova na hora: os dados são baixados de novo, a
+tela recarrega e você continua onde estava. Se preferir, ignore o aviso: a versão nova entra quando você fechar e abrir o app de
+novo. No navegador do computador é igual.
+
+O app nunca se atualiza sozinho no meio do uso, e o aviso não aparece na visualização para o
+palco, para não atrapalhar um show.
 
 ## A agenda no calendário do celular
 
