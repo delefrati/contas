@@ -17,7 +17,9 @@ banda.
 
 ## Mudar e desativar
 
-- **O lápis** muda o nome e o email.
+- **O lápis** muda o nome e o email. Cuidado com o email: se ele deixar de ser o da conta
+  Google da pessoa, ela não consegue mais entrar. Cada um também muda o próprio nome nas
+  [Configurações](/ajuda/configuracoes).
 - **Desativar** tira o acesso da pessoa na hora: ela não entra mais, e o que estava baixado
   no celular dela é apagado. **Ativar** devolve o acesso.
 

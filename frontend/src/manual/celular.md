@@ -20,7 +20,9 @@ Sem conexão continuam abrindo:
 
 - a [Agenda](/ajuda/agenda), do mês passado até um ano à frente;
 - cada [evento](/ajuda/evento), com o repertório e a visualização para o palco;
-- as [Músicas](/ajuda/musicas) e as letras.
+- as [Músicas](/ajuda/musicas) e as letras;
+- as [Configurações](/ajuda/configuracoes), para trocar o tema e o idioma ou tentar baixar os
+  dados de novo.
 
 Sem internet dá para ver, compartilhar e imprimir, mas não mudar nada. Início, Financeiro,
 Integrantes e Registros mostram **Esta tela precisa de internet**, com um botão para ir à

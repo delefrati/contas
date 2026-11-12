@@ -55,7 +55,8 @@ O evento que recebeu a cópia abre em seguida.
   letra. Com a letra aberta, o rodapé mostra **Música 3 de 12** e avançar passa para a próxima
   música. **Fechar letra** volta ao bloco.
 - **A− e A+** mudam o tamanho da letra, e o sol ou a lua alterna entre o modo claro e o
-  escuro. As duas escolhas ficam guardadas.
+  escuro. As duas escolhas ficam guardadas. Antes de você escolher, a visualização segue o
+  tema das [Configurações](/ajuda/configuracoes).
 - **Sair** fecha a visualização.
 
 Enquanto a visualização está aberta, a tela do celular não apaga e os dados não se atualizam
