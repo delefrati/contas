@@ -264,6 +264,7 @@ function signIn() {
   background: var(--bg);
   color: var(--text);
   font: inherit;
+  white-space: nowrap;
   cursor: pointer;
 }
 @media (max-width: 600px) {
@@ -272,6 +273,7 @@ function signIn() {
     gap: 4px;
     padding: 8px 6px;
     font-size: 0.85rem;
+    white-space: normal;
   }
 }
 .theme-option:hover {

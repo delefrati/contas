@@ -3,6 +3,8 @@
 Toque na engrenagem, no cabeçalho de qualquer tela, ou no seu nome. As **Configurações** abrem
 também sem internet.
 
+![As configurações](/manual/configuracoes.png)
+
 ## Meus dados
 
 Mude o seu **nome** e toque em **Salvar**. Ele aparece no cabeçalho e, para a banda, em

@@ -21,8 +21,25 @@ The manual for members and super admins, in Portuguese, is in
 [`frontend/src/manual/`](frontend/src/manual), one markdown file per part, starting with
 [`entrar.md`](frontend/src/manual/entrar.md). The app shows it at `/ajuda`, signed out and
 offline too, with a Help link on every screen; its screenshots are in
-[`frontend/public/manual/`](frontend/public/manual). When a screen changes, update its part and
-retake its screenshot from a local stack with made-up data (see the `/verify` skill).
+[`frontend/public/manual/`](frontend/public/manual).
+
+**Every change to a screen's layout or behaviour updates the manual in the same commit:** the text
+of its part and, if the screen looks different, its screenshots. To retake them:
+
+```bash
+scripts/manual-screenshots.sh                  # every screenshot
+scripts/manual-screenshots.sh agenda evento    # only these
+scripts/manual-screenshots.sh --keep           # and leave the stack up to take prints by hand
+scripts/manual-screenshots.sh --down           # stop a stack left up with --keep
+```
+
+It starts a separate local stack (its own database; stop the dev stack first, they share the
+ports), fills it with the made-up band "Os Exemplos" from
+[`scripts/manual/seed.mjs`](scripts/manual/seed.mjs) (members, songs with lyrics, events with a
+setlist, expenses and a super admin, with dates around today) and takes the screenshots listed in
+[`scripts/manual/screenshots.mjs`](scripts/manual/screenshots.mjs) in the light theme. With
+`--keep` it prints a line to paste in the browser console to sign in as Ana Souza. A new screen
+in the manual gets a line in that list and a `![...](/manual/<name>.png)` in its part.
 
 ## Tickets
 

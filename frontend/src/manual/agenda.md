@@ -21,6 +21,8 @@ Toque em **Lista**, no alto da agenda, para ver todos os eventos e repertórios 
 calendário, separados por mês. A agenda passa a abrir na lista neste aparelho, até você tocar
 em **Calendário** de novo.
 
+![A lista de eventos](/manual/agenda-lista.png)
+
 - **Próximos** mostra os eventos de hoje em diante, do mais perto para o mais longe.
 - **Já passaram** mostra os anteriores, do mais recente para o mais antigo.
 - **Todos** mostra os dois, primeiro os próximos.

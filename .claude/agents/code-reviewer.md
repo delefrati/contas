@@ -48,6 +48,14 @@ to apply fixes.
    (applied by `prisma migrate deploy` when the backend container starts).
    Check that new band-owned models get a `bandId` column + `@@index([bandId])`
    and that the migration is safe on the existing prod data.
+6. **The user manual.** A change to what a screen shows or how it works
+   (`frontend/src/pages`, `frontend/src/components`, labels in the `pt`
+   locale, styles) must update the matching part of the manual in
+   `frontend/src/manual/*.md` in the same change, and retake the affected
+   screenshots in `frontend/public/manual/` with
+   `scripts/manual-screenshots.sh <name>...`. Grep the manual for the labels
+   and screens touched; text or images that no longer match the app are a
+   finding.
 
 ## How to verify, not just read
 

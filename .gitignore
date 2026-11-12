@@ -6,3 +6,6 @@ doc/
 !.env.prod.example
 coverage/
 backup-prod-*.sql
+
+# Sessions of the manual screenshot stack (scripts/manual-screenshots.sh)
+scripts/manual/.session.json
