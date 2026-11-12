@@ -16,7 +16,7 @@ vi.mock('../composables/useAuth', () => ({
 
 const Page = { template: '<div />' }
 
-async function headerOn(path, { slots } = {}) {
+async function headerOn(path, { slots, props } = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -35,7 +35,7 @@ async function headerOn(path, { slots } = {}) {
   await router.push(path)
   const i18n = createI18n({ legacy: false, locale: 'pt', messages: { pt } })
   const wrapper = mount(AppHeader, {
-    props: { icon: 'fa-house', title: 'Teste' },
+    props: { icon: 'fa-house', title: 'Teste', ...props },
     slots,
     global: { plugins: [i18n, router] },
     attachTo: document.body,
@@ -80,6 +80,23 @@ describe('AppHeader settings', () => {
   it('leaves the gear out on the settings page itself', async () => {
     const wrapper = await headerOn('/configuracoes')
     expect(wrapper.find(`a[aria-label="${pt.settings.open}"]`).exists()).toBe(false)
+  })
+})
+
+describe('AppHeader logo and title', () => {
+  it('go back to the Início', async () => {
+    const wrapper = await headerOn('/agenda')
+    const home = wrapper.find('a.header-home')
+    expect(home.attributes('href')).toBe('/dashboard')
+    expect(home.find('.header-title').text()).toBe('Teste')
+    expect(home.find('.header-logo').exists()).toBe(true)
+  })
+
+  it('stay as they are on the Início, where the logo changes it', async () => {
+    const wrapper = await headerOn('/dashboard', { props: { logoEditable: true } })
+    expect(wrapper.find('a.header-home').exists()).toBe(false)
+    await wrapper.find('button.header-logo').trigger('click')
+    expect(wrapper.emitted('edit-logo')).toHaveLength(1)
   })
 })
 

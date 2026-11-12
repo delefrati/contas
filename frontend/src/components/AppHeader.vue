@@ -8,7 +8,7 @@ import { connectionLost } from '../offline/connection'
 import { copyInfo } from '../offline/snapshot'
 import { helpPath } from '../manual'
 
-defineProps({
+const props = defineProps({
   icon: { type: String, required: true },
   title: { type: String, required: true },
   // Shown instead of the icon when set
@@ -34,6 +34,9 @@ const sections = [
 ]
 
 const otherSections = computed(() => sections.filter((s) => s.path !== route.path))
+
+// On the Início itself the logo is the button that changes it
+const homeLink = computed(() => !props.logoEditable && route.path !== '/dashboard')
 
 // On a phone only the logo and the name stay in the header; the buttons go into a menu
 const PHONE_QUERY = '(max-width: 600px)'
@@ -87,20 +90,28 @@ async function handleLogout() {
   <header class="header">
     <div class="header-top">
       <h1>
+        <!-- The logo and the title go back to the Início, except on it, where the logo changes it -->
         <component
-          :is="logoEditable ? 'button' : 'span'"
-          :type="logoEditable ? 'button' : undefined"
-          class="header-logo"
-          :class="{ 'is-editable': logoEditable }"
-          :title="logoEditable ? $t('band.changeLogo') : undefined"
-          :aria-label="logoEditable ? $t('band.changeLogo') : undefined"
-          @click="logoEditable && emit('edit-logo')"
+          :is="homeLink ? 'router-link' : 'span'"
+          :to="homeLink ? '/dashboard' : undefined"
+          :title="homeLink ? $t('home.title') : undefined"
+          class="header-home"
         >
-          <img v-if="logo" :src="logo" alt="" />
-          <i v-else class="fa-solid" :class="icon"></i>
-          <span v-if="logoEditable" class="header-logo-edit"><i class="fa-solid fa-camera"></i></span>
+          <component
+            :is="logoEditable ? 'button' : 'span'"
+            :type="logoEditable ? 'button' : undefined"
+            class="header-logo"
+            :class="{ 'is-editable': logoEditable }"
+            :title="logoEditable ? $t('band.changeLogo') : undefined"
+            :aria-label="logoEditable ? $t('band.changeLogo') : undefined"
+            @click="logoEditable && emit('edit-logo')"
+          >
+            <img v-if="logo" :src="logo" alt="" />
+            <i v-else class="fa-solid" :class="icon"></i>
+            <span v-if="logoEditable" class="header-logo-edit"><i class="fa-solid fa-camera"></i></span>
+          </component>
+          <span class="header-title">{{ title }}</span>
         </component>
-        <span class="header-title">{{ title }}</span>
       </h1>
       <div v-if="!isPhone" class="header-controls">
         <nav class="header-nav">
@@ -220,9 +231,19 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+}
+.header-home {
+  display: flex;
+  align-items: center;
   /* The space the text had after the logo before this was a flex row */
   column-gap: 0.25em;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+a.header-home:hover .header-title {
+  color: var(--accent);
 }
 .header-title {
   min-width: 0;
