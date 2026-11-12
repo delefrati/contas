@@ -22,3 +22,39 @@ export function nextTypeColor(types) {
   const used = new Set(types.map((type) => type.color))
   return TYPE_COLORS.find((color) => !used.has(color)) || TYPE_COLORS[types.length % TYPE_COLORS.length]
 }
+
+// Lowercase without accents, so "sao joao" finds "São João"
+function searchable(text) {
+  return (text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+// Every word typed has to appear in the name, the type or the place
+export function matchesSearch(event, search) {
+  const words = searchable(search).split(/\s+/).filter(Boolean)
+  if (words.length === 0) return true
+  const haystack = searchable([eventName(event), event?.type?.name, event?.location].join(' '))
+  return words.every((word) => haystack.includes(word))
+}
+
+export const LIST_PERIODS = ['upcoming', 'past', 'all']
+
+// The events for the list, split around today: the next ones soonest first, the past ones
+// latest first. Events come from the API ordered by date and time.
+export function listEvents(events, { period = 'upcoming', search = '', today }) {
+  const found = events.filter((event) => matchesSearch(event, search))
+  return {
+    upcoming: period === 'past' ? [] : found.filter((event) => event.date >= today),
+    past: period === 'upcoming' ? [] : found.filter((event) => event.date < today).reverse(),
+  }
+}
+
+// Consecutive events of the same month, as [{ month: 'YYYY-MM', events }]
+export function groupByMonth(events) {
+  const groups = []
+  for (const event of events) {
+    const month = event.date.slice(0, 7)
+    if (groups.at(-1)?.month !== month) groups.push({ month, events: [] })
+    groups.at(-1).events.push(event)
+  }
+  return groups
+}

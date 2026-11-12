@@ -223,7 +223,15 @@
     "successCreate": "¡Evento creado con éxito!",
     "successUpdate": "¡Evento actualizado con éxito!",
     "successDelete": "¡Evento eliminado con éxito!",
-    "confirmDelete": "¿Eliminar el evento \"{name}\" del {date}?"
+    "confirmDelete": "¿Eliminar el evento \"{name}\" del {date}?",
+    "viewCalendar": "Calendario",
+    "viewList": "Lista",
+    "periodFilter": "Período",
+    "periodUpcoming": "Próximos",
+    "periodPast": "Pasados",
+    "periodAll": "Todos",
+    "search": "Buscar por nombre, tipo o lugar",
+    "listEmpty": "No se encontraron eventos."
   },
   "calendarFeed": {
     "button": "Mi calendario",
@@ -387,7 +395,8 @@
     "noticeText": "La agenda, las canciones y las letras descargadas siguen disponibles sin conexión.",
     "goToAgenda": "Ir a la agenda",
     "retry": "Reintentar",
-    "confirmLogout": "Al salir, los datos descargados se borrarán de este dispositivo y solo se recuperan con internet. ¿Salir de todos modos?"
+    "confirmLogout": "Al salir, los datos descargados se borrarán de este dispositivo y solo se recuperan con internet. ¿Salir de todos modos?",
+    "listPartial": "Sin internet, la lista muestra solo los eventos descargados, del {from} al {to}."
   },
   "manual": {
     "title": "Ayuda",

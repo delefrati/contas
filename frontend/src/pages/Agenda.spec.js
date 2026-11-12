@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { ref } from 'vue'
 import Agenda from './Agenda.vue'
-import { todayISO } from '../utils/date'
+import { isoDate, todayISO } from '../utils/date'
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -37,6 +37,8 @@ const messages = {
       songCount: 'no songs | {n} song | {n} songs', addOnDay: 'Add event on {date}',
       share: 'Share', shareSuccess: 'Calendar copied!',
       shareUpcoming: 'Upcoming', upcoming: 'Upcoming dates', noUpcoming: 'Nothing upcoming',
+      viewCalendar: 'Calendar', viewList: 'List', periodUpcoming: 'Next', periodPast: 'Past',
+      periodAll: 'All', search: 'Search', listEmpty: 'No events found.',
     },
     errors: { genericError: 'An error occurred' },
   },
@@ -244,5 +246,92 @@ describe('Agenda', () => {
     expect(modal.attributes('data-open')).toBe('true')
     expect(modal.attributes('data-date')).toBe('2026-10-15')
     expect(modal.attributes('data-types')).toBe('3')
+  })
+  describe('list', () => {
+    // Relative to today, since the list splits around it
+    function daysFromToday(days) {
+      const date = new Date()
+      date.setDate(date.getDate() + days)
+      return isoDate(date)
+    }
+    const listed = [
+      { id: 21, typeId: 1, type: show, title: 'Festa Junina', date: daysFromToday(-60), time: '', location: 'Praça', songCount: 20 },
+      { id: 22, typeId: 2, type: rehearsal, title: '', date: daysFromToday(-3), time: '', location: null, songCount: 4 },
+      { id: 23, typeId: 1, type: show, title: 'Bar do Zé', date: daysFromToday(0), time: '21:00', location: 'Centro', songCount: 12 },
+      { id: 24, typeId: 1, type: show, title: 'Réveillon', date: daysFromToday(45), time: '', location: 'Centro', songCount: 0 },
+    ]
+    const names = (wrapper) => wrapper.findAll('.event-row .event-name').map((name) => name.text())
+    const tab = (wrapper, label) => wrapper.findAll('.tab-button').find((button) => button.text() === label)
+    const chip = (wrapper, label) => wrapper.findAll('.period-chip').find((button) => button.text() === label)
+
+    beforeEach(() => {
+      mockFetch.mockImplementation((url) => respond(url.includes('/api/event-types') ? types : listed))
+    })
+
+    it('should load every event and list the next ones, soonest first, without the calendar', async () => {
+      const { wrapper } = await createWrapper('/agenda?ver=lista')
+      expect(eventsUrls()).toEqual([expect.stringMatching(/\/api\/events$/)])
+      expect(wrapper.find('.calendar').exists()).toBe(false)
+      expect(names(wrapper)).toEqual(['Show Bar do Zé', 'Show Réveillon'])
+      expect(wrapper.find('.list-title').text()).toBe('Next (2)')
+      expect(wrapper.findAll('.list-month-title').length).toBeGreaterThan(0)
+      expect(wrapper.findAll('button').some((b) => b.text() === 'Share')).toBe(false)
+    })
+
+    it('should list the past events latest first, and both for all', async () => {
+      const { wrapper, router } = await createWrapper('/agenda?ver=lista')
+      await chip(wrapper, 'Past').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.query.periodo).toBe('passados')
+      expect(names(wrapper)).toEqual(['Rehearsal Rehearsal', 'Show Festa Junina'])
+
+      await chip(wrapper, 'All').trigger('click')
+      await flushPromises()
+      expect(names(wrapper)).toEqual(['Show Bar do Zé', 'Show Réveillon', 'Rehearsal Rehearsal', 'Show Festa Junina'])
+      expect(wrapper.findAll('.list-title').map((title) => title.text())).toEqual(['Next (2)', 'Past (2)'])
+    })
+
+    it('should find events by name, type or place, and keep the search in the URL', async () => {
+      const { wrapper, router } = await createWrapper('/agenda?ver=lista&periodo=todos')
+      await wrapper.find('input[type="search"]').setValue('centro')
+      await flushPromises()
+      expect(names(wrapper)).toEqual(['Show Bar do Zé', 'Show Réveillon'])
+      expect(router.currentRoute.value.query.busca).toBe('centro')
+
+      await wrapper.find('input[type="search"]').setValue('nothing like it')
+      await flushPromises()
+      expect(wrapper.find('.empty-state').text()).toBe('No events found.')
+    })
+
+    it('should hide the types unchecked in the filter', async () => {
+      const { wrapper } = await createWrapper('/agenda?ver=lista&periodo=passados')
+      await filterChip(wrapper, 'Rehearsal').trigger('click')
+      expect(names(wrapper)).toEqual(['Show Festa Junina'])
+    })
+
+    it('should remember the list and open on it next time', async () => {
+      const { wrapper, router } = await createWrapper('/agenda')
+      expect(wrapper.find('.calendar').exists()).toBe(true)
+      await tab(wrapper, 'List').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.query.ver).toBe('lista')
+      expect(eventsUrls().at(-1)).toMatch(/\/api\/events$/)
+      expect(wrapper.find('.calendar').exists()).toBe(false)
+
+      const { wrapper: reopened } = await createWrapper('/agenda')
+      expect(reopened.find('.calendar').exists()).toBe(false)
+      expect(names(reopened)).toEqual(['Show Bar do Zé', 'Show Réveillon'])
+    })
+
+    it('should go back to the calendar of the month', async () => {
+      localStorage.setItem('agenda_view', 'list')
+      const { wrapper } = await createWrapper('/agenda?mes=2026-10')
+      mockFetch.mockImplementation((url) => respond(url.includes('/api/event-types') ? types : events))
+      await tab(wrapper, 'Calendar').trigger('click')
+      await flushPromises()
+      expect(eventsUrls().at(-1)).toContain('/api/events?from=2026-09-27&to=2026-10-31')
+      expect(wrapper.findAll('.event-chip')).toHaveLength(3)
+      expect(localStorage.getItem('agenda_view')).toBe('calendar')
+    })
   })
 })

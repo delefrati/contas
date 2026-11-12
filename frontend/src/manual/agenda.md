@@ -1,7 +1,8 @@
 # Agenda
 
-A **Agenda** mostra os shows, ensaios e outros eventos da banda, mês a mês. Cada evento tem a
-sua página, com o repertório: veja [Evento e repertório](/ajuda/evento).
+A **Agenda** mostra os shows, ensaios e outros eventos da banda, mês a mês no **Calendário**
+ou todos de uma vez na **Lista**. Cada evento tem a sua página, com o repertório: veja
+[Evento e repertório](/ajuda/evento).
 
 ![A agenda](/manual/agenda.png)
 
@@ -13,6 +14,21 @@ sua página, com o repertório: veja [Evento e repertório](/ajuda/evento).
 - Toque em um evento para abrir a página dele. Ao voltar, a agenda continua no mesmo mês.
 - Com dois ou mais tipos de evento cadastrados, aparece **Mostrar:** com um botão por tipo.
   Toque para esconder ou mostrar aquele tipo. A escolha fica guardada neste aparelho.
+
+## A lista de eventos
+
+Toque em **Lista**, no alto da agenda, para ver todos os eventos e repertórios sem o
+calendário, separados por mês. A agenda passa a abrir na lista neste aparelho, até você tocar
+em **Calendário** de novo.
+
+- **Próximos** mostra os eventos de hoje em diante, do mais perto para o mais longe.
+- **Já passaram** mostra os anteriores, do mais recente para o mais antigo.
+- **Todos** mostra os dois, primeiro os próximos.
+- A busca acha os eventos pelo nome, pelo tipo ou pelo local. Não precisa acento: "sao joao"
+  acha "São João".
+- O filtro **Mostrar:** também vale para a lista.
+
+Ao abrir um evento e voltar, a lista continua com a mesma busca e o mesmo período.
 
 ## Criar um evento
 
@@ -63,5 +79,5 @@ padrão** dos eventos sem término. Elas valem para os calendários de todos os 
 ## Sem internet
 
 A agenda abre sem internet, com os eventos do mês passado até um ano à frente, se já foram
-baixados. Nesse caso dá para ver e compartilhar, mas não criar nem mudar eventos. Veja
+baixados. A lista também mostra só esses: os mais antigos voltam com a conexão. Nesse caso dá para ver e compartilhar, mas não criar nem mudar eventos. Veja
 [No celular](/ajuda/celular).

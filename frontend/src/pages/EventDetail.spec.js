@@ -151,6 +151,19 @@ describe('EventDetail', () => {
     })
   })
 
+  it('should go back to the month of the event', async () => {
+    window.history.replaceState(null, '')
+    const { wrapper } = await createWrapper()
+    expect(wrapper.find('.back-link').attributes('href')).toMatch(/^\/agenda\?mes=\d{4}-\d{2}$/)
+  })
+
+  it('should go back to the agenda as it was left, such as the list with a search', async () => {
+    window.history.replaceState({ back: '/agenda?ver=lista&busca=ze' }, '')
+    const { wrapper } = await createWrapper()
+    expect(wrapper.find('.back-link').attributes('href')).toBe('/agenda?ver=lista&busca=ze')
+    window.history.replaceState(null, '')
+  })
+
   it('should show the event and its setlist', async () => {
     const { wrapper } = await createWrapper()
     expect(wrapper.find('.event-heading').text()).toContain('Bar do Zé')

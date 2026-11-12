@@ -45,9 +45,13 @@ const copying = ref(false)
 
 const eventId = computed(() => Number(route.params.id))
 
-const agendaLink = computed(() =>
-  event.value ? { path: '/agenda', query: { mes: event.value.date.slice(0, 7) } } : '/agenda',
-)
+// Back to the agenda as it was left (the list with its search, or a month), when it opened this
+// event; otherwise to the event's month
+const agendaLink = computed(() => {
+  const back = window.history.state?.back
+  if (typeof back === 'string' && /^\/agenda(\?|$)/.test(back)) return back
+  return event.value ? { path: '/agenda', query: { mes: event.value.date.slice(0, 7) } } : '/agenda'
+})
 
 const filteredSongs = computed(() => {
   const term = songFilter.value.trim().toLowerCase()

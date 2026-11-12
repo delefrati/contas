@@ -10,8 +10,9 @@ import OfflineBar from '../components/OfflineBar.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import EventTypesModal from '../components/EventTypesModal.vue'
 import CalendarFeedModal from '../components/CalendarFeedModal.vue'
+import EventRow from '../components/EventRow.vue'
 import { formatDate as formatLocalDate, localeTag, monthGrid, parseDate, todayISO } from '../utils/date'
-import { eventName, eventTime, typeStyle } from '../utils/events'
+import { eventName, eventTime, groupByMonth, LIST_PERIODS, listEvents, typeStyle } from '../utils/events'
 import { copyInfo, readSnapshot } from '../offline/snapshot'
 import { readStagePosition } from '../offline/stage'
 
@@ -79,6 +80,74 @@ const visibleEvents = computed(() =>
 
 const today = todayISO()
 
+// Calendar or list, in the URL (?ver=lista) so going back from an event returns to it, and
+// remembered per browser so whoever prefers the list never has to open the calendar
+const VIEW_KEY = 'agenda_view'
+const VIEW_QUERY = { calendar: 'calendario', list: 'lista' }
+
+function readStoredView() {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'calendar'
+  } catch {
+    return 'calendar'
+  }
+}
+
+const view = computed(() => {
+  const fromUrl = Object.keys(VIEW_QUERY).find((key) => VIEW_QUERY[key] === route.query.ver)
+  return fromUrl || readStoredView()
+})
+
+function setView(next) {
+  try {
+    localStorage.setItem(VIEW_KEY, next)
+  } catch {
+    // Not remembering the view is fine
+  }
+  router.replace({ query: { ...route.query, ver: VIEW_QUERY[next] } })
+}
+
+// The list's period and search are in the URL too (?periodo=passados&busca=...)
+const PERIOD_QUERY = { upcoming: 'proximos', past: 'passados', all: 'todos' }
+
+const period = computed(() =>
+  LIST_PERIODS.find((key) => PERIOD_QUERY[key] === route.query.periodo) || 'upcoming',
+)
+
+function setPeriod(next) {
+  const { periodo, ...query } = route.query
+  router.replace({ query: next === 'upcoming' ? query : { ...query, periodo: PERIOD_QUERY[next] } })
+}
+
+const search = ref(typeof route.query.busca === 'string' ? route.query.busca : '')
+
+watch(search, (value) => {
+  const { busca, ...query } = route.query
+  router.replace({ query: value.trim() ? { ...query, busca: value } : query })
+})
+
+const listed = computed(() =>
+  listEvents(visibleEvents.value, { period: period.value, search: search.value, today }),
+)
+const upcomingMonths = computed(() => groupByMonth(listed.value.upcoming))
+const pastMonths = computed(() => groupByMonth(listed.value.past))
+const listParts = computed(() => [
+  { key: 'upcoming', title: t('agenda.periodUpcoming'), count: listed.value.upcoming.length, months: upcomingMonths.value },
+  { key: 'past', title: t('agenda.periodPast'), count: listed.value.past.length, months: pastMonths.value },
+].filter((part) => part.count > 0))
+const listIsEmpty = computed(() => listed.value.upcoming.length + listed.value.past.length === 0)
+
+function monthName(month) {
+  const [year, number] = month.split('-').map(Number)
+  return new Date(year, number - 1, 1).toLocaleDateString(localeTag(locale.value), { month: 'long', year: 'numeric' })
+}
+
+// Offline, the list only has what was downloaded: from last month to a year ahead
+const listWindow = computed(() => {
+  const window = showingCopy.value && copyInfo.value?.window
+  return window ? { from: formatDate(window.from), to: formatDate(window.to) } : null
+})
+
 // The month shown is kept in the URL (?mes=YYYY-MM) so going back from an event returns to it
 const viewMonth = computed(() => {
   const match = /^(\d{4})-(\d{2})$/.exec(route.query.mes || '')
@@ -133,16 +202,20 @@ const monthNotDownloaded = computed(() => {
     (monthPrefix.value < window.from.slice(0, 7) || monthPrefix.value > window.to.slice(0, 7))
 })
 
+// The calendar loads the weeks shown, the list every event of the band
 async function loadEvents() {
   loading.value = true
   error.value = ''
+  const listing = view.value === 'list'
   const from = weeks.value[0][0]
   const to = weeks.value[weeks.value.length - 1][6]
   try {
     const outcome = await load({
-      paths: [`/api/events?from=${from}&to=${to}`, '/api/event-types'],
+      paths: [listing ? '/api/events' : `/api/events?from=${from}&to=${to}`, '/api/event-types'],
       paint(snapshot) {
-        events.value = snapshot.events.filter((event) => event.date >= from && event.date <= to)
+        events.value = listing
+          ? snapshot.events
+          : snapshot.events.filter((event) => event.date >= from && event.date <= to)
         types.value = snapshot.eventTypes
       },
       apply([liveEvents, liveTypes]) {
@@ -273,7 +346,10 @@ function formatWeekday(date) {
   return parseDate(date).toLocaleDateString(localeTag(locale.value), { weekday: 'short' })
 }
 
-watch(monthPrefix, loadEvents)
+watch(monthPrefix, () => {
+  if (view.value === 'calendar') loadEvents()
+})
+watch(view, loadEvents)
 
 function onTypesChanged() {
   scheduleCopySync()
@@ -298,10 +374,54 @@ onMounted(loadEvents)
       <i class="fa-solid fa-mobile-screen"></i> {{ $t('offline.backToStage') }}
     </router-link>
 
+    <div class="tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab-button"
+        :class="{ active: view === 'calendar' }"
+        :aria-selected="view === 'calendar'"
+        @click="setView('calendar')"
+      >
+        <i class="fa-solid fa-calendar-days"></i> {{ $t('agenda.viewCalendar') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-button"
+        :class="{ active: view === 'list' }"
+        :aria-selected="view === 'list'"
+        @click="setView('list')"
+      >
+        <i class="fa-solid fa-list"></i> {{ $t('agenda.viewList') }}
+      </button>
+    </div>
+
     <div class="content">
       <section class="expenses-section">
         <div class="calendar-toolbar">
-          <div class="month-nav">
+          <div v-if="view === 'list'" class="list-controls">
+            <div class="period-filter" role="group" :aria-label="$t('agenda.periodFilter')">
+              <button
+                v-for="key in LIST_PERIODS"
+                :key="key"
+                type="button"
+                class="type-filter-chip period-chip"
+                :class="{ active: period === key }"
+                :aria-pressed="period === key"
+                @click="setPeriod(key)"
+              >{{ $t(`agenda.period${key.charAt(0).toUpperCase()}${key.slice(1)}`) }}</button>
+            </div>
+            <input
+              v-model="search"
+              type="search"
+              class="search-input"
+              :placeholder="$t('agenda.search')"
+              :aria-label="$t('agenda.search')"
+            />
+            <span v-if="loading" class="saving-indicator"><i class="fa-solid fa-spinner fa-spin"></i></span>
+          </div>
+          <div v-else class="month-nav">
             <button @click="goToMonth(-1)" class="btn-secondary" :title="$t('agenda.previousMonth')" :aria-label="$t('agenda.previousMonth')">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
@@ -313,7 +433,7 @@ onMounted(loadEvents)
             <span v-if="loading" class="saving-indicator"><i class="fa-solid fa-spinner fa-spin"></i></span>
           </div>
           <div class="toolbar-actions">
-            <button @click="shareAgenda" :disabled="monthEvents.length === 0" class="btn-secondary" :title="$t('agenda.shareHint')">
+            <button v-if="view === 'calendar'" @click="shareAgenda" :disabled="monthEvents.length === 0" class="btn-secondary" :title="$t('agenda.shareHint')">
               <i class="fa-solid fa-share-nodes"></i> {{ $t('agenda.share') }}
             </button>
             <button @click="shareUpcoming" class="btn-secondary" :title="$t('agenda.shareUpcomingHint')">
@@ -345,7 +465,23 @@ onMounted(loadEvents)
           </button>
         </div>
 
-        <div class="calendar" role="grid">
+        <div v-if="view === 'list'" class="agenda-list">
+          <p v-if="listWindow" class="list-note">{{ $t('offline.listPartial', listWindow) }}</p>
+          <p v-if="!loading && listIsEmpty" class="empty-state">{{ $t('agenda.listEmpty') }}</p>
+          <div v-for="part in listParts" :key="part.key" class="list-part">
+            <h2 class="list-title">{{ part.title }} <span class="list-count">({{ part.count }})</span></h2>
+            <div v-for="group in part.months" :key="group.month" class="list-month">
+              <h3 class="list-month-title">{{ monthName(group.month) }}</h3>
+              <ul class="event-list">
+                <li v-for="event in group.events" :key="event.id">
+                  <EventRow :event="event" />
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="calendar" role="grid">
           <div class="calendar-row calendar-weekdays" role="row">
             <div v-for="weekday in weekdays" :key="weekday" class="weekday" role="columnheader">{{ weekday }}</div>
           </div>
@@ -386,31 +522,14 @@ onMounted(loadEvents)
         </div>
       </section>
 
-      <section class="expenses-section">
+      <section v-if="view === 'calendar'" class="expenses-section">
         <h2 class="list-title">{{ $t('agenda.monthEvents') }}</h2>
         <p v-if="!loading && monthEvents.length === 0" class="empty-state">
           {{ monthNotDownloaded ? $t('offline.monthNotDownloaded') : $t('agenda.noEvents') }}
         </p>
         <ul v-else class="event-list">
           <li v-for="event in monthEvents" :key="event.id">
-            <router-link :to="`/agenda/${event.id}`" class="event-row" :class="{ 'is-past': event.date < today }">
-              <span class="event-date">
-                <span class="event-date-day">{{ dayNumber(event.date) }}</span>
-                <span class="event-date-weekday">{{ formatWeekday(event.date) }}</span>
-              </span>
-              <span class="event-info">
-                <span class="event-name">
-                  <span class="type-tag" :style="typeStyle(event.type)">{{ event.type.name }}</span>
-                  {{ eventName(event) }}
-                </span>
-                <span class="event-meta">
-                  <span v-if="event.time"><i class="fa-regular fa-clock"></i> {{ eventTime(event) }}</span>
-                  <span v-if="event.location"><i class="fa-solid fa-location-dot"></i> {{ event.location }}</span>
-                  <span><i class="fa-solid fa-list-ol"></i> {{ $t('agenda.songCount', event.songCount) }}</span>
-                </span>
-              </span>
-              <i class="fa-solid fa-chevron-right event-arrow"></i>
-            </router-link>
+            <EventRow :event="event" :past="event.date < today" />
           </li>
         </ul>
       </section>
@@ -593,65 +712,56 @@ onMounted(loadEvents)
   margin: 0;
   padding: 0;
 }
-.event-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  text-decoration: none;
-}
-.event-list li:last-child .event-row {
+.event-list li:last-child :deep(.event-row) {
   border-bottom: none;
 }
-.event-row:hover {
-  background: var(--accent-light);
-}
-.event-row.is-past {
-  opacity: 0.6;
-}
-.event-date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 44px;
-}
-.event-date-day {
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--text-h);
-}
-.event-date-weekday {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-light);
-}
-.event-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  text-align: left;
-}
-.event-name {
-  font-weight: 600;
-  color: var(--text-h);
-  overflow-wrap: anywhere;
-}
-.event-name .type-tag {
-  margin-right: 6px;
-}
-.event-meta {
+.list-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  align-items: center;
+  gap: 8px 12px;
+  flex: 1;
+}
+.period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.period-chip {
+  --type-color: var(--accent);
+}
+.list-controls .search-input {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.list-note {
+  margin: 0 0 12px;
   font-size: 0.85rem;
   color: var(--text-light);
 }
-.event-arrow {
+.list-part + .list-part {
+  margin-top: 24px;
+}
+.list-count {
+  font-weight: 400;
+  color: var(--text-light);
+}
+.list-month + .list-month {
+  margin-top: 12px;
+}
+.list-month-title {
+  margin: 0 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  text-align: left;
   color: var(--text-light);
 }
 @media (max-width: 600px) {

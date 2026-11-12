@@ -223,7 +223,15 @@
     "successCreate": "Event created successfully!",
     "successUpdate": "Event updated successfully!",
     "successDelete": "Event removed successfully!",
-    "confirmDelete": "Remove the event \"{name}\" on {date}?"
+    "confirmDelete": "Remove the event \"{name}\" on {date}?",
+    "viewCalendar": "Calendar",
+    "viewList": "List",
+    "periodFilter": "Period",
+    "periodUpcoming": "Upcoming",
+    "periodPast": "Past",
+    "periodAll": "All",
+    "search": "Search by name, type or place",
+    "listEmpty": "No events found."
   },
   "calendarFeed": {
     "button": "My calendar",
@@ -387,7 +395,8 @@
     "noticeText": "The calendar, songs and downloaded lyrics stay available offline.",
     "goToAgenda": "Go to the calendar",
     "retry": "Try again",
-    "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?"
+    "confirmLogout": "Logging out deletes the downloaded data from this device, and it can only be restored online. Log out anyway?",
+    "listPartial": "Offline, the list shows only the downloaded events, from {from} to {to}."
   },
   "manual": {
     "title": "Help",
