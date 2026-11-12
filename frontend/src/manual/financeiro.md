@@ -48,6 +48,7 @@ A aba **Relatório** mostra:
 - **Acerto por Integrante:** quanto cabe a cada integrante, somando todos os lançamentos, pagos
   ou não. Cada lançamento é dividido em partes iguais entre os integrantes dele.
 
-O ícone de impressora, no topo, imprime as duas abas.
+O ícone de impressora, no topo, imprime as duas abas. No celular, ele fica no menu, como
+**Imprimir**.
 
 > O Financeiro precisa de internet.

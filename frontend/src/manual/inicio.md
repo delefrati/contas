@@ -21,6 +21,13 @@ Músicas, Financeiro, Integrantes e Registros. Ao lado ficam o ícone de ajuda (
 interrogação), que abre a parte deste manual sobre a tela em que você está, a engrenagem e o
 seu nome, que abrem as [Configurações](/ajuda/configuracoes), e o botão de sair.
 
+**No celular**, o cabeçalho mostra só o logo e o nome da tela (no Início, o da banda). Os botões
+ficam no **menu**: toque nas três linhas, no canto direito. Ele lista o seu nome, todas as telas
+(a que está aberta aparece destacada), a Ajuda, as Configurações e Sair. Toque em um item, fora
+do menu ou no X para fechar.
+
+![O menu no celular](/manual/menu-celular.png)
+
 ## Trocar o logo da banda
 
 No Início, o logo da banda (ou o ícone, se ainda não tiver logo) tem uma câmera no canto.

@@ -30,5 +30,6 @@ O login vale por 24 horas. Depois disso o sistema pede para entrar de novo.
 
 ## Sair
 
-O botão de sair fica no canto do cabeçalho (o ícone de porta com seta). Ao sair, os dados que
+O botão de sair fica no canto do cabeçalho (o ícone de porta com seta); no celular, abra o
+menu (as três linhas) e toque em **Sair**. Ao sair, os dados que
 estavam guardados no aparelho para usar sem internet são apagados.

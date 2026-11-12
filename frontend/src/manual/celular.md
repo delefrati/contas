@@ -26,7 +26,7 @@ Sem conexão continuam abrindo:
 
 Sem internet dá para ver, compartilhar e imprimir, mas não mudar nada. Início, Financeiro,
 Integrantes e Registros mostram **Esta tela precisa de internet**, com um botão para ir à
-agenda. No cabeçalho, os ícones dessas telas ficam apagados. Este manual também abre sem
+agenda. No cabeçalho (no celular, no menu), essas telas ficam apagadas. Este manual também abre sem
 internet.
 
 ## Quando os dados são baixados

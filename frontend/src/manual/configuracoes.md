@@ -1,7 +1,8 @@
 # Configurações
 
-Toque na engrenagem, no cabeçalho de qualquer tela, ou no seu nome. As **Configurações** abrem
-também sem internet.
+Toque na engrenagem, no cabeçalho de qualquer tela, ou no seu nome. No celular, abra o menu (as
+três linhas, no canto do cabeçalho) e toque em **Configurações**. Elas abrem também sem
+internet.
 
 ![As configurações](/manual/configuracoes.png)
 

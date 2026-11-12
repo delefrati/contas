@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
@@ -35,6 +35,35 @@ const sections = [
 
 const otherSections = computed(() => sections.filter((s) => s.path !== route.path))
 
+// On a phone only the logo and the name stay in the header; the buttons go into a menu
+const PHONE_QUERY = '(max-width: 600px)'
+const phoneMedia = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(PHONE_QUERY) : null
+const isPhone = ref(Boolean(phoneMedia?.matches))
+const menuOpen = ref(false)
+
+function onMediaChange(event) {
+  isPhone.value = event.matches
+  if (!event.matches) menuOpen.value = false
+}
+
+function onKeydown(event) {
+  if (event.key === 'Escape') menuOpen.value = false
+}
+
+onMounted(() => {
+  phoneMedia?.addEventListener?.('change', onMediaChange)
+  document.addEventListener('keydown', onKeydown)
+})
+onBeforeUnmount(() => {
+  phoneMedia?.removeEventListener?.('change', onMediaChange)
+  document.removeEventListener('keydown', onKeydown)
+})
+
+// Going anywhere closes it
+watch(() => route.fullPath, () => {
+  menuOpen.value = false
+})
+
 // Opens the manual on the part about this screen; it's bundled, so it works offline too
 const help = computed(() => helpPath(route.name))
 
@@ -46,6 +75,7 @@ function confirmLogoutMessage() {
 }
 
 async function handleLogout() {
+  menuOpen.value = false
   if (confirm(confirmLogoutMessage())) {
     await logout()
     router.push('/login')
@@ -72,7 +102,7 @@ async function handleLogout() {
         </component>
         <span class="header-title">{{ title }}</span>
       </h1>
-      <div class="header-controls">
+      <div v-if="!isPhone" class="header-controls">
         <nav class="header-nav">
           <router-link
             v-for="section in otherSections"
@@ -123,16 +153,75 @@ async function handleLogout() {
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
       </div>
+      <button
+        v-else
+        type="button"
+        class="menu-toggle"
+        :aria-expanded="menuOpen"
+        aria-controls="header-menu"
+        :aria-label="$t('app.menu')"
+        :title="$t('app.menu')"
+        @click="menuOpen = !menuOpen"
+      >
+        <i class="fa-solid" :class="menuOpen ? 'fa-xmark' : 'fa-bars'"></i>
+      </button>
     </div>
+
+    <template v-if="isPhone && menuOpen">
+      <div class="menu-backdrop" @click="menuOpen = false"></div>
+      <nav id="header-menu" class="header-menu" :aria-label="$t('app.menu')">
+        <router-link v-if="member" to="/configuracoes" class="menu-user">
+          <i class="fa-solid fa-circle-user"></i>
+          <span class="menu-user-name">{{ member.name }}</span>
+          <span v-if="member.superAdmin" class="super-admin-badge">{{ $t('app.superAdmin') }}</span>
+        </router-link>
+        <router-link
+          v-for="section in sections"
+          :key="section.path"
+          :to="section.path"
+          class="menu-item"
+          :class="{
+            'is-current': section.path === route.path,
+            'is-unavailable': unavailableOffline && !section.offline,
+          }"
+          :aria-current="section.path === route.path ? 'page' : undefined"
+        >
+          <i class="fa-solid" :class="section.icon"></i> {{ $t(section.titleKey) }}
+        </router-link>
+        <hr />
+        <router-link :to="help" class="menu-item">
+          <i class="fa-solid fa-circle-question"></i> {{ $t('manual.open') }}
+        </router-link>
+        <a v-if="member?.superAdmin" :href="adminUrl()" class="menu-item">
+          <i class="fa-solid fa-user-shield"></i> {{ $t('admin.openPanel') }}
+        </a>
+        <router-link
+          to="/configuracoes"
+          class="menu-item"
+          :class="{ 'is-current': route.name === 'Settings' }"
+          :aria-current="route.name === 'Settings' ? 'page' : undefined"
+        >
+          <i class="fa-solid fa-gear"></i> {{ $t('settings.open') }}
+        </router-link>
+        <!-- What the screen adds to the header, like the Financeiro's print button -->
+        <div v-if="$slots.default" class="menu-extra" @click="menuOpen = false"><slot /></div>
+        <hr />
+        <button type="button" class="menu-item menu-logout" @click="handleLogout">
+          <i class="fa-solid fa-right-from-bracket"></i> {{ $t('app.logout') }}
+        </button>
+      </nav>
+    </template>
   </header>
 </template>
 
 <style scoped>
-/* The title gives way, with an ellipsis, when the icons need the room: on an iPhone the system
-   font is wider and a long band name would push the logout button off the screen */
+/* The title gives way, with an ellipsis, when the icons need the room */
 .header-top h1 {
   display: flex;
   align-items: center;
+  justify-content: center;
+  /* The space the text had after the logo before this was a flex row */
+  column-gap: 0.25em;
   min-width: 0;
 }
 .header-title {
@@ -140,6 +229,23 @@ async function handleLogout() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* On a phone a long name gets two lines before the ellipsis */
+@media (max-width: 600px) {
+  .header-top h1 {
+    justify-content: flex-start;
+  }
+  .header-title {
+    text-align: left;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    line-height: 1.15;
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
 }
 .header-logo {
   flex-shrink: 0;
@@ -237,19 +343,130 @@ async function handleLogout() {
 .nav-link:hover {
   background: var(--accent-light);
 }
-@media (max-width: 600px) {
-  .header-nav {
-    gap: 0;
-  }
-  .nav-link {
-    width: 30px;
-    height: 30px;
-  }
+.header {
+  position: relative;
 }
-/* Seven icons on an event's page (every section, plus help) fit a 360px phone */
-@media (max-width: 400px) {
-  .nav-link {
-    width: 26px;
-  }
+.menu-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-white);
+  color: var(--accent);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(0, 0, 0, 0.25);
+}
+.header-menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 0;
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, 100%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-white);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+.header-menu hr {
+  width: 100%;
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+.menu-user,
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menu-item i,
+.menu-user i {
+  width: 20px;
+  text-align: center;
+  color: var(--accent);
+}
+.menu-item:hover,
+.menu-user:hover {
+  background: var(--accent-light);
+}
+.menu-item.is-current {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+.menu-item.is-unavailable {
+  opacity: 0.4;
+}
+.menu-user {
+  font-weight: 600;
+}
+.menu-user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-logout,
+.menu-logout i {
+  color: var(--error);
+}
+/* A screen's own header buttons become menu items, with the label they keep hidden in the header
+   (class header-action-label) */
+.menu-extra {
+  display: flex;
+  flex-direction: column;
+}
+.menu-extra :deep(button) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-extra :deep(button i) {
+  width: 20px;
+  text-align: center;
+  color: var(--accent);
+}
+.menu-extra :deep(button:hover) {
+  background: var(--accent-light);
+}
+.header-controls :deep(.header-action-label) {
+  display: none;
 }
 </style>

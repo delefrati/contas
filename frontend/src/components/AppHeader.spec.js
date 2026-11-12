@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
@@ -16,7 +16,7 @@ vi.mock('../composables/useAuth', () => ({
 
 const Page = { template: '<div />' }
 
-async function headerOn(path) {
+async function headerOn(path, { slots } = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -36,7 +36,9 @@ async function headerOn(path) {
   const i18n = createI18n({ legacy: false, locale: 'pt', messages: { pt } })
   const wrapper = mount(AppHeader, {
     props: { icon: 'fa-house', title: 'Teste' },
+    slots,
     global: { plugins: [i18n, router] },
+    attachTo: document.body,
   })
   await flushPromises()
   return wrapper
@@ -78,5 +80,60 @@ describe('AppHeader settings', () => {
   it('leaves the gear out on the settings page itself', async () => {
     const wrapper = await headerOn('/configuracoes')
     expect(wrapper.find(`a[aria-label="${pt.settings.open}"]`).exists()).toBe(false)
+  })
+})
+
+describe('AppHeader on a phone', () => {
+  function asPhone() {
+    window.matchMedia = vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+  }
+
+  afterEach(() => {
+    delete window.matchMedia
+    document.body.innerHTML = ''
+  })
+
+  it('keeps only the logo, the name and a menu button in the header', async () => {
+    asPhone()
+    const wrapper = await headerOn('/agenda')
+    expect(wrapper.find('.header-title').text()).toBe('Teste')
+    expect(wrapper.find('.header-controls').exists()).toBe(false)
+    expect(wrapper.find('.header-menu').exists()).toBe(false)
+    expect(wrapper.find('.menu-toggle').attributes('aria-expanded')).toBe('false')
+  })
+
+  it('lists every section, the help, the settings and logout in the menu', async () => {
+    asPhone()
+    const wrapper = await headerOn('/agenda')
+    await wrapper.find('.menu-toggle').trigger('click')
+    const menu = wrapper.find('.header-menu')
+    const links = menu.findAll('a').map((a) => a.attributes('href'))
+    expect(links).toEqual(expect.arrayContaining([
+      '/dashboard', '/agenda', '/musicas', '/financeiro', '/integrantes', '/registros', '/ajuda/agenda', '/configuracoes',
+    ]))
+    expect(menu.find('.is-current').text()).toContain(pt.agenda.title)
+    expect(menu.find('.menu-logout').text()).toContain(pt.app.logout)
+    expect(menu.text()).toContain('Ana')
+  })
+
+  it('closes when going somewhere, or tapping outside', async () => {
+    asPhone()
+    const wrapper = await headerOn('/agenda')
+    await wrapper.find('.menu-toggle').trigger('click')
+    await wrapper.find('.header-menu a[href="/musicas"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.header-menu').exists()).toBe(false)
+
+    await wrapper.find('.menu-toggle').trigger('click')
+    await wrapper.find('.menu-backdrop').trigger('click')
+    expect(wrapper.find('.header-menu').exists()).toBe(false)
+  })
+
+  it("carries the screen's own header buttons", async () => {
+    asPhone()
+    const wrapper = await headerOn('/financeiro', { slots: { default: '<button class="btn-print">print</button>' } })
+    expect(wrapper.find('.btn-print').exists()).toBe(false)
+    await wrapper.find('.menu-toggle').trigger('click')
+    expect(wrapper.find('.header-menu .btn-print').exists()).toBe(true)
   })
 })

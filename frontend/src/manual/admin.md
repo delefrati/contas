@@ -2,7 +2,8 @@
 
 Esta parte é para **super admins**. O painel fica no endereço principal,
 `minhabanda.com/admin`, e tem um login próprio: entre com a conta Google de um super admin. Em
-uma banda, o ícone de escudo no cabeçalho também abre o painel.
+uma banda, o ícone de escudo no cabeçalho (no celular, **Painel do administrador**, no menu)
+também abre o painel.
 
 ![O painel do administrador](/manual/admin.png)
 

@@ -33,6 +33,7 @@ const SHOTS = [
   { name: 'registros', path: '/registros', size: SHORT },
   { name: 'configuracoes', path: '/configuracoes', size: DESKTOP, full: true },
   { name: 'admin', path: '/admin', as: 'admin', size: { width: 1100, height: 360 } },
+  { name: 'menu-celular', path: '/agenda', size: PHONE, click: '.menu-toggle' },
 ]
 
 function signedInAs(who) {

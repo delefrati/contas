@@ -486,6 +486,7 @@ onMounted(async () => {
     <AppHeader icon="fa-coins" :title="$t('finance.title')">
       <button @click="printPage" class="btn-secondary btn-print" :title="$t('app.print')">
         <i class="fa-solid fa-print"></i>
+        <span class="header-action-label">{{ $t('app.print') }}</span>
       </button>
     </AppHeader>
 
