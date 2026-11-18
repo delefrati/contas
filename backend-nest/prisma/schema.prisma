@@ -94,6 +94,7 @@ model Expense {
   fkMember    Int?      @map("fk_member")
   date        String    @default("") @db.VarChar(10)
   paid        Boolean   @default(false)
+  notes       String?   @db.Text
   createdAt   String    @map("created_at") @db.VarChar(40)
   deletedAt   DateTime? @map("deleted_at")
 

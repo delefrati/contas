@@ -17,12 +17,12 @@ O login vale por 24 horas. Depois disso o sistema pede para entrar de novo.
 
 ## Quando não dá para entrar
 
-- **"Member not found. Please contact an administrator."** A sua conta Google não está
-  cadastrada em nenhuma banda (a mensagem aparece em inglês). Peça para alguém da banda
+- **"Sua conta não está cadastrada. Fale com um administrador da banda."** A sua conta Google
+  não está cadastrada em nenhuma banda. Peça para alguém da banda
   adicionar você em [Integrantes](/ajuda/integrantes), com o **mesmo email** da conta Google
   que você usa para entrar.
-- **A banda que você quer não aparece na lista.** O seu cadastro nessa banda pode estar
-  desativado. Peça para um integrante ativar você de novo.
+- **A banda que você quer não aparece na lista,** ou aparece **"Sua conta está desativada."**: o
+  seu cadastro nessa banda pode estar desativado. Peça para um integrante ativar você de novo.
 - **"Não foi possível concluir o login. Tente novamente."** O login demorou mais de um minuto
   para terminar. Toque em **Voltar ao login** e entre de novo.
 - **Sem internet.** Não dá para entrar sem conexão. O que já foi baixado no celular continua

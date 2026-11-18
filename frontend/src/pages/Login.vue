@@ -48,7 +48,7 @@ import { useBand } from '../composables/useBand'
 import { bandCallbackUrl, isCentralHost } from '../hosts'
 import { renderGoogleButton } from '../utils/googleSignIn'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { loginWithGoogle, centralLogin, loading } = useAuth()
@@ -57,6 +57,12 @@ const { band, logoUrl } = useBand()
 const error = ref('')
 const credential = ref('')
 const bands = ref([])
+
+// The server's English message never reaches the page: known codes are translated, the rest is a generic failure
+function loginErrorText(err) {
+  const key = `login.errors.${err?.code}`
+  return err?.code && te(key) ? t(key) : t('login.loginFailed')
+}
 
 // Central host: pick the band, then hand off to its subdomain with a one-time code
 async function continueCentralLogin(slug) {
@@ -70,7 +76,7 @@ async function continueCentralLogin(slug) {
     bands.value = result.bands || []
   } catch (err) {
     bands.value = []
-    error.value = err.message || t('login.loginFailed')
+    error.value = loginErrorText(err)
   }
 }
 
@@ -86,7 +92,7 @@ async function handleGoogleResponse(googleCredential) {
     const redirectTo = route.query.redirect || '/dashboard'
     router.push(redirectTo)
   } catch (err) {
-    error.value = err.message || t('login.loginFailed')
+    error.value = loginErrorText(err)
   }
 }
 

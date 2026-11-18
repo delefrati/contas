@@ -7,7 +7,8 @@ No **Financeiro** a banda anota o que entra e o que sai, e vê quanto cabe a cad
 ## Lançamentos
 
 A aba **Despesas** lista os lançamentos: a origem, o tipo, os integrantes envolvidos, o valor,
-se já foi pago e a data. **Total:** soma o que está na lista.
+se já foi pago e a data. A **Observação** de um lançamento, quando tem, aparece logo abaixo da
+origem. **Total:** soma o que está na lista.
 
 - **Valor positivo é entrada,** como um cachê ou a venda de um equipamento.
 - **Valor negativo é despesa,** como um gasto com equipamento ou publicidade.
@@ -20,8 +21,9 @@ se já foi pago e a data. **Total:** soma o que está na lista.
 3. Marque **Pago** se já foi pago.
 4. Em **Integrantes**, escolha quem participa. No computador, segure Ctrl (ou Cmd no Mac)
    para escolher mais de um. **Sem ninguém escolhido, o valor é dividido entre todos os
-   integrantes ativos.**
-5. Toque em **Adicionar**.
+   integrantes ativos.** Quem está desativado aparece com **(Inativo)** ao lado do nome.
+5. Se quiser, escreva uma **Observação**, como onde está a nota fiscal ou como foi pago.
+6. Toque em **Adicionar**.
 
 Se o tipo que você quer não existe, escreva o nome em **Novo tipo de despesa** e toque em
 **Adicionar tipo**.
@@ -33,7 +35,8 @@ Se o tipo que você quer não existe, escreva o nome em **Novo tipo de despesa**
   **Limpar filtros** mostra tudo de novo.
 - Marque a caixa de um ou mais lançamentos e use **Marcar como pago** ou **Marcar como não
   pago** para mudar todos de uma vez.
-- O lápis muda um lançamento e o X remove.
+- O lápis muda um lançamento, inclusive a **Observação**. O X remove, depois de perguntar
+  **Remover o lançamento "..."?** com a origem dele.
 
 No celular, as ações de cada lançamento ficam no menu de três pontos.
 

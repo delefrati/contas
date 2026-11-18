@@ -11,6 +11,7 @@ export class ExpenseDto {
   amount!: number;
   date!: string;
   paid!: boolean;
+  notes!: string | null;
   createdAt!: string;
   memberId!: number | null;
   memberIds!: number[];
@@ -23,6 +24,7 @@ export class CreateExpenseDto {
   amount!: number;
   date?: string;
   paid?: boolean;
+  notes?: string | null;
   memberIds?: number[];
 }
 
@@ -32,6 +34,7 @@ export class UpdateExpenseDto {
   amount?: number;
   date?: string;
   paid?: boolean;
+  notes?: string | null;
   memberIds?: number[];
 }
 
@@ -67,7 +70,7 @@ export class ExpenseService {
   }
 
   async create(createExpenseDto: CreateExpenseDto): Promise<ExpenseDto> {
-    const { description, typeId, amount, date, paid = false, memberIds = [] } = createExpenseDto;
+    const { description, typeId, amount, date, paid = false, notes, memberIds = [] } = createExpenseDto;
     const numericAmount = Number(amount);
     const normalizedAmount = Math.round(numericAmount * 100) / 100;
     const bandId = this.requestContext.requireBandId();
@@ -153,6 +156,7 @@ export class ExpenseService {
         fkMember: normalizedMemberIds[0] || null,
         date: normalizedDate,
         paid: Boolean(paid),
+        notes: this.normalizeNotes(notes),
         createdAt: new Date().toISOString(),
         members: {
           create: normalizedMemberIds.map((memberId) => ({
@@ -230,6 +234,10 @@ export class ExpenseService {
 
     if (dto.paid !== undefined) {
       data.paid = Boolean(dto.paid);
+    }
+
+    if (dto.notes !== undefined) {
+      data.notes = this.normalizeNotes(dto.notes);
     }
 
     if (dto.typeId !== undefined) {
@@ -385,6 +393,12 @@ export class ExpenseService {
     return report;
   }
 
+  // Blank notes are stored as null, so an emptied field clears them.
+  private normalizeNotes(notes: string | null | undefined): string | null {
+    const trimmed = typeof notes === 'string' ? notes.trim() : '';
+    return trimmed || null;
+  }
+
   private mapExpenseToDto(expense: any): ExpenseDto {
     const memberIds = (expense.members || []).map((em: any) => em.memberId);
     const members = (expense.members || [])
@@ -403,6 +417,7 @@ export class ExpenseService {
       amount: parseFloat(expense.amount.toString()),
       date: expense.date || createdAt.slice(0, 10),
       paid: Boolean(expense.paid),
+      notes: expense.notes ?? null,
       createdAt,
       memberId: expense.fkMember,
       memberIds,

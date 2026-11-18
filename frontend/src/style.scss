@@ -912,6 +912,14 @@ code {
     color: var(--text-h);
   }
 
+  .expense-notes {
+    margin-top: 2px;
+    color: var(--text-light);
+    font-size: $font-size-xs;
+    font-weight: 400;
+    white-space: pre-line;
+  }
+
   .type {
     width: $width-table-type;
   }

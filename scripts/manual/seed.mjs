@@ -153,7 +153,7 @@ export async function seed() {
   const ads = (await api('POST', '/api/expense-types', { name: 'Publicidade' })).id
   const EXPENSES = [
     { description: 'Cachê Bar do Zé', typeId: fee, amount: 1200, date: day(-23), paid: true, memberIds: everyone },
-    { description: 'Cordas e palhetas', typeId: gear, amount: -180, date: day(-13), paid: true, memberIds: [anaId, bruno.id] },
+    { description: 'Cordas e palhetas', typeId: gear, amount: -180, date: day(-13), paid: true, memberIds: [anaId, bruno.id], notes: 'Nota fiscal na pasta da banda' },
     { description: 'Impulsionar post do show', typeId: ads, amount: -60, date: day(-9), memberIds: everyone },
     { description: 'Aluguel do estúdio', typeId: gear, amount: -150, date: day(-5), memberIds: everyone },
     { description: 'Cachê Festa da Vila (sinal)', typeId: fee, amount: 500, date: day(-2), memberIds: everyone },

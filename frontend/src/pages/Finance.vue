@@ -35,6 +35,7 @@ const editFormData = ref({
   date: '',
   paid: false,
   memberIds: [],
+  notes: '',
 })
 const updating = ref(false)
 const openActionMenuId = ref(null)
@@ -242,6 +243,7 @@ async function submitForm() {
       amount: parseFloat(formData.value.amount),
       date: formData.value.date,
       paid: formData.value.paid,
+      notes: formData.value.notes,
     }
 
     if (formData.value.memberIds.length > 0) {
@@ -321,10 +323,11 @@ async function createExpenseType() {
   }
 }
 
-async function deleteExpense(id) {
-  if (!confirm(t('expenses.successDelete'))) {
+async function deleteExpense(expense) {
+  if (!confirm(t('expenses.confirmDelete', { name: expense.description }))) {
     return
   }
+  const id = expense.id
 
   try {
     const response = await fetch(`${apiBaseUrl}/api/expenses/${id}`, {
@@ -333,7 +336,7 @@ async function deleteExpense(id) {
     })
 
     if (!response.ok) {
-      throw new Error(t('expenses.successDelete'))
+      throw new Error(t('expenses.deleteError'))
     }
 
     successMessage.value = '✓ ' + t('expenses.successDelete')
@@ -363,6 +366,7 @@ function openEditModal(expense) {
     date: expense.date || (expense.createdAt ? expense.createdAt.slice(0, 10) : ''),
     paid: Boolean(expense.paid),
     memberIds: expense.memberIds ? expense.memberIds.map(String) : [],
+    notes: expense.notes || '',
   }
   isEditExpenseModalOpen.value = true
 }
@@ -378,6 +382,7 @@ async function updateExpense() {
       amount: parseFloat(editFormData.value.amount),
       date: editFormData.value.date,
       paid: editFormData.value.paid,
+      notes: editFormData.value.notes,
     }
 
     if (editFormData.value.memberIds.length > 0) {
@@ -626,7 +631,10 @@ onMounted(async () => {
                     <input type="checkbox" :checked="selectedExpenseIds.includes(expense.id)" @change="toggleExpenseSelection(expense.id)" />
                   </td>
                   <td class="id">{{ expense.id }}</td>
-                  <td class="description">{{ expense.description }}</td>
+                  <td class="description">
+                    {{ expense.description }}
+                    <div v-if="expense.notes" class="expense-notes">{{ expense.notes }}</div>
+                  </td>
                   <td class="type">
                     <span class="type-badge" :title="getTypeName(expense.typeId ?? expense.type)">
                       <span class="type-full">{{ getTypeName(expense.typeId ?? expense.type) }}</span>
@@ -646,7 +654,7 @@ onMounted(async () => {
                       <button @click="openEditModal(expense)" class="btn-edit" :title="$t('actions.edit')">
                         <i class="fa-solid fa-pencil"></i>
                       </button>
-                      <button @click="deleteExpense(expense.id)" class="btn-delete" :title="$t('actions.delete')">
+                      <button @click="deleteExpense(expense)" class="btn-delete" :title="$t('actions.delete')">
                         <i class="fa-solid fa-xmark"></i>
                       </button>
                     </div>
@@ -658,7 +666,7 @@ onMounted(async () => {
                         <button @click="openEditModal(expense); openActionMenuId = null">
                           <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
                         </button>
-                        <button @click="deleteExpense(expense.id); openActionMenuId = null">
+                        <button @click="deleteExpense(expense); openActionMenuId = null">
                           <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
                         </button>
                       </div>
@@ -749,7 +757,7 @@ onMounted(async () => {
             <label for="member">{{ $t('form.members') }}</label>
             <select id="member" v-model="formData.memberIds" multiple size="5">
               <option v-for="mem in members" :key="mem.id" :value="mem.id">
-                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
+                {{ mem.name }}{{ !mem.active ? ` (${$t('report.inactive')})` : '' }}
               </option>
             </select>
             <small>{{ $t('form.membersHint') }}</small>
@@ -829,10 +837,20 @@ onMounted(async () => {
             <label for="edit-member">{{ $t('form.members') }}</label>
             <select id="edit-member" v-model="editFormData.memberIds" multiple size="5">
               <option v-for="mem in members" :key="mem.id" :value="String(mem.id)">
-                {{ mem.name }}{{ !mem.active ? ' (disabled)' : '' }}
+                {{ mem.name }}{{ !mem.active ? ` (${$t('report.inactive')})` : '' }}
               </option>
             </select>
             <small>{{ $t('form.membersHint') }}</small>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-notes">{{ $t('form.notes') }}</label>
+            <textarea
+              id="edit-notes"
+              v-model="editFormData.notes"
+              :placeholder="$t('form.notes')"
+              rows="3"
+            ></textarea>
           </div>
 
           <button type="submit" :disabled="updating" class="btn-primary">

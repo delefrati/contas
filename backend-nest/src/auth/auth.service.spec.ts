@@ -17,6 +17,16 @@ jest.mock('google-auth-library', () => {
   };
 });
 
+// The code the sign-in page translates, from the body a refused sign-in answers with
+async function signInCode(promise: Promise<unknown>): Promise<string | undefined> {
+  try {
+    await promise;
+  } catch (err) {
+    return ((err as BadRequestException).getResponse() as { code?: string }).code;
+  }
+  throw new Error('expected the sign-in to be refused');
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let jwtService: { sign: jest.Mock; verify: jest.Mock };
@@ -95,6 +105,25 @@ describe('AuthService', () => {
         data: { superAdminId: 3, token: 'jwt-token', expiresAt: expect.any(Date) },
       });
     });
+    describe('when the account cannot sign in', () => {
+      beforeEach(() => {
+        process.env.GOOGLE_CLIENT_ID = 'client-id';
+        mockVerifyIdToken.mockResolvedValue({
+          getPayload: () => ({ sub: 'google-sub', email: 'me@test.com' }),
+        });
+      });
+
+      it('should answer MEMBER_NOT_FOUND for an unknown account', async () => {
+        memberService.findByOidcSub.mockResolvedValue(null);
+        memberService.findByEmail.mockResolvedValue(null);
+        expect(await signInCode(service.loginWithGoogle('id-token'))).toBe('MEMBER_NOT_FOUND');
+      });
+
+      it('should answer MEMBER_DISABLED for a disabled member', async () => {
+        memberService.findByOidcSub.mockResolvedValue({ id: 1, active: false });
+        expect(await signInCode(service.loginWithGoogle('id-token'))).toBe('MEMBER_DISABLED');
+      });
+    });
   });
 
   describe('centralLoginWithGoogle', () => {
@@ -150,11 +179,13 @@ describe('AuthService', () => {
     it('should reject a band the account does not belong to', async () => {
       prisma.member.findMany.mockResolvedValue([maverick]);
       await expect(service.centralLoginWithGoogle('id-token', 'outra')).rejects.toThrow(BadRequestException);
+      expect(await signInCode(service.centralLoginWithGoogle('id-token', 'outra'))).toBe('MEMBER_NOT_IN_BAND');
     });
 
     it('should reject an account with no memberships', async () => {
       prisma.member.findMany.mockResolvedValue([]);
       await expect(service.centralLoginWithGoogle('id-token')).rejects.toThrow(BadRequestException);
+      expect(await signInCode(service.centralLoginWithGoogle('id-token'))).toBe('MEMBER_NOT_FOUND');
     });
 
     describe('as a super admin', () => {
@@ -265,6 +296,7 @@ describe('AuthService', () => {
       const code = await issueCode();
       prisma.member.findFirst.mockResolvedValue(null);
       await expect(service.exchangeLoginCode(code)).rejects.toThrow('Member account is disabled');
+      expect(await signInCode(service.exchangeLoginCode(await issueCode()))).toBe('MEMBER_DISABLED');
     });
 
     describe('for a super admin', () => {

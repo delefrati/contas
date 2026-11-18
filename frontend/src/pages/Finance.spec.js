@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import Finance from './Finance.vue'
+import pt from '../i18n/locales/pt.json'
 
 // Mock localStorage
 Object.defineProperty(global, 'localStorage', {
@@ -65,8 +66,8 @@ const messages = {
   },
 }
 
-async function createWrapper(path = '/financeiro') {
-  const i18n = createI18n({ legacy: false, locale: 'en', messages })
+async function createWrapper(path = '/financeiro', locale = 'en') {
+  const i18n = createI18n({ legacy: false, locale, messages: { ...messages, pt } })
 
   const router = createRouter({
     history: createMemoryHistory(),
@@ -185,5 +186,81 @@ describe('Finance', () => {
     const wrapper = await createWrapper()
     await flushPromises()
     expect(wrapper.find('.alert-error').exists()).toBe(true)
+  })
+
+  describe('in Portuguese, with entries and members', () => {
+    let deleteResponse
+
+    beforeEach(() => {
+      deleteResponse = { ok: true }
+      mockFetch.mockImplementation((url, options = {}) => {
+        if (options.method === 'DELETE') return Promise.resolve(deleteResponse)
+        if (url.includes('/api/health')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'ok' }) })
+        if (url.includes('/api/expenses/report')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) })
+        if (url.includes('/api/expenses')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              data: [
+                { id: 7, description: 'Cordas', amount: '-80', paid: false, date: '2026-10-10', memberIds: [], notes: 'Loja do centro' },
+              ],
+            }),
+          })
+        }
+        if (url.includes('/api/members')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ data: [{ id: 1, name: 'Ana', active: true }, { id: 2, name: 'Beto', active: false }] }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) })
+      })
+    })
+
+    it('should ask to remove the entry by its name, before removing it', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const wrapper = await createWrapper('/financeiro', 'pt')
+      await flushPromises()
+      await wrapper.find('.btn-delete').trigger('click')
+      expect(confirmSpy).toHaveBeenCalledWith('Remover o lançamento "Cordas"?')
+      expect(mockFetch).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ method: 'DELETE' }))
+      confirmSpy.mockRestore()
+    })
+
+    it('should say the entry was not removed when the delete fails', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      deleteResponse = { ok: false }
+      const wrapper = await createWrapper('/financeiro', 'pt')
+      await flushPromises()
+      await wrapper.find('.btn-delete').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.alert-error').text()).toContain('Não foi possível remover o lançamento.')
+      expect(wrapper.text()).not.toContain('Despesa removida com sucesso!')
+      confirmSpy.mockRestore()
+    })
+
+    it('should mark inactive members as Inativo in the member lists', async () => {
+      const wrapper = await createWrapper('/financeiro', 'pt')
+      await flushPromises()
+      const options = wrapper.findAll('#member option, #edit-member option').map((o) => o.text())
+      expect(options.filter((o) => o.startsWith('Beto'))).toEqual(['Beto (Inativo)', 'Beto (Inativo)'])
+      expect(options).toContain('Ana')
+      expect(wrapper.text()).not.toContain('(disabled)')
+    })
+
+    it('should show the entry notes under it and send them when edited', async () => {
+      const wrapper = await createWrapper('/financeiro', 'pt')
+      await flushPromises()
+      expect(wrapper.find('.expense-row .expense-notes').text()).toBe('Loja do centro')
+
+      await wrapper.find('.btn-edit').trigger('click')
+      const notes = wrapper.find('#edit-notes')
+      expect(notes.element.value).toBe('Loja do centro')
+      await notes.setValue('Loja do bairro')
+      await wrapper.find('#edit-notes').element.form.dispatchEvent(new Event('submit'))
+      await flushPromises()
+      const patch = mockFetch.mock.calls.find(([, options]) => options?.method === 'PATCH')
+      expect(JSON.parse(patch[1].body).notes).toBe('Loja do bairro')
+    })
   })
 })

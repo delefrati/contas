@@ -38,6 +38,13 @@ function storeSession(data) {
   keepCopyOnlyFor(ownerKey(member.value))
 }
 
+// Keeps the server's code (MEMBER_NOT_FOUND, ...) so the page can say it in the user's language
+function loginError(data) {
+  const err = new Error(data?.message || 'Login failed')
+  err.code = data?.code
+  return err
+}
+
 async function postJson(path, body) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
@@ -46,7 +53,7 @@ async function postJson(path, body) {
   })
   const data = await response.json()
   if (!response.ok) {
-    throw new Error(data.message || 'Login failed')
+    throw loginError(data)
   }
   return data.data
 }
@@ -154,8 +161,7 @@ export function useAuth() {
       })
 
       if (!response.ok) {
-        const error_data = await response.json()
-        throw new Error(error_data.message || 'Login failed')
+        throw loginError(await response.json())
       }
 
       const data = await response.json()

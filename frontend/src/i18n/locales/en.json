@@ -43,6 +43,11 @@
     "subtitle": "Sign in with your Google account",
     "loggingIn": "Logging in...",
     "loginFailed": "Login failed. Please try again.",
+    "errors": {
+      "MEMBER_NOT_FOUND": "Your account is not registered. Please contact a band administrator.",
+      "MEMBER_NOT_IN_BAND": "Your account is not registered in this band. Please contact a band administrator.",
+      "MEMBER_DISABLED": "Your account is disabled. Please contact a band administrator."
+    },
     "info": "Only authorized accounts can sign in. Contact an administrator if you need access.",
     "chooseBand": "Choose your band:",
     "completing": "Completing login...",
@@ -58,6 +63,8 @@
     "loadingError": "Could not load data from the API.",
     "successCreate": "Expense added successfully!",
     "successDelete": "Expense removed successfully!",
+    "confirmDelete": "Remove the entry \"{name}\"?",
+    "deleteError": "Could not remove the entry. Please try again.",
     "invalidAmount": "Amount cannot be zero",
     "originRequired": "Origin is required",
     "noExpenses": "No expenses found",

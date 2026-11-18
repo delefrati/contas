@@ -68,6 +68,13 @@ type BandSession = Prisma.SessionGetPayload<{
   };
 }>;
 
+// A sign-in refusal the page can translate: the code names the case, the message stays for logs.
+export type SignInErrorCode = 'MEMBER_NOT_FOUND' | 'MEMBER_NOT_IN_BAND' | 'MEMBER_DISABLED';
+
+function signInError(message: string, code: SignInErrorCode): BadRequestException {
+  return new BadRequestException({ statusCode: 400, error: 'Bad Request', message, code });
+}
+
 @Injectable()
 export class AuthService {
   // Single-use codes handing a central login (BASE_DOMAIN) over to a band subdomain
@@ -156,11 +163,11 @@ export class AuthService {
     }
 
     if (!member) {
-      throw new BadRequestException('Member not found. Please contact an administrator.');
+      throw signInError('Member not found. Please contact an administrator.', 'MEMBER_NOT_FOUND');
     }
 
     if (!member.active) {
-      throw new BadRequestException('Member account is disabled');
+      throw signInError('Member account is disabled', 'MEMBER_DISABLED');
     }
 
     return this.startSession({ memberId: member.id }, member, { method: 'google', oidcSub });
@@ -189,14 +196,14 @@ export class AuthService {
       : memberships.map((m) => m.band);
 
     if (bands.length === 0) {
-      throw new BadRequestException('Member not found. Please contact an administrator.');
+      throw signInError('Member not found. Please contact an administrator.', 'MEMBER_NOT_FOUND');
     }
 
     let chosen = bands.length === 1 && !bandSlug ? bands[0] : undefined;
     if (bandSlug) {
       chosen = bands.find((b) => b.slug === bandSlug);
       if (!chosen) {
-        throw new BadRequestException('Member not found in this band. Please contact an administrator.');
+        throw signInError('Member not found in this band. Please contact an administrator.', 'MEMBER_NOT_IN_BAND');
       }
     }
 
@@ -224,7 +231,7 @@ export class AuthService {
         where: { id: entry.superAdminId, active: true },
       });
       if (!superAdmin) {
-        throw new BadRequestException('Account is disabled');
+        throw signInError('Account is disabled', 'MEMBER_DISABLED');
       }
       return this.startSession({ superAdminId: superAdmin.id }, superAdmin, { method: 'google-central' });
     }
@@ -233,7 +240,7 @@ export class AuthService {
       where: { id: entry.memberId, bandId, active: true },
     });
     if (!member) {
-      throw new BadRequestException('Member account is disabled');
+      throw signInError('Member account is disabled', 'MEMBER_DISABLED');
     }
 
     return this.startSession({ memberId: member.id }, member, { method: 'google-central' });

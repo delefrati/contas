@@ -115,6 +115,27 @@ describe('ExpenseService', () => {
       expect(prisma.expense.create).not.toHaveBeenCalled();
     });
 
+    it('should save and return the notes', async () => {
+      prisma.expense.create.mockResolvedValue({
+        id: 5, description: 'Groceries', fkType: 1, amount: 50.5, date: '2024-01-15',
+        fkMember: 1, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null, notes: 'Nota fiscal na pasta',
+        type: { id: 1, name: 'Food' }, members: [{ memberId: 1, member: { name: 'Alice' } }],
+      });
+      const result = await service.create({ ...validDto, notes: '  Nota fiscal na pasta  ' });
+      expect(prisma.expense.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ notes: 'Nota fiscal na pasta' }) }),
+      );
+      expect(result.notes).toBe('Nota fiscal na pasta');
+    });
+
+    it('should store no notes when none are sent', async () => {
+      const result = await service.create(validDto);
+      expect(prisma.expense.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ notes: null }) }),
+      );
+      expect(result.notes).toBeNull();
+    });
+
     it('should throw for empty description', async () => {
       await expect(service.create({ ...validDto, description: '' }))
         .rejects.toThrow(BadRequestException);
@@ -280,6 +301,27 @@ describe('ExpenseService', () => {
       expect(prisma.expenseMember.createMany).toHaveBeenCalledWith({
         data: [{ expenseId: 1, memberId: 3 }],
       });
+    });
+
+    it('should update and return the notes', async () => {
+      prisma.expense.findUnique.mockResolvedValueOnce({
+        id: 1, description: 'Test', fkType: 1, amount: 10, date: '2024-01-15',
+        fkMember: 1, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null, notes: 'Pago em dinheiro',
+        type: { id: 1, name: 'Food' }, members: [],
+      });
+      const result = await service.update(1, { notes: 'Pago em dinheiro' });
+      expect(prisma.expense.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { notes: 'Pago em dinheiro' } });
+      expect(result.notes).toBe('Pago em dinheiro');
+    });
+
+    it('should clear the notes when they are emptied', async () => {
+      prisma.expense.findUnique.mockResolvedValueOnce({
+        id: 1, description: 'Test', fkType: 1, amount: 10, date: '2024-01-15',
+        fkMember: 1, createdAt: '2024-01-15T10:00:00.000Z', deletedAt: null, notes: null,
+        type: { id: 1, name: 'Food' }, members: [],
+      });
+      await service.update(1, { notes: '   ' });
+      expect(prisma.expense.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { notes: null } });
     });
 
     it('should reject memberIds from another band', async () => {

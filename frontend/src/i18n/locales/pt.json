@@ -43,6 +43,11 @@
     "subtitle": "Entre com sua conta Google",
     "loggingIn": "Entrando...",
     "loginFailed": "Falha ao entrar. Tente novamente.",
+    "errors": {
+      "MEMBER_NOT_FOUND": "Sua conta não está cadastrada. Fale com um administrador da banda.",
+      "MEMBER_NOT_IN_BAND": "Sua conta não está cadastrada nesta banda. Fale com um administrador da banda.",
+      "MEMBER_DISABLED": "Sua conta está desativada. Fale com um administrador da banda."
+    },
     "info": "Apenas contas autorizadas podem entrar. Entre em contato com um administrador se precisar de acesso.",
     "chooseBand": "Escolha a banda:",
     "completing": "Concluindo login...",
@@ -58,6 +63,8 @@
     "loadingError": "Não foi possível carregar os dados da API.",
     "successCreate": "Despesa adicionada com sucesso!",
     "successDelete": "Despesa removida com sucesso!",
+    "confirmDelete": "Remover o lançamento \"{name}\"?",
+    "deleteError": "Não foi possível remover o lançamento. Tente novamente.",
     "invalidAmount": "Valor não pode ser zero",
     "originRequired": "Origem é obrigatória",
     "noExpenses": "Nenhuma despesa encontrada",

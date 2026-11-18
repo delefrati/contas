@@ -32,8 +32,7 @@ O minhabanda.com existe em **português**, **inglês** e **espanhol**. Em **Idio
 **Português**, **English** ou **Español**. Na primeira vez, o sistema usa o idioma do seu
 navegador.
 
-Este manual, por enquanto, existe só em português. Algumas mensagens de erro vindas do
-servidor, como as da [entrada](/ajuda/entrar), aparecem em inglês.
+Este manual, por enquanto, existe só em português.
 
 O tema e o idioma mudam na hora e ficam guardados **neste aparelho**: em outro celular ou
 computador, escolha de novo.
