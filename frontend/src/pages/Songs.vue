@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
 import { useOfflineCopy } from '../composables/useOfflineCopy'
@@ -41,6 +41,17 @@ const isImportModalOpen = ref(false)
 const importText = ref('')
 const importing = ref(false)
 const importResult = ref(null)
+
+// On a phone the edit and delete buttons sit in a three-dot menu, one song's at a time
+const openActionMenuId = ref(null)
+
+function toggleActionMenu(id) {
+  openActionMenuId.value = openActionMenuId.value === id ? null : id
+}
+
+function closeActionMenu(e) {
+  if (!e.target.closest('.actions-mobile')) openActionMenuId.value = null
+}
 
 const filteredSongs = computed(() => {
   const term = songFilter.value.trim().toLowerCase()
@@ -216,7 +227,14 @@ async function submitImport() {
   }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  document.addEventListener('click', closeActionMenu)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeActionMenu)
+})
 </script>
 
 <template>
@@ -283,6 +301,19 @@ onMounted(loadData)
                   <button @click="deleteSong(song)" class="btn-delete" :title="$t('actions.delete')">
                     <i class="fa-solid fa-xmark"></i>
                   </button>
+                </div>
+                <div v-if="!showingCopy" class="actions-mobile">
+                  <button @click="toggleActionMenu(song.id)" class="btn-dots" :aria-label="$t('actions.more')" :title="$t('actions.more')">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                  </button>
+                  <div v-if="openActionMenuId === song.id" class="action-dropdown">
+                    <button @click="openEditSong(song); openActionMenuId = null">
+                      <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
+                    </button>
+                    <button @click="deleteSong(song); openActionMenuId = null">
+                      <i class="fa-solid fa-xmark"></i> {{ $t('actions.delete') }}
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>

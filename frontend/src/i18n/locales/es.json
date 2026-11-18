@@ -126,7 +126,8 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "loading": "Cargando...",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "more": "Más acciones"
   },
   "filters": {
     "text": "Buscar",

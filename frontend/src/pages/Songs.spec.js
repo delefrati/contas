@@ -126,4 +126,45 @@ describe('Songs', () => {
 
     expect(savedPayload()).not.toHaveProperty('lyrics')
   })
+
+  describe('on a phone', () => {
+    function phoneMenu(wrapper, row) {
+      return wrapper.findAll('tbody tr')[row].find('.actions-mobile')
+    }
+
+    it('should offer edit and delete in a three-dot menu for each song', async () => {
+      const wrapper = await createWrapper()
+      expect(phoneMenu(wrapper, 0).find('.action-dropdown').exists()).toBe(false)
+
+      await phoneMenu(wrapper, 0).find('.btn-dots').trigger('click')
+      const items = phoneMenu(wrapper, 0).findAll('.action-dropdown button')
+      expect(items).toHaveLength(2)
+      expect(phoneMenu(wrapper, 1).find('.action-dropdown').exists()).toBe(false)
+
+      await items[0].trigger('click')
+      await flushPromises()
+      expect(lyricsTextarea(wrapper).element.value).toBe('Amor da minha vida')
+      expect(phoneMenu(wrapper, 0).find('.action-dropdown').exists()).toBe(false)
+    })
+
+    it('should delete a song from the menu after confirming', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      const wrapper = await createWrapper()
+      await phoneMenu(wrapper, 1).find('.btn-dots').trigger('click')
+      await phoneMenu(wrapper, 1).findAll('.action-dropdown button')[1].trigger('click')
+      await flushPromises()
+
+      expect(confirmSpy).toHaveBeenCalled()
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/songs/4'), expect.objectContaining({ method: 'DELETE' }))
+      confirmSpy.mockRestore()
+    })
+
+    it('should close the menu when tapping elsewhere', async () => {
+      const wrapper = await createWrapper()
+      await phoneMenu(wrapper, 0).find('.btn-dots').trigger('click')
+      document.body.click()
+      await flushPromises()
+      expect(phoneMenu(wrapper, 0).find('.action-dropdown').exists()).toBe(false)
+    })
+  })
 })

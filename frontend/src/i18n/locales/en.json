@@ -126,7 +126,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "loading": "Loading...",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "more": "More actions"
   },
   "filters": {
     "text": "Search",

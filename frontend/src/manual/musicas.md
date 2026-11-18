@@ -22,6 +22,9 @@ Na letra, deixe uma linha em branco entre as estrofes: é assim que ela aparece 
 O lápis muda uma música e o X remove, depois de confirmar. Uma música removida continua nos
 repertórios que já tinham ela.
 
+No celular, o lápis e o X ficam no menu de três pontos de cada música, como **Editar** e
+**Deletar**.
+
 ## Importar uma lista
 
 Para cadastrar várias de uma vez:
