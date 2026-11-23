@@ -486,7 +486,7 @@
     "willInclude": "No song with a link will go in. | 1 song with a link will go in, in order. | {n} songs with a link will go in, in order.",
     "publicNote": "The playlist is public: anyone with the link can open it. Its name has only the band and the date.",
     "missingTitle": "Without a Spotify link ({n}) | Without a Spotify link ({n}) | Without a Spotify link ({n})",
-    "missingHint": "These are left out. Search Spotify for the version the band plays, or paste its link, to include them. With the field empty, the search uses the song's name.",
+    "missingHint": "These are left out. The field starts with the song's name: tap Search to find the version the band plays on Spotify, change the words to search for another, or paste its link.",
     "linkOrSearch": "Paste the link or type to search",
     "make": "Make playlist",
     "makeAgain": "Update again",

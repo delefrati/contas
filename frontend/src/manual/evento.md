@@ -39,8 +39,8 @@ quando o Spotify está ligado no minhabanda.com.
 
 - Antes de fazer, a janela diz quantas músicas entram e lista as que **não têm link**: elas ficam
   de fora. Para incluir uma, toque em **Buscar**: aparecem algumas versões do Spotify, com a capa,
-  o álbum e a duração. Com o campo vazio, a busca usa o nome e o artista da música; para buscar
-  outra coisa (como "ao vivo"), digite no campo e aperte Enter. **Ouvir** abre a versão no
+  o álbum e a duração. O campo já vem com o nome e o artista da música; para buscar outra coisa
+  (como "ao vivo"), mude as palavras e aperte Enter. **Ouvir** abre a versão no
   Spotify, e **Usar esta** guarda o link dela na música. Se preferir, cole o link no mesmo campo:
   o botão vira **Salvar**.
 - **Fazer playlist** cria a playlist e mostra **Abrir no Spotify**. Fazer de novo atualiza a

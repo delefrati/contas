@@ -206,6 +206,25 @@ describe('SpotifyPlaylist', () => {
       expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
     })
 
+    it("should start the field with the song's name, and search by the song itself with it", async () => {
+      const wrapper = await createWrapper()
+      await openDialog(wrapper)
+
+      expect(wrapper.find('.missing-link input').element.value).toBe('Malandragem')
+      await wrapper.find('.missing-link').trigger('submit')
+      await flushPromises()
+
+      const [url] = mockFetch.mock.calls.find(([u]) => u.includes('/tracks'))
+      expect(url).toMatch(/\/api\/spotify\/songs\/4\/tracks$/)
+    })
+
+    it('should start the field with the title and the artist, when the song has one', async () => {
+      const wrapper = await createWrapper({ songs: [{ id: 4, title: 'Exagerado', artist: 'Cazuza', spotifyUrl: null }] })
+      await openDialog(wrapper)
+
+      expect(wrapper.find('.missing-link input').element.value).toBe('Exagerado - Cazuza')
+    })
+
     it('should offer Save instead of Search once a link is in the field', async () => {
       const wrapper = await createWrapper()
       await openDialog(wrapper)

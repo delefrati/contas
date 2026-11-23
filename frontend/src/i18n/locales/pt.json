@@ -486,7 +486,7 @@
     "willInclude": "Nenhuma música com link vai entrar. | 1 música com link vai entrar, na ordem. | {n} músicas com link vão entrar, na ordem.",
     "publicNote": "A playlist é pública: quem tiver o link consegue abrir. O nome dela tem só a banda e a data.",
     "missingTitle": "Sem link do Spotify ({n}) | Sem link do Spotify ({n}) | Sem link do Spotify ({n})",
-    "missingHint": "Estas ficam de fora. Busque a versão que a banda toca no Spotify, ou cole o link, para incluir. Com o campo vazio, a busca usa o nome da música.",
+    "missingHint": "Estas ficam de fora. O campo já vem com o nome da música: toque em Buscar para achar a versão que a banda toca no Spotify, mude as palavras para buscar outra, ou cole o link.",
     "linkOrSearch": "Cole o link ou digite para buscar",
     "make": "Fazer playlist",
     "makeAgain": "Atualizar de novo",

@@ -55,7 +55,15 @@ async function loadAvailability() {
   }
 }
 
+// What the search field starts with: the song's own name, ready to search or to change
+function songWords(song) {
+  return song.artist ? `${song.title} - ${song.artist}` : song.title
+}
+
 function open() {
+  for (const song of missing.value) {
+    if (drafts.value[song.id] === undefined) drafts.value[song.id] = songWords(song)
+  }
   result.value = null
   error.value = ''
   draftErrors.value = {}
@@ -87,15 +95,16 @@ function duration(ms) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-// The one field takes a link or words: a link is saved, words (or nothing, for the song's own
-// title and artist) are searched on Spotify
+// The one field takes a link or words: a link is saved, words are searched on Spotify
 function isLinkDraft(song) {
   return looksLikeLink(drafts.value[song.id])
 }
 
 function submit(song) {
-  if (isLinkDraft(song)) saveLink(song)
-  else search(song, (drafts.value[song.id] ?? '').trim())
+  if (isLinkDraft(song)) return saveLink(song)
+  const words = (drafts.value[song.id] ?? '').trim()
+  // The name as it came (or nothing) searches by the song itself, with Spotify's exact filters
+  search(song, words === songWords(song) ? '' : words)
 }
 
 async function search(song, words = '') {
