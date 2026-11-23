@@ -135,3 +135,42 @@ version is ready.
 ```bash
 docker compose exec -T db mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" > backup-$(date +%F).sql
 ```
+
+## 8) Spotify playlists (optional)
+
+Bands can turn their songs, or an event's setlist, into a Spotify playlist. Every playlist is
+made in **one Spotify account that belongs to minhabanda.com**, never in a member's account:
+Spotify allows an app in Development Mode only 5 users, each added by hand, and grants more
+(Extended Quota) only to registered businesses with at least 250k monthly users. One account
+needs one slot, for any number of bands. Without the keys below, the Spotify buttons don't show.
+
+1. **The account:** a Spotify account for minhabanda.com, with **Premium** (Spotify requires it
+   of a Development Mode app's owner).
+2. **The app:** sign in to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   with that account and create an app for the Web API. In **Settings → Users Management**, add
+   the same account.
+3. **Redirect URIs,** which Spotify matches exactly, with no wildcards:
+   - production: `https://minhabanda.com/api/admin/spotify/callback` (the central host, where the
+     admin panel lives, so no band subdomain needs registering);
+   - local: `http://127.0.0.1:8001/api/admin/spotify/callback` (Spotify refuses `localhost`).
+4. **The server's `.env`** (and `.env.prod`, which the deploy reads but doesn't copy):
+
+   ```env
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   SPOTIFY_REDIRECT_URI=https://minhabanda.com/api/admin/spotify/callback
+   # Encrypts the stored refresh token: openssl rand -base64 32. Changing it means connecting again.
+   SPOTIFY_TOKEN_KEY=...
+   ```
+
+5. **Connect:** a super admin opens **Spotify** in the admin panel (`/admin`) and connects the
+   account. Only the `playlist-modify-public` scope is asked for.
+
+What to know:
+- **The playlists are public:** anyone with the link can open one, and they show on the account's
+  profile. Spotify doesn't reliably let others open a private playlist by link. So a playlist's
+  name has the band and the date, never the event's title or place.
+- **The quota** is per developer account and shared by all its apps. When it runs out, Spotify
+  answers `429` with `QUOTA_EXCEEDED` and the app asks to try again later.
+- **If Spotify drops the connection** (the app removed from the account, or the key changed), the
+  admin panel shows it disconnected and a super admin connects it again. Existing playlists stay.
