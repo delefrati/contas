@@ -25,6 +25,21 @@ function reply(status, body) {
 
 let availability
 let makeReply
+let searchReply
+
+const FOUND = [
+  {
+    id: 'live',
+    name: 'Malandragem - Ao Vivo',
+    artists: ['Cássia Eller'],
+    album: 'Acústico (Ao Vivo)',
+    year: '2001',
+    durationMs: 240799,
+    imageUrl: 'https://i.scdn.co/image/cover',
+    url: 'https://open.spotify.com/track/2PIHTeccvbpmrSeYrlWkfx',
+  },
+  { id: 'studio', name: 'Malandragem', artists: ['Cássia Eller'], album: null, year: null, durationMs: 200000, imageUrl: null, url: 'https://open.spotify.com/track/studio' },
+]
 
 async function createWrapper(props = {}) {
   const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
@@ -48,11 +63,13 @@ describe('SpotifyPlaylist', () => {
     mockFetch.mockReset()
     scheduleCopySync.mockReset()
     availability = 'working'
+    searchReply = () => reply(200, { data: FOUND })
     makeReply = () => reply(201, { data: { url: 'https://open.spotify.com/playlist/abc', tracks: 2, missing: 1 } })
     mockFetch.mockImplementation((url, options = {}) => {
       if (url.endsWith('/api/spotify/status')) return reply(200, { data: { availability } })
       if (url.endsWith('/api/spotify/playlists/events/7')) return makeReply()
-      if (options.method === 'PATCH') return reply(200, { data: { id: 4, spotifyUrl: LINK } })
+      if (options.method === 'PATCH') return reply(200, { data: { id: 4, spotifyUrl: JSON.parse(options.body).spotifyUrl } })
+      if (url.endsWith('/api/spotify/songs/4/tracks')) return searchReply()
       return reply(404, {})
     })
   })
@@ -150,5 +167,65 @@ describe('SpotifyPlaylist', () => {
 
     expect(wrapper.text()).toContain(message)
     expect(wrapper.text()).not.toContain('English')
+  })
+
+  describe("searching a song's version", () => {
+    async function searchFirstMissing(wrapper) {
+      await openDialog(wrapper)
+      await wrapper.find('.search-song').trigger('click')
+      await flushPromises()
+    }
+
+    it('should show the tracks found, each to listen to on Spotify', async () => {
+      const wrapper = await createWrapper()
+      await searchFirstMissing(wrapper)
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/spotify/songs/4/tracks'), expect.anything())
+      const found = wrapper.findAll('.track-result')
+      expect(found).toHaveLength(2)
+      expect(found[0].text()).toContain('Malandragem - Ao Vivo')
+      expect(found[0].find('.track-info small').text().replace(/\s+/g, ' ')).toBe('Cássia Eller · Acústico (Ao Vivo) (2001) · 4:01')
+      expect(found[0].find('img.track-cover').attributes('src')).toBe('https://i.scdn.co/image/cover')
+      expect(found[0].find('a.listen').attributes('target')).toBe('_blank')
+      expect(found[1].find('img').exists()).toBe(false)
+      expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
+    })
+
+    it('should save the picked track as the song link', async () => {
+      const wrapper = await createWrapper()
+      await searchFirstMissing(wrapper)
+      await wrapper.findAll('.use-track')[0].trigger('click')
+      await flushPromises()
+
+      const [url, options] = mockFetch.mock.calls.find(([, o]) => o?.method === 'PATCH')
+      expect(url).toContain('/api/songs/4')
+      expect(JSON.parse(options.body)).toEqual({ spotifyUrl: 'https://open.spotify.com/track/2PIHTeccvbpmrSeYrlWkfx' })
+      expect(wrapper.emitted('song-updated')).toEqual([[4, 'https://open.spotify.com/track/2PIHTeccvbpmrSeYrlWkfx']])
+    })
+
+    it('should say nothing was found, keeping the paste field', async () => {
+      searchReply = () => reply(200, { data: [] })
+      const wrapper = await createWrapper()
+      await searchFirstMissing(wrapper)
+
+      expect(wrapper.find('.nothing-found').text()).toBe(en.spotify.nothingFound)
+      expect(wrapper.find('.missing-link input').exists()).toBe(true)
+    })
+
+    it('should say under the song when Spotify asks to wait', async () => {
+      searchReply = () => reply(429, { message: 'English', code: 'SPOTIFY_RATE_LIMITED' })
+      const wrapper = await createWrapper()
+      await searchFirstMissing(wrapper)
+
+      expect(wrapper.find('.draft-error').text()).toBe(en.spotify.rateLimited)
+    })
+
+    it('should be off without internet', async () => {
+      const wrapper = await createWrapper({ disabled: true })
+      wrapper.vm.isOpen = true
+      await flushPromises()
+
+      expect(wrapper.find('.search-song').attributes('disabled')).toBeDefined()
+    })
   })
 })

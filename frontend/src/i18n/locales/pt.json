@@ -486,7 +486,7 @@
     "willInclude": "Nenhuma música com link vai entrar. | 1 música com link vai entrar, na ordem. | {n} músicas com link vão entrar, na ordem.",
     "publicNote": "A playlist é pública: quem tiver o link consegue abrir. O nome dela tem só a banda e a data.",
     "missingTitle": "Sem link do Spotify ({n}) | Sem link do Spotify ({n}) | Sem link do Spotify ({n})",
-    "missingHint": "Estas ficam de fora. Cole o link da versão que a banda toca para incluir.",
+    "missingHint": "Estas ficam de fora. Busque a versão que a banda toca no Spotify, ou cole o link, para incluir.",
     "pasteLink": "Cole o link do Spotify",
     "make": "Fazer playlist",
     "makeAgain": "Atualizar de novo",
@@ -495,6 +495,11 @@
     "unavailable": "O Spotify está indisponível no momento. Um super admin precisa conectar a conta de novo no painel.",
     "rateLimited": "O Spotify pediu para esperar. Tente de novo daqui a pouco.",
     "noSongs": "Nenhuma música tem link do Spotify ainda.",
-    "error": "Não foi possível fazer a playlist no Spotify. Tente de novo."
+    "error": "Não foi possível fazer a playlist no Spotify. Tente de novo.",
+    "search": "Buscar",
+    "searching": "Buscando...",
+    "nothingFound": "Nada encontrado no Spotify. Cole o link à mão.",
+    "listen": "Ouvir",
+    "useThis": "Usar esta"
   }
 }

@@ -17,7 +17,7 @@ describe('PlaylistService', () => {
   let service: PlaylistService;
   let prisma: {
     band: { findUniqueOrThrow: jest.Mock; update: jest.Mock };
-    song: { findMany: jest.Mock };
+    song: { findMany: jest.Mock; findFirst: jest.Mock };
     event: { findFirst: jest.Mock; update: jest.Mock };
   };
   let spotifyService: { getAccessToken: jest.Mock };
@@ -45,7 +45,7 @@ describe('PlaylistService', () => {
   beforeEach(async () => {
     prisma = {
       band: { findUniqueOrThrow: jest.fn().mockResolvedValue(band), update: jest.fn() },
-      song: { findMany: jest.fn() },
+      song: { findMany: jest.fn(), findFirst: jest.fn() },
       event: { findFirst: jest.fn(), update: jest.fn() },
     };
     spotifyService = { getAccessToken: jest.fn().mockResolvedValue('access') };
@@ -161,6 +161,94 @@ describe('PlaylistService', () => {
         ['PUT /playlists/band-list', undefined],
         ['POST /playlists/band-list/items', 50],
       ]);
+    });
+  });
+
+  describe("searching a song's version", () => {
+    const found = {
+      tracks: {
+        items: [
+          {
+            id: 'abc',
+            name: 'Exagerado',
+            artists: [{ name: 'Cazuza' }],
+            album: {
+              name: 'Exagerado',
+              release_date: '1985-01-01',
+              images: [
+                { url: 'big.jpg', width: 640 },
+                { url: 'small.jpg', width: 64 },
+                { url: 'medium.jpg', width: 300 },
+              ],
+            },
+            duration_ms: 222696,
+            external_urls: { spotify: 'https://open.spotify.com/track/abc' },
+          },
+        ],
+      },
+    };
+
+    function queries() {
+      return fetchMock.mock.calls.map(([url]) => new URL(url).searchParams.get('q'));
+    }
+
+    it("should search by title and artist, within the request's band, and map the tracks", async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'Exagerado', artist: 'Cazuza' });
+      answers = { 'GET /search?q=track%3A%22Exagerado%22+artist%3A%22Cazuza%22&type=track&limit=5': () => reply(200, found) };
+
+      const tracks = await service.searchForSong(3);
+
+      expect(prisma.song.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 3, bandId: 1, deletedAt: null } }));
+      expect(queries()).toEqual(['track:"Exagerado" artist:"Cazuza"']);
+      expect(tracks).toEqual([
+        {
+          id: 'abc',
+          name: 'Exagerado',
+          artists: ['Cazuza'],
+          album: 'Exagerado',
+          year: '1985',
+          durationMs: 222696,
+          imageUrl: 'small.jpg',
+          url: 'https://open.spotify.com/track/abc',
+        },
+      ]);
+    });
+
+    it('should search by the title alone for a song without an artist, keeping quotes out of the filter', async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'O "Bom" Malandro', artist: null });
+      fetchMock.mockImplementation(() => reply(200, found));
+
+      await service.searchForSong(4);
+
+      expect(queries()).toEqual(['track:"O Bom Malandro"']);
+    });
+
+    it('should try plain words when the filters find nothing, and say nothing was found after that', async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'Pais e Filho', artist: 'Legiao Urbana' });
+      fetchMock.mockImplementation(() => reply(200, { tracks: { items: [] } }));
+
+      expect(await service.searchForSong(5)).toEqual([]);
+      expect(queries()).toEqual(['track:"Pais e Filho" artist:"Legiao Urbana"', 'Pais e Filho Legiao Urbana']);
+    });
+
+    it('should refuse a song of another band without calling Spotify', async () => {
+      prisma.song.findFirst.mockResolvedValue(null);
+
+      await expect(service.searchForSong(99)).rejects.toThrow('Song not found.');
+      expect(spotifyService.getAccessToken).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('should report a 429 as a wait, and no connection as unavailable', async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'Exagerado', artist: 'Cazuza' });
+      fetchMock.mockImplementation(() => reply(429, { error: { status: 429, message: 'API rate limit exceeded' } }));
+
+      const limited = (await service.searchForSong(3).catch((e) => e)) as HttpException;
+      expect([limited.getStatus(), (limited.getResponse() as { code: string }).code]).toEqual([429, 'SPOTIFY_RATE_LIMITED']);
+
+      spotifyService.getAccessToken.mockResolvedValue(null);
+      const unavailable = (await service.searchForSong(3).catch((e) => e)) as HttpException;
+      expect((unavailable.getResponse() as { code: string }).code).toBe('SPOTIFY_UNAVAILABLE');
     });
   });
 

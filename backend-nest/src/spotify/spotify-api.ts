@@ -130,3 +130,38 @@ export async function replaceItems(accessToken: string, playlistId: string, uris
 export async function addItems(accessToken: string, playlistId: string, uris: string[]): Promise<void> {
   await apiRequest(accessToken, 'POST', `/playlists/${encodeURIComponent(playlistId)}/items`, { uris });
 }
+
+// ---- Search (MB-15): GET /search allows at most 10 results since February 2026 ----
+
+export const SEARCH_LIMIT = 5;
+
+export interface SpotifyTrackDto {
+  id: string;
+  name: string;
+  artists: string[];
+  album: string | null;
+  year: string | null;
+  durationMs: number;
+  imageUrl: string | null;
+  url: string;
+}
+
+export async function searchTracks(accessToken: string, q: string): Promise<SpotifyTrackDto[]> {
+  const query = new URLSearchParams({ q, type: 'track', limit: String(SEARCH_LIMIT) });
+  const data = await apiRequest(accessToken, 'GET', `/search?${query}`);
+  return (data.tracks?.items ?? []).filter(Boolean).map((track: SpotifyBody) => {
+    const images: SpotifyBody[] = track.album?.images ?? [];
+    // Spotify lists the biggest first; a small one is enough next to a song
+    const image = [...images].sort((a, b) => (a.width ?? 0) - (b.width ?? 0)).find((i) => (i.width ?? 0) >= 64) ?? images[0];
+    return {
+      id: track.id,
+      name: track.name,
+      artists: (track.artists ?? []).map((a: SpotifyBody) => a.name),
+      album: track.album?.name ?? null,
+      year: track.album?.release_date ? String(track.album.release_date).slice(0, 4) : null,
+      durationMs: track.duration_ms ?? 0,
+      imageUrl: image?.url ?? null,
+      url: track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`,
+    };
+  });
+}

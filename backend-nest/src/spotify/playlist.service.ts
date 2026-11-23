@@ -15,10 +15,12 @@ import { SpotifyService } from './spotify.service';
 import {
   MAX_ITEMS_PER_REQUEST,
   SpotifyRequestError,
+  SpotifyTrackDto,
   addItems,
   createPlaylist,
   renamePlaylist,
   replaceItems,
+  searchTracks,
   trackUri,
 } from './spotify-api';
 
@@ -40,6 +42,11 @@ function chunks<T>(items: T[], size: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
   return result;
+}
+
+// A value inside a Spotify field filter: its own quotes would end the filter early
+function filterValue(text: string): string {
+  return `"${text.replace(/"/g, ' ').replace(/\s+/g, ' ').trim()}"`;
 }
 
 // "2026-12-12" as "12/12/2026"
@@ -115,6 +122,27 @@ export class PlaylistService {
       missing: result.missing,
     });
     return { url: result.url, tracks: result.tracks, missing: result.missing };
+  }
+
+  // Tracks that may be the version a song of the band is, for a member to pick (MB-15). Nothing
+  // is saved here: the pick goes through the song update.
+  async searchForSong(songId: number): Promise<SpotifyTrackDto[]> {
+    const song = await this.prisma.song.findFirst({
+      where: { id: songId, bandId: this.requestContext.requireBandId(), deletedAt: null },
+      select: { title: true, artist: true },
+    });
+    if (!song) throw new NotFoundException('Song not found.');
+
+    const accessToken = await this.accessToken();
+    const filtered = `track:${filterValue(song.title)}${song.artist ? ` artist:${filterValue(song.artist)}` : ''}`;
+    try {
+      const tracks = await searchTracks(accessToken, filtered);
+      if (tracks.length > 0) return tracks;
+      // The filters want the exact words; plain words forgive a title written a little differently
+      return await searchTracks(accessToken, [song.title, song.artist].filter(Boolean).join(' '));
+    } catch (error) {
+      throw this.spotifyError(error);
+    }
   }
 
   // Puts these tracks, in order, in the stored playlist, or in a new one when there is none or

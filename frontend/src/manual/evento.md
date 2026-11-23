@@ -38,7 +38,9 @@ quando o Spotify está ligado no minhabanda.com.
 ![A playlist do repertório](/manual/spotify-playlist.png)
 
 - Antes de fazer, a janela diz quantas músicas entram e lista as que **não têm link**: elas ficam
-  de fora. Cole o link de cada uma ali mesmo e toque em **Salvar** para incluir.
+  de fora. Para incluir uma, toque em **Buscar**: aparecem algumas versões do Spotify, com a capa,
+  o álbum e a duração. **Ouvir** abre a versão no Spotify, e **Usar esta** guarda o link dela na
+  música. Se a busca não achar a versão certa, cole o link ali mesmo e toque em **Salvar**.
 - **Fazer playlist** cria a playlist e mostra **Abrir no Spotify**. Fazer de novo atualiza a
   mesma playlist, com o repertório como estiver.
 - **A playlist é pública:** quem tiver o link consegue abrir, e ela aparece no perfil do

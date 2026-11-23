@@ -33,6 +33,9 @@ const error = ref('')
 const drafts = ref({})
 const draftErrors = ref({})
 const savingId = ref(null)
+// Spotify tracks found for a song, by song id: an array (maybe empty) once searched (MB-15)
+const results = ref({})
+const searchingId = ref(null)
 
 const withLink = computed(() => props.songs.filter((s) => s.spotifyUrl))
 const missing = computed(() => props.songs.filter((s) => !s.spotifyUrl))
@@ -78,8 +81,33 @@ async function make() {
   }
 }
 
-async function saveLink(song) {
-  const link = (drafts.value[song.id] || '').trim()
+// Track lengths as m:ss
+function duration(ms) {
+  const seconds = Math.round(ms / 1000)
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
+async function search(song) {
+  searchingId.value = song.id
+  draftErrors.value = { ...draftErrors.value, [song.id]: '' }
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/spotify/songs/${song.id}/tracks`, { headers: getAuthHeader() })
+    const body = await response.json().catch(() => null)
+    if (!response.ok) {
+      if (body?.code === 'SPOTIFY_UNAVAILABLE') availability.value = 'unavailable'
+      throw new Error(t(ERRORS[body?.code] || 'spotify.error'))
+    }
+    results.value = { ...results.value, [song.id]: body.data }
+  } catch (exception) {
+    draftErrors.value = { ...draftErrors.value, [song.id]: exception.message }
+  } finally {
+    searchingId.value = null
+  }
+}
+
+// A pasted link, or the link of a track picked from the search
+async function saveLink(song, picked) {
+  const link = (picked ?? drafts.value[song.id] ?? '').trim()
   draftErrors.value = { ...draftErrors.value, [song.id]: '' }
   if (!link || !isSpotifyLink(link)) {
     draftErrors.value = { ...draftErrors.value, [song.id]: t('songs.invalidSpotifyLink') }
@@ -149,8 +177,45 @@ onMounted(loadAvailability)
                 <button type="submit" :disabled="savingId === song.id" class="btn-secondary btn-small">
                   {{ $t('actions.save') }}
                 </button>
+                <button
+                  type="button"
+                  @click="search(song)"
+                  :disabled="searchingId === song.id || disabled"
+                  class="btn-secondary btn-small search-song"
+                >
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  {{ searchingId === song.id ? $t('spotify.searching') : $t('spotify.search') }}
+                </button>
               </form>
               <small v-if="draftErrors[song.id]" class="draft-error">{{ draftErrors[song.id] }}</small>
+              <p v-if="results[song.id] && results[song.id].length === 0" class="hint nothing-found">
+                {{ $t('spotify.nothingFound') }}
+              </p>
+              <ul v-else-if="results[song.id]" class="track-results">
+                <li v-for="track in results[song.id]" :key="track.id" class="track-result">
+                  <img v-if="track.imageUrl" :src="track.imageUrl" alt="" class="track-cover" loading="lazy" />
+                  <span class="track-info">
+                    <strong>{{ track.name }}</strong>
+                    <small>
+                      {{ track.artists.join(', ') }}
+                      <template v-if="track.album"> · {{ track.album }}</template>
+                      <template v-if="track.year"> ({{ track.year }})</template>
+                      · {{ duration(track.durationMs) }}
+                    </small>
+                  </span>
+                  <a :href="track.url" target="_blank" rel="noopener noreferrer" class="listen" :title="$t('spotify.listen')">
+                    <i class="fa-brands fa-spotify"></i> {{ $t('spotify.listen') }}
+                  </a>
+                  <button
+                    type="button"
+                    @click="saveLink(song, track.url)"
+                    :disabled="savingId === song.id"
+                    class="btn-primary btn-small use-track"
+                  >
+                    {{ $t('spotify.useThis') }}
+                  </button>
+                </li>
+              </ul>
             </li>
           </ul>
         </div>
@@ -220,6 +285,46 @@ onMounted(loadAvailability)
   border: 1px solid var(--border-color, #ccc);
   border-radius: 6px;
   font-size: 0.9rem;
+}
+.track-results {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.track-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.track-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+.track-info small {
+  color: var(--text-light, #718096);
+}
+.listen {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: var(--text-light, #718096);
+}
+.use-track {
+  flex-shrink: 0;
+}
+.nothing-found {
+  margin: 4px 0 0;
 }
 .draft-error {
   color: var(--error, #e53e3e);
