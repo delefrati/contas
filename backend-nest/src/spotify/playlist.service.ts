@@ -44,6 +44,9 @@ function chunks<T>(items: T[], size: number): T[][] {
   return result;
 }
 
+// Words a member types to search: Spotify allows a long q, a person never needs one
+const MAX_TYPED_SEARCH = 200;
+
 // A value inside a Spotify field filter: its own quotes would end the filter early
 function filterValue(text: string): string {
   return `"${text.replace(/"/g, ' ').replace(/\s+/g, ' ').trim()}"`;
@@ -125,8 +128,9 @@ export class PlaylistService {
   }
 
   // Tracks that may be the version a song of the band is, for a member to pick (MB-15). Nothing
-  // is saved here: the pick goes through the song update.
-  async searchForSong(songId: number): Promise<SpotifyTrackDto[]> {
+  // is saved here: the pick goes through the song update. Words typed by the member replace the
+  // song's title and artist.
+  async searchForSong(songId: number, typed?: string): Promise<SpotifyTrackDto[]> {
     const song = await this.prisma.song.findFirst({
       where: { id: songId, bandId: this.requestContext.requireBandId(), deletedAt: null },
       select: { title: true, artist: true },
@@ -134,6 +138,14 @@ export class PlaylistService {
     if (!song) throw new NotFoundException('Song not found.');
 
     const accessToken = await this.accessToken();
+    const words = (typed ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TYPED_SEARCH);
+    if (words) {
+      try {
+        return await searchTracks(accessToken, words);
+      } catch (error) {
+        throw this.spotifyError(error);
+      }
+    }
     const filtered = `track:${filterValue(song.title)}${song.artist ? ` artist:${filterValue(song.artist)}` : ''}`;
     try {
       const tracks = await searchTracks(accessToken, filtered);

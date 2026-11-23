@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlaylistResultDto, PlaylistService } from './playlist.service';
 import { SpotifyTrackDto } from './spotify-api';
@@ -18,10 +18,14 @@ export class PlaylistController {
     return { data: { availability: await this.spotifyService.availability() } };
   }
 
-  // Tracks that may be a song's version, to pick one (MB-15)
+  // Tracks that may be a song's version, to pick one (MB-15): by its title and artist, or by the
+  // words a member typed (q)
   @Get('songs/:id/tracks')
-  async searchForSong(@Param('id', ParseIntPipe) id: number): Promise<{ data: SpotifyTrackDto[] }> {
-    return { data: await this.playlistService.searchForSong(id) };
+  async searchForSong(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('q') q?: string,
+  ): Promise<{ data: SpotifyTrackDto[] }> {
+    return { data: await this.playlistService.searchForSong(id, typeof q === 'string' ? q : undefined) };
   }
 
   @Post('playlists/songs')

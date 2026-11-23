@@ -486,8 +486,8 @@
     "willInclude": "No song with a link will go in. | 1 song with a link will go in, in order. | {n} songs with a link will go in, in order.",
     "publicNote": "The playlist is public: anyone with the link can open it. Its name has only the band and the date.",
     "missingTitle": "Without a Spotify link ({n}) | Without a Spotify link ({n}) | Without a Spotify link ({n})",
-    "missingHint": "These are left out. Search Spotify for the version the band plays, or paste its link, to include them.",
-    "pasteLink": "Paste the Spotify link",
+    "missingHint": "These are left out. Search Spotify for the version the band plays, or paste its link, to include them. With the field empty, the search uses the song's name.",
+    "linkOrSearch": "Paste the link or type to search",
     "make": "Make playlist",
     "makeAgain": "Update again",
     "made": "Playlist ready, with no songs. | Playlist ready, with {n} song. | Playlist ready, with {n} songs.",
@@ -498,7 +498,7 @@
     "error": "Couldn't make the Spotify playlist. Try again.",
     "search": "Search",
     "searching": "Searching...",
-    "nothingFound": "Nothing found on Spotify. Paste the link by hand.",
+    "nothingFound": "Nothing found on Spotify. Try other words or paste the link.",
     "listen": "Listen",
     "useThis": "Use this one"
   }

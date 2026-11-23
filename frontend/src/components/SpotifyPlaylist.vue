@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
-import { isSpotifyLink } from '../utils/spotify'
+import { isSpotifyLink, looksLikeLink } from '../utils/spotify'
 import Modal from './Modal.vue'
 
 // The "Playlist no Spotify" button and its dialog (MB-17). The playlist is made in the
@@ -87,11 +87,23 @@ function duration(ms) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-async function search(song) {
+// The one field takes a link or words: a link is saved, words (or nothing, for the song's own
+// title and artist) are searched on Spotify
+function isLinkDraft(song) {
+  return looksLikeLink(drafts.value[song.id])
+}
+
+function submit(song) {
+  if (isLinkDraft(song)) saveLink(song)
+  else search(song, (drafts.value[song.id] ?? '').trim())
+}
+
+async function search(song, words = '') {
   searchingId.value = song.id
   draftErrors.value = { ...draftErrors.value, [song.id]: '' }
   try {
-    const response = await fetch(`${apiBaseUrl}/api/spotify/songs/${song.id}/tracks`, { headers: getAuthHeader() })
+    const query = words ? `?${new URLSearchParams({ q: words })}` : ''
+    const response = await fetch(`${apiBaseUrl}/api/spotify/songs/${song.id}/tracks${query}`, { headers: getAuthHeader() })
     const body = await response.json().catch(() => null)
     if (!response.ok) {
       if (body?.code === 'SPOTIFY_UNAVAILABLE') availability.value = 'unavailable'
@@ -165,21 +177,25 @@ onMounted(loadAvailability)
                 {{ song.title }}
                 <small v-if="song.artist">— {{ song.artist }}</small>
               </span>
-              <form class="missing-link" @submit.prevent="saveLink(song)">
+              <form class="missing-link" @submit.prevent="submit(song)">
                 <input
                   v-model="drafts[song.id]"
                   type="text"
-                  inputmode="url"
                   autocomplete="off"
-                  :placeholder="$t('spotify.pasteLink')"
-                  :aria-label="$t('spotify.pasteLink')"
+                  :placeholder="$t('spotify.linkOrSearch')"
+                  :aria-label="$t('spotify.linkOrSearch')"
                 />
-                <button type="submit" :disabled="savingId === song.id" class="btn-secondary btn-small">
+                <button
+                  v-if="isLinkDraft(song)"
+                  type="submit"
+                  :disabled="savingId === song.id"
+                  class="btn-secondary btn-small save-link"
+                >
                   {{ $t('actions.save') }}
                 </button>
                 <button
-                  type="button"
-                  @click="search(song)"
+                  v-else
+                  type="submit"
                   :disabled="searchingId === song.id || disabled"
                   class="btn-secondary btn-small search-song"
                 >

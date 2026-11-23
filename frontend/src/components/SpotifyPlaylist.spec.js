@@ -69,7 +69,7 @@ describe('SpotifyPlaylist', () => {
       if (url.endsWith('/api/spotify/status')) return reply(200, { data: { availability } })
       if (url.endsWith('/api/spotify/playlists/events/7')) return makeReply()
       if (options.method === 'PATCH') return reply(200, { data: { id: 4, spotifyUrl: JSON.parse(options.body).spotifyUrl } })
-      if (url.endsWith('/api/spotify/songs/4/tracks')) return searchReply()
+      if (url.includes('/api/spotify/songs/4/tracks')) return searchReply()
       return reply(404, {})
     })
   })
@@ -172,7 +172,7 @@ describe('SpotifyPlaylist', () => {
   describe("searching a song's version", () => {
     async function searchFirstMissing(wrapper) {
       await openDialog(wrapper)
-      await wrapper.find('.search-song').trigger('click')
+      await wrapper.find('.missing-link').trigger('submit')
       await flushPromises()
     }
 
@@ -189,6 +189,30 @@ describe('SpotifyPlaylist', () => {
       expect(found[0].find('a.listen').attributes('target')).toBe('_blank')
       expect(found[1].find('img').exists()).toBe(false)
       expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
+    })
+
+    it('should search the words typed in the link field when Enter is pressed, without saving', async () => {
+      const wrapper = await createWrapper()
+      await openDialog(wrapper)
+      await wrapper.find('.missing-link input').setValue(' malandragem ao vivo ')
+      expect(wrapper.find('.save-link').exists()).toBe(false)
+      await wrapper.find('.missing-link').trigger('submit')
+      await flushPromises()
+
+      const [url] = mockFetch.mock.calls.find(([u]) => u.includes('/tracks'))
+      expect(new URL(url).searchParams.get('q')).toBe('malandragem ao vivo')
+      expect(wrapper.findAll('.track-result')).toHaveLength(2)
+      expect(wrapper.find('.draft-error').exists()).toBe(false)
+      expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
+    })
+
+    it('should offer Save instead of Search once a link is in the field', async () => {
+      const wrapper = await createWrapper()
+      await openDialog(wrapper)
+      await wrapper.find('.missing-link input').setValue(LINK)
+
+      expect(wrapper.find('.save-link').exists()).toBe(true)
+      expect(wrapper.find('.search-song').exists()).toBe(false)
     })
 
     it('should save the picked track as the song link', async () => {

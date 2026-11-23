@@ -231,10 +231,27 @@ describe('PlaylistService', () => {
       expect(queries()).toEqual(['track:"Pais e Filho" artist:"Legiao Urbana"', 'Pais e Filho Legiao Urbana']);
     });
 
+    it('should search by the words typed instead of the song, as they are', async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'Exagerado', artist: 'Cazuza' });
+      fetchMock.mockImplementation(() => reply(200, { tracks: { items: [] } }));
+
+      expect(await service.searchForSong(3, '  exagerado   ao vivo ')).toEqual([]);
+      expect(queries()).toEqual(['exagerado ao vivo']);
+    });
+
+    it('should search by the song when the words typed are only spaces', async () => {
+      prisma.song.findFirst.mockResolvedValue({ title: 'Exagerado', artist: 'Cazuza' });
+      fetchMock.mockImplementation(() => reply(200, found));
+
+      await service.searchForSong(3, '   ');
+      expect(queries()).toEqual(['track:"Exagerado" artist:"Cazuza"']);
+    });
+
     it('should refuse a song of another band without calling Spotify', async () => {
       prisma.song.findFirst.mockResolvedValue(null);
 
       await expect(service.searchForSong(99)).rejects.toThrow('Song not found.');
+      await expect(service.searchForSong(99, 'exagerado')).rejects.toThrow('Song not found.');
       expect(spotifyService.getAccessToken).not.toHaveBeenCalled();
       expect(fetchMock).not.toHaveBeenCalled();
     });

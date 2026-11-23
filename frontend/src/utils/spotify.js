@@ -8,3 +8,10 @@ export function isSpotifyLink(link) {
   const text = String(link ?? '').trim()
   return !text || URI.test(text) || URL.test(text)
 }
+
+// True for text meant as a link, Spotify's or not, rather than words to search for: a link that
+// is not a track still gets the invalid-link message instead of a search
+export function looksLikeLink(text) {
+  const value = String(text ?? '').trim()
+  return /^(https?:\/\/|www\.|spotify:)/i.test(value) || /\bspotify\.(com|link)\//i.test(value) || /^\S+\.[a-z]{2,}\/\S*$/i.test(value)
+}
