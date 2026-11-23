@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { AuthService, AuthPayload } from './auth.service';
 import { RequestContextService } from '../common/request-context.service';
+import { readJwtSecret } from './jwt-secret';
 
 const extractToken = ExtractJwt.fromAuthHeaderAsBearerToken();
 
@@ -16,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: extractToken,
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      secretOrKey: readJwtSecret(),
       passReqToCallback: true,
     });
   }

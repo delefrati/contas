@@ -10,7 +10,20 @@ describe('JwtStrategy', () => {
   let requestContext: { getBandId: jest.Mock; requireBandId: jest.Mock; getIdentity: jest.Mock };
   const req = { headers: { authorization: 'Bearer the-token' } } as unknown as Request;
 
+  const originalSecret = process.env.JWT_SECRET;
+
+  afterEach(() => {
+    process.env.JWT_SECRET = originalSecret;
+  });
+
+  it('should refuse to be built without a secret', () => {
+    delete process.env.JWT_SECRET;
+
+    expect(() => new JwtStrategy({} as AuthService, {} as RequestContextService)).toThrow(/JWT_SECRET is not set/);
+  });
+
   beforeEach(() => {
+    process.env.JWT_SECRET = 'test-secret';
     authService = { isBandSessionLive: jest.fn().mockResolvedValue(true) };
     requestContext = {
       getBandId: jest.fn().mockReturnValue(1),

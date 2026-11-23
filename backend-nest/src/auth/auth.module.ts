@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { readJwtSecret } from './jwt-secret';
 import { PrismaModule } from '../prisma/prisma.module';
 import { LogModule } from '../log/log.module';
 import { MemberModule } from '../member/member.module';
@@ -16,9 +17,8 @@ import { CommonModule } from '../common/common.module';
     MemberModule,
     CommonModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-      signOptions: { expiresIn: '24h' },
+    JwtModule.registerAsync({
+      useFactory: () => ({ secret: readJwtSecret(), signOptions: { expiresIn: '24h' } }),
     }),
   ],
   providers: [AuthService, JwtStrategy],

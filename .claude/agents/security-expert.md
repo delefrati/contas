@@ -41,9 +41,10 @@ authorized, defensive-security context (this is the project's own repo).
   endpoints. A new unguarded endpoint
   returning band data is a finding. There is no per-member role today: any
   active member of a band can write — flag new features that assume one.
-- **JWT secret**: `JWT_SECRET` falls back to a hardcoded default in
-  `jwt.strategy.ts`/`auth.module.ts` when unset — verify prod sets it, and
-  flag any new code that adds a similar fallback for a secret.
+- **JWT secret**: read only through `readJwtSecret()` (`auth/jwt-secret.ts`),
+  which stops the backend without one, or with a short or example one in
+  production. Flag any code that reads `JWT_SECRET` around it or adds a
+  fallback for a secret.
 - **SQL**: data access is Prisma. `$queryRaw` with tagged templates is
   parameterized; `$queryRawUnsafe`/`$executeRawUnsafe` or string-built SQL
   over request data is a finding. Also check the shell scripts in

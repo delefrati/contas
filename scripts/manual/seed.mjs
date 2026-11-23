@@ -37,7 +37,7 @@ function signIn(payload) {
     'exec', '-T', 'backend', 'node', '-e',
     `const jwt = require('jsonwebtoken');
      console.log(jwt.sign(${JSON.stringify(payload)},
-       process.env.JWT_SECRET || 'your-secret-key-change-in-production', { expiresIn: '24h' }))`,
+       process.env.JWT_SECRET, { expiresIn: '24h' }))`,
   )
   const owner = payload.superAdminId ? 'super_admin_id' : 'member_id'
   const id = payload.superAdminId ?? payload.memberId

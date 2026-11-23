@@ -21,9 +21,10 @@ services:
       context: ./backend-nest
     environment:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
-      NODE_ENV: production
+      # Local stack only: development accepts the example secret, so a .env without one still runs
+      NODE_ENV: development
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       # localhost isn't a band subdomain, so local requests use this band
       DEFAULT_BAND: ${DEFAULT_BAND:-maverick}

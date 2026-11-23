@@ -24,12 +24,12 @@ until curl -sf http://localhost:8001/api/health; do sleep 3; done
 ## Getting a session (gotcha)
 
 Google login can't run locally: GSI rejects the `localhost:51731` origin ("The given origin
-is not allowed"). Mint the same JWT that `AuthService.createToken` issues instead. `JWT_SECRET`
-is empty in `.env`, so the backend falls back to `your-secret-key-change-in-production`:
+is not allowed"). Mint the same JWT that `AuthService.createToken` issues instead, signed with
+the backend's own `JWT_SECRET` (the local compose defaults it to `.env.example`'s value):
 
 ```bash
 docker compose exec -T backend node -e 'console.log(require("jsonwebtoken").sign(
-  { memberId: 1, bandId: 1, name: "Ana" }, "your-secret-key-change-in-production", { expiresIn: "24h" }))'
+  { memberId: 1, bandId: 1, name: "Ana" }, process.env.JWT_SECRET, { expiresIn: "24h" }))'
 ```
 
 Use `{ superAdminId: <id>, ... }` for a super admin. Always insert a matching `sessions` row

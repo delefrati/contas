@@ -41,7 +41,7 @@ Configure your environment variables:
 DATABASE_URL="mysql://root:root@db:3306/contas"
 NODE_ENV=development
 PORT=3000
-JWT_SECRET="your-secret-key-change-in-production"
+JWT_SECRET="dev-secret-change-in-production"
 OIDC_PROVIDER_URL="https://your-oidc-provider.com"
 OIDC_CLIENT_ID="your-client-id"
 OIDC_CLIENT_SECRET="your-client-secret"
@@ -374,7 +374,8 @@ docker build -t contas-api .
 ```bash
 docker run -p 3000:3000 \
   -e DATABASE_URL="mysql://root:root@db:3306/contas" \
-  -e JWT_SECRET="your-secret-key" \
+  -e NODE_ENV=production \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
   contas-api
 ```
 
@@ -398,7 +399,8 @@ See the root `docker-compose.yml` for the complete setup.
 
 ### JWT Token Issues
 
-- Ensure `JWT_SECRET` is set in `.env`
+- Ensure `JWT_SECRET` is set in `.env`: the backend won't start without it. In production it must
+  be at least 32 characters and not an example value (`openssl rand -base64 48` makes one)
 - Verify token hasn't expired (24h expiration by default)
 - Check `Authorization: Bearer <token>` header format
 

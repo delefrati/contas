@@ -49,6 +49,9 @@ cp .env.prod.example .env
 Edit `.env` and set all `CHANGE_ME...` values.
 
 Important values:
+- `JWT_SECRET` signs every sign-in. Make it with `openssl rand -base64 48` and keep it out of
+  git. The backend refuses to start without one, or with one shorter than 32 characters or equal
+  to an example value. Changing it signs everyone out.
 - `BASE_DOMAIN=minhabanda.com`
 - `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` must match the same Google OAuth client
 - `BASE_DOMAIN` must match the wildcard DNS record
