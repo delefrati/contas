@@ -26,6 +26,7 @@ const SHOTS = [
   { name: 'agenda-lista', path: '/agenda?ver=lista', size: DESKTOP },
   { name: 'evento', path: `/agenda/${session.eventId}`, size: DESKTOP, full: true },
   { name: 'palco', path: `/agenda/${session.eventId}?visualizar=1`, size: PHONE },
+  { name: 'spotify-playlist', path: `/agenda/${session.eventId}`, size: DESKTOP, click: 'button.spotify-playlist-button', element: '.modal-content' },
   { name: 'musicas', path: '/musicas', size: SHORT },
   { name: 'financeiro', path: '/financeiro', size: DESKTOP, full: true },
   { name: 'relatorio', path: '/financeiro', size: DESKTOP, full: true, click: 'button.tab-button:has-text("Relatório")' },

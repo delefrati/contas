@@ -33,6 +33,14 @@ repertórios que já tinham ela.
 No celular, o lápis e o X ficam no menu de três pontos de cada música, como **Editar** e
 **Deletar**, junto com **Abrir no Spotify** para as músicas que têm o link.
 
+## Playlist com todas as músicas
+
+**Playlist no Spotify** faz uma playlist com todas as músicas da banda que têm link do Spotify,
+na ordem da lista. Funciona como a do repertório de um evento, explicada em
+[Evento e repertório](/ajuda/evento): a janela lista as músicas sem link, para colar ali mesmo,
+fazer de novo atualiza a mesma playlist, e **a playlist é pública**, com o nome da banda e
+"Repertório".
+
 ## Importar uma lista
 
 Para cadastrar várias de uma vez:

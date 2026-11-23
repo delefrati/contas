@@ -68,6 +68,17 @@ export class SpotifyService {
     return this.config !== null;
   }
 
+  // What a band page needs to know, and nothing about the account: whether to show the playlist
+  // button at all (not set up), and whether it works right now
+  async availability(): Promise<'not-set-up' | 'unavailable' | 'working'> {
+    if (!this.config) return 'not-set-up';
+    const connection = await this.prisma.spotifyConnection.findUnique({
+      where: { id: CONNECTION_ID },
+      select: { broken: true },
+    });
+    return connection && !connection.broken ? 'working' : 'unavailable';
+  }
+
   async status(): Promise<SpotifyStatusDto> {
     const connection = this.config
       ? await this.prisma.spotifyConnection.findUnique({

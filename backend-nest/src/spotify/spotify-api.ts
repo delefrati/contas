@@ -84,3 +84,49 @@ export async function currentUser(accessToken: string): Promise<SpotifyUser> {
   }
   return { id: data.id, displayName: data.display_name ?? null };
 }
+
+// ---- Playlists (MB-17), with the endpoints of February 2026 ----
+
+// Spotify takes at most 100 tracks per request
+export const MAX_ITEMS_PER_REQUEST = 100;
+
+export interface SpotifyPlaylist {
+  id: string;
+  url: string;
+}
+
+async function apiRequest(accessToken: string, method: string, path: string, body?: object): Promise<SpotifyBody> {
+  const response = await fetch(`${API}${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await readBody(response);
+  if (!response.ok) {
+    throw new SpotifyRequestError(response.status, data?.error?.message || `Spotify answered ${response.status}`);
+  }
+  return data;
+}
+
+export function trackUri(trackId: string): string {
+  return `spotify:track:${trackId}`;
+}
+
+export async function createPlaylist(accessToken: string, name: string, description: string): Promise<SpotifyPlaylist> {
+  const data = await apiRequest(accessToken, 'POST', '/me/playlists', { name, description, public: true });
+  return { id: data.id, url: data.external_urls?.spotify || `https://open.spotify.com/playlist/${data.id}` };
+}
+
+export async function renamePlaylist(accessToken: string, playlistId: string, name: string): Promise<void> {
+  await apiRequest(accessToken, 'PUT', `/playlists/${encodeURIComponent(playlistId)}`, { name });
+}
+
+// Overwrites the playlist's tracks with these (at most 100)
+export async function replaceItems(accessToken: string, playlistId: string, uris: string[]): Promise<void> {
+  await apiRequest(accessToken, 'PUT', `/playlists/${encodeURIComponent(playlistId)}/items`, { uris });
+}
+
+// Appends these (at most 100)
+export async function addItems(accessToken: string, playlistId: string, uris: string[]): Promise<void> {
+  await apiRequest(accessToken, 'POST', `/playlists/${encodeURIComponent(playlistId)}/items`, { uris });
+}

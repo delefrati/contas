@@ -9,6 +9,7 @@ import OfflineBar from '../components/OfflineBar.vue'
 import Modal from '../components/Modal.vue'
 import EventFormModal from '../components/EventFormModal.vue'
 import StageView from '../components/StageView.vue'
+import SpotifyPlaylist from '../components/SpotifyPlaylist.vue'
 import { formatDate as formatLocalDate, localeTag, parseDate } from '../utils/date'
 import { eventName, eventTime, typeStyle } from '../utils/events'
 
@@ -61,6 +62,20 @@ const filteredSongs = computed(() => {
     (s.artist || '').toLowerCase().includes(term),
   )
 })
+
+// The setlist's songs, in order and without the pauses, for the Spotify playlist
+const setlistSongs = computed(() =>
+  (event.value?.setlist || [])
+    .filter((item) => item.type !== 'pause')
+    .map((item) => ({ id: item.songId, title: item.title, artist: item.artist, spotifyUrl: item.spotifyUrl })),
+)
+
+// A link pasted in the playlist dialog, shown in the setlist and the song list
+function onSongLinked(id, spotifyUrl) {
+  for (const item of event.value?.setlist || []) if (item.songId === id) item.spotifyUrl = spotifyUrl
+  const song = songs.value.find((s) => s.id === id)
+  if (song) song.spotifyUrl = spotifyUrl
+}
 
 const availableSongs = computed(() => {
   if (!event.value) return []
@@ -611,6 +626,12 @@ onBeforeUnmount(() => {
               <button @click="openCopy" :disabled="showingCopy || event.setlist.length === 0" class="btn-secondary" :title="$t('repertoires.copy')">
                 <i class="fa-solid fa-copy"></i> {{ $t('repertoires.copy') }}
               </button>
+              <SpotifyPlaylist
+                :songs="setlistSongs"
+                :endpoint="`/api/spotify/playlists/events/${eventId}`"
+                :disabled="showingCopy"
+                @song-updated="onSongLinked"
+              />
               <button @click="shareRepertoire" class="btn-secondary" :title="$t('repertoires.shareText')">
                 <i class="fa-solid fa-share-nodes"></i> {{ $t('repertoires.shareText') }}
               </button>

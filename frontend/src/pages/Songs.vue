@@ -6,6 +6,7 @@ import { useOfflineCopy } from '../composables/useOfflineCopy'
 import AppHeader from '../components/AppHeader.vue'
 import Modal from '../components/Modal.vue'
 import OfflineBar from '../components/OfflineBar.vue'
+import SpotifyPlaylist from '../components/SpotifyPlaylist.vue'
 import { isSpotifyLink } from '../utils/spotify'
 
 const { t } = useI18n()
@@ -239,6 +240,12 @@ async function submitImport() {
   }
 }
 
+// A link pasted in the playlist dialog
+function onSongLinked(id, spotifyUrl) {
+  const song = songs.value.find((s) => s.id === id)
+  if (song) song.spotifyUrl = spotifyUrl
+}
+
 onMounted(() => {
   loadData()
   document.addEventListener('click', closeActionMenu)
@@ -265,6 +272,12 @@ onBeforeUnmount(() => {
             <button @click="openImport" :disabled="showingCopy" class="btn-secondary">
               <i class="fa-solid fa-file-import"></i> {{ $t('songs.import') }}
             </button>
+            <SpotifyPlaylist
+              :songs="songs"
+              endpoint="/api/spotify/playlists/songs"
+              :disabled="showingCopy"
+              @song-updated="onSongLinked"
+            />
             <button @click="openCreateSong" :disabled="showingCopy" class="btn-primary">+ {{ $t('songs.addSong') }}</button>
             <button @click="loadData" :disabled="loading" class="btn-secondary">
               <i v-if="!loading" class="fa-solid fa-arrows-rotate"></i> {{ loading ? $t('actions.loading') : $t('actions.refresh') }}

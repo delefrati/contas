@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { ref } from 'vue'
 import EventDetail from './EventDetail.vue'
+import SpotifyPlaylist from '../components/SpotifyPlaylist.vue'
 import { deleteRecord, writeRecord } from '../offline/db'
 
 const mockFetch = vi.fn()
@@ -101,6 +102,17 @@ describe('EventDetail', () => {
       if (options.method === 'PATCH') return respond({ ...show, id: 21 })
       return respond(show)
     })
+  })
+
+  it('should offer the setlist to the Spotify playlist in order, without the pauses', async () => {
+    const { wrapper } = await createWrapper()
+    const playlist = wrapper.findComponent(SpotifyPlaylist)
+
+    expect(playlist.props('endpoint')).toBe('/api/spotify/playlists/events/7')
+    expect(playlist.props('songs').map((s) => [s.id, s.title, !!s.spotifyUrl])).toEqual([
+      [3, 'Exagerado', true],
+      [4, 'Malandragem', false],
+    ])
   })
 
   describe('without a connection', () => {

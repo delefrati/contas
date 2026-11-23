@@ -1,0 +1,251 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAuth } from '../composables/useAuth'
+import { isSpotifyLink } from '../utils/spotify'
+import Modal from './Modal.vue'
+
+// The "Playlist no Spotify" button and its dialog (MB-17). The playlist is made in the
+// platform's Spotify account; this page only learns whether that works, never the account.
+const props = defineProps({
+  // The songs that would go in, in order: { id, title, artist, spotifyUrl }
+  songs: { type: Array, required: true },
+  // POST path that makes the playlist, such as /api/spotify/playlists/songs
+  endpoint: { type: String, required: true },
+  // Without internet, or reading the downloaded copy
+  disabled: { type: Boolean, default: false },
+})
+
+// A link pasted here, so the page can show it too: (songId, spotifyUrl)
+const emit = defineEmits(['song-updated'])
+
+const { t } = useI18n()
+const { getAuthHeader, scheduleCopySync } = useAuth()
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+
+// 'not-set-up' hides the button; 'unavailable' opens a dialog that says so
+const availability = ref(null)
+const isOpen = ref(false)
+const making = ref(false)
+const result = ref(null)
+const error = ref('')
+// Links being pasted for songs without one, by song id
+const drafts = ref({})
+const draftErrors = ref({})
+const savingId = ref(null)
+
+const withLink = computed(() => props.songs.filter((s) => s.spotifyUrl))
+const missing = computed(() => props.songs.filter((s) => !s.spotifyUrl))
+
+const ERRORS = {
+  NO_SPOTIFY_SONGS: 'spotify.noSongs',
+  SPOTIFY_UNAVAILABLE: 'spotify.unavailable',
+  SPOTIFY_RATE_LIMITED: 'spotify.rateLimited',
+}
+
+async function loadAvailability() {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/spotify/status`, { headers: getAuthHeader() })
+    if (response.ok) availability.value = (await response.json()).data.availability
+  } catch {
+    // Offline or failing: no button, as if Spotify weren't set up
+  }
+}
+
+function open() {
+  result.value = null
+  error.value = ''
+  draftErrors.value = {}
+  isOpen.value = true
+}
+
+async function make() {
+  making.value = true
+  error.value = ''
+  result.value = null
+  try {
+    const response = await fetch(`${apiBaseUrl}${props.endpoint}`, { method: 'POST', headers: getAuthHeader() })
+    const body = await response.json().catch(() => null)
+    if (!response.ok) {
+      if (body?.code === 'SPOTIFY_UNAVAILABLE') availability.value = 'unavailable'
+      throw new Error(t(ERRORS[body?.code] || 'spotify.error'))
+    }
+    result.value = body.data
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : t('spotify.error')
+  } finally {
+    making.value = false
+  }
+}
+
+async function saveLink(song) {
+  const link = (drafts.value[song.id] || '').trim()
+  draftErrors.value = { ...draftErrors.value, [song.id]: '' }
+  if (!link || !isSpotifyLink(link)) {
+    draftErrors.value = { ...draftErrors.value, [song.id]: t('songs.invalidSpotifyLink') }
+    return
+  }
+
+  savingId.value = song.id
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/songs/${song.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ spotifyUrl: link }),
+    })
+    const body = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(body?.code === 'INVALID_SPOTIFY_LINK' ? t('songs.invalidSpotifyLink') : t('errors.genericError'))
+    }
+    scheduleCopySync()
+    emit('song-updated', song.id, body.data.spotifyUrl)
+  } catch (exception) {
+    draftErrors.value = { ...draftErrors.value, [song.id]: exception.message }
+  } finally {
+    savingId.value = null
+  }
+}
+
+onMounted(loadAvailability)
+</script>
+
+<template>
+  <button
+    v-if="availability && availability !== 'not-set-up'"
+    @click="open"
+    :disabled="disabled || songs.length === 0"
+    class="btn-secondary spotify-playlist-button"
+    :title="$t('spotify.playlist')"
+  >
+    <i class="fa-brands fa-spotify"></i> {{ $t('spotify.playlist') }}
+  </button>
+
+  <Modal v-model="isOpen" :title="$t('spotify.playlist')">
+    <div class="spotify-playlist">
+      <p v-if="availability === 'unavailable'" class="alert alert-error unavailable">{{ $t('spotify.unavailable') }}</p>
+
+      <template v-else>
+        <p class="will-include">{{ $t('spotify.willInclude', withLink.length) }}</p>
+        <p class="hint public-note"><i class="fa-solid fa-globe"></i> {{ $t('spotify.publicNote') }}</p>
+
+        <div v-if="missing.length > 0" class="missing">
+          <h4>{{ $t('spotify.missingTitle', missing.length) }}</h4>
+          <p class="hint">{{ $t('spotify.missingHint') }}</p>
+          <ul>
+            <li v-for="song in missing" :key="song.id" class="missing-song">
+              <span class="missing-name">
+                {{ song.title }}
+                <small v-if="song.artist">— {{ song.artist }}</small>
+              </span>
+              <form class="missing-link" @submit.prevent="saveLink(song)">
+                <input
+                  v-model="drafts[song.id]"
+                  type="text"
+                  inputmode="url"
+                  autocomplete="off"
+                  :placeholder="$t('spotify.pasteLink')"
+                  :aria-label="$t('spotify.pasteLink')"
+                />
+                <button type="submit" :disabled="savingId === song.id" class="btn-secondary btn-small">
+                  {{ $t('actions.save') }}
+                </button>
+              </form>
+              <small v-if="draftErrors[song.id]" class="draft-error">{{ draftErrors[song.id] }}</small>
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="result" class="alert alert-success made">
+          {{ $t('spotify.made', result.tracks) }}
+          <a :href="result.url" target="_blank" rel="noopener noreferrer" class="open-playlist">
+            <i class="fa-brands fa-spotify"></i> {{ $t('spotify.open') }}
+          </a>
+        </div>
+        <div v-if="error" class="alert alert-error">{{ error }}</div>
+      </template>
+
+      <div class="form-actions">
+        <button type="button" @click="isOpen = false" class="btn-secondary">{{ $t('actions.close') }}</button>
+        <button
+          v-if="availability !== 'unavailable'"
+          type="button"
+          @click="make"
+          :disabled="making || disabled || withLink.length === 0"
+          class="btn-primary make-playlist"
+        >
+          <i class="fa-brands fa-spotify"></i>
+          {{ making ? $t('actions.loading') : result ? $t('spotify.makeAgain') : $t('spotify.make') }}
+        </button>
+      </div>
+    </div>
+  </Modal>
+</template>
+
+<style scoped>
+.spotify-playlist p {
+  margin: 0 0 10px;
+}
+.hint {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+.missing h4 {
+  margin: 14px 0 4px;
+}
+.missing ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.missing-song {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.missing-name small {
+  color: var(--text-light, #718096);
+}
+.missing-link {
+  display: flex;
+  gap: 6px;
+}
+.missing-link input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.draft-error {
+  color: var(--error, #e53e3e);
+}
+.made {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.open-playlist {
+  font-weight: 600;
+  color: #1db954;
+  text-decoration: none;
+}
+.fa-spotify {
+  color: #1db954;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.make-playlist .fa-spotify {
+  color: inherit;
+}
+</style>

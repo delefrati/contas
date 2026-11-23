@@ -127,7 +127,8 @@
     "save": "Guardar",
     "loading": "Cargando...",
     "refresh": "Actualizar",
-    "more": "Más acciones"
+    "more": "Más acciones",
+    "close": "Cerrar"
   },
   "filters": {
     "text": "Buscar",
@@ -479,5 +480,21 @@
     "refreshed": "Datos actualizados.",
     "refreshFailed": "No se pudo descargar ahora. Revisa la conexión e inténtalo de nuevo.",
     "expired": "Tu sesión expiró. Vuelve a entrar para actualizar los datos."
+  },
+  "spotify": {
+    "playlist": "Playlist en Spotify",
+    "willInclude": "Ninguna canción con enlace va a entrar. | 1 canción con enlace va a entrar, en orden. | {n} canciones con enlace van a entrar, en orden.",
+    "publicNote": "La playlist es pública: quien tenga el enlace puede abrirla. Su nombre tiene solo la banda y la fecha.",
+    "missingTitle": "Sin enlace de Spotify ({n}) | Sin enlace de Spotify ({n}) | Sin enlace de Spotify ({n})",
+    "missingHint": "Estas quedan fuera. Pega el enlace de la versión que toca la banda para incluirlas.",
+    "pasteLink": "Pega el enlace de Spotify",
+    "make": "Hacer playlist",
+    "makeAgain": "Actualizar de nuevo",
+    "made": "Playlist lista, sin canciones. | Playlist lista, con {n} canción. | Playlist lista, con {n} canciones.",
+    "open": "Abrir en Spotify",
+    "unavailable": "Spotify no está disponible ahora. Un super admin tiene que conectar la cuenta de nuevo en el panel.",
+    "rateLimited": "Spotify pidió esperar. Inténtalo de nuevo en un momento.",
+    "noSongs": "Ninguna canción tiene enlace de Spotify todavía.",
+    "error": "No se pudo hacer la playlist en Spotify. Inténtalo de nuevo."
   }
 }

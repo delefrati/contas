@@ -29,6 +29,24 @@ Cada mudança é salva na hora. Não existe botão de salvar.
 - **Compartilhar** copia o repertório como texto, com o nome, a data e o local do evento,
   para colar no WhatsApp.
 
+## Playlist no Spotify
+
+**Playlist no Spotify** faz uma playlist com as músicas do repertório, na ordem e sem as pausas,
+nas versões cujo link do Spotify está cadastrado em [Músicas](/ajuda/musicas). O botão só aparece
+quando o Spotify está ligado no minhabanda.com.
+
+![A playlist do repertório](/manual/spotify-playlist.png)
+
+- Antes de fazer, a janela diz quantas músicas entram e lista as que **não têm link**: elas ficam
+  de fora. Cole o link de cada uma ali mesmo e toque em **Salvar** para incluir.
+- **Fazer playlist** cria a playlist e mostra **Abrir no Spotify**. Fazer de novo atualiza a
+  mesma playlist, com o repertório como estiver.
+- **A playlist é pública:** quem tiver o link consegue abrir, e ela aparece no perfil do
+  minhabanda.com no Spotify. Por isso o nome dela tem só a banda e a data, nunca o nome nem o
+  local do evento.
+- Se a janela disser que o Spotify está indisponível, um super admin precisa conectar a conta
+  de novo no painel. Sem internet, o botão fica desligado.
+
 ## Copiar para outra data
 
 Para usar o mesmo repertório em outro evento:

@@ -127,7 +127,8 @@
     "save": "Save",
     "loading": "Loading...",
     "refresh": "Refresh",
-    "more": "More actions"
+    "more": "More actions",
+    "close": "Close"
   },
   "filters": {
     "text": "Search",
@@ -479,5 +480,21 @@
     "refreshed": "Data updated.",
     "refreshFailed": "Couldn't download right now. Check the connection and try again.",
     "expired": "Your session expired. Sign in again to update the data."
+  },
+  "spotify": {
+    "playlist": "Spotify playlist",
+    "willInclude": "No song with a link will go in. | 1 song with a link will go in, in order. | {n} songs with a link will go in, in order.",
+    "publicNote": "The playlist is public: anyone with the link can open it. Its name has only the band and the date.",
+    "missingTitle": "Without a Spotify link ({n}) | Without a Spotify link ({n}) | Without a Spotify link ({n})",
+    "missingHint": "These are left out. Paste the link to the version the band plays to include them.",
+    "pasteLink": "Paste the Spotify link",
+    "make": "Make playlist",
+    "makeAgain": "Update again",
+    "made": "Playlist ready, with no songs. | Playlist ready, with {n} song. | Playlist ready, with {n} songs.",
+    "open": "Open in Spotify",
+    "unavailable": "Spotify is unavailable right now. A super admin needs to connect the account again in the admin panel.",
+    "rateLimited": "Spotify asked to wait. Try again in a moment.",
+    "noSongs": "No song has a Spotify link yet.",
+    "error": "Couldn't make the Spotify playlist. Try again."
   }
 }

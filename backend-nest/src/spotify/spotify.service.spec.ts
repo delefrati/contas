@@ -273,6 +273,18 @@ describe('SpotifyService', () => {
     });
   });
 
+  it('should tell band pages only whether playlists work, not set up, broken or missing', async () => {
+    expect(await (await createService({ ...ENV, SPOTIFY_CLIENT_ID: '' })).availability()).toBe('not-set-up');
+
+    const service = await createService();
+    expect(await service.availability()).toBe('unavailable');
+    prisma.spotifyConnection.findUnique.mockResolvedValue({ broken: true });
+    expect(await service.availability()).toBe('unavailable');
+    prisma.spotifyConnection.findUnique.mockResolvedValue({ broken: false });
+    expect(await service.availability()).toBe('working');
+    expect(prisma.spotifyConnection.findUnique).toHaveBeenLastCalledWith({ where: { id: 1 }, select: { broken: true } });
+  });
+
   it('should delete the tokens on disconnect and log it', async () => {
     const service = await createService();
 
