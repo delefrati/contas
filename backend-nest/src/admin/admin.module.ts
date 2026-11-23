@@ -5,13 +5,14 @@ import { LogModule } from '../log/log.module';
 import { MemberModule } from '../member/member.module';
 import { AuthModule } from '../auth/auth.module';
 import { BandModule } from '../band/band.module';
+import { SpotifyModule } from '../spotify/spotify.module';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './admin-auth.guard';
-import { AdminAuthController, AdminController } from './admin.controller';
+import { AdminAuthController, AdminController, AdminSpotifyController } from './admin.controller';
 
 @Module({
-  imports: [PrismaModule, CommonModule, LogModule, MemberModule, AuthModule, BandModule],
+  imports: [PrismaModule, CommonModule, LogModule, MemberModule, AuthModule, BandModule, SpotifyModule],
   providers: [AdminService, AdminAuthGuard],
-  controllers: [AdminAuthController, AdminController],
+  controllers: [AdminAuthController, AdminController, AdminSpotifyController],
 })
 export class AdminModule {}

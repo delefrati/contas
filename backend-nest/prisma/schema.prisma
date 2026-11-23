@@ -68,8 +68,27 @@ model SuperAdmin {
 
   sessions Session[]
   logs     Log[]
+  spotifyConnections SpotifyConnection[]
 
   @@map("super_admins")
+}
+
+// The one Spotify account minhabanda.com makes every band's playlists in (DEPLOY-OCI.md, section 8)
+model SpotifyConnection {
+  // Always 1: there is a single connection for the whole platform
+  id               Int      @id
+  spotifyUserId    String   @map("spotify_user_id") @db.VarChar(255)
+  displayName      String?  @map("display_name") @db.VarChar(255)
+  // AES-256-GCM with SPOTIFY_TOKEN_KEY, see spotify/token-crypto.ts
+  refreshToken     String   @map("refresh_token") @db.Text
+  // Spotify refused the refresh token: a super admin has to connect again
+  broken           Boolean  @default(false)
+  connectedById    Int?     @map("connected_by_id")
+  connectedAt      DateTime @default(now()) @map("connected_at")
+
+  connectedBy SuperAdmin? @relation(fields: [connectedById], references: [id], onDelete: SetNull)
+
+  @@map("spotify_connection")
 }
 
 model ExpenseType {

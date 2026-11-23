@@ -43,3 +43,23 @@ bandas e neste painel.
   a si mesmo (você aparece marcado como **você**).
 
 Como acontece com os integrantes, super admins nunca são excluídos, só desativados.
+
+## Spotify
+
+As playlists do Spotify de todas as bandas são feitas numa conta do Spotify do próprio
+minhabanda.com. O Spotify só deixa um app como este ser usado por 5 contas, então os integrantes
+não conectam a conta deles: um super admin conecta a do minhabanda.com, uma vez, na tela
+**Spotify** (o ícone do Spotify no topo do painel).
+
+![A conta do Spotify no painel](/manual/admin-spotify.png)
+
+- **Conectar conta do Spotify** abre a página do Spotify. Entre com a conta do minhabanda.com e
+  aceite. Você volta para o painel, que mostra a conta, quem conectou e quando.
+- **Funcionando** quer dizer que as bandas conseguem fazer playlists. **Desconectada pelo
+  Spotify** quer dizer que o Spotify não aceita mais a conexão (por exemplo, o app foi removido
+  da conta): use **Conectar de novo**.
+- **Conectar outra conta** troca a conta. **Desconectar** tira a conexão, depois de confirmar:
+  as bandas param de conseguir fazer playlists, e as que já existem continuam no Spotify.
+
+Se a tela disser que o Spotify não está configurado, faltam as chaves do Spotify no servidor
+(veja a seção 8 do `DEPLOY-OCI.md`).

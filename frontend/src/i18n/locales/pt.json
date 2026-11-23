@@ -389,6 +389,28 @@
       "you": "você",
       "added": "Super admin adicionado!",
       "confirmDisable": "Desativar {name}? A pessoa perde o acesso a este painel na hora."
+    },
+    "spotify": {
+      "title": "Spotify",
+      "hint": "As playlists de todas as bandas são feitas numa conta do Spotify do minhabanda.com. Conecte essa conta aqui; os integrantes não conectam nada.",
+      "notSetUp": "O Spotify não está configurado neste servidor. Veja a seção 8 do DEPLOY-OCI.md.",
+      "notConnected": "Nenhuma conta conectada. Sem ela, as bandas não conseguem fazer playlists.",
+      "connect": "Conectar conta do Spotify",
+      "connectOther": "Conectar outra conta",
+      "reconnect": "Conectar de novo",
+      "disconnect": "Desconectar",
+      "confirmDisconnect": "Desconectar a conta do Spotify? As bandas não conseguem mais fazer playlists até alguém conectar de novo. As playlists já feitas continuam no Spotify.",
+      "working": "Funcionando",
+      "broken": "Desconectada pelo Spotify",
+      "brokenHint": "O Spotify não aceita mais esta conexão (o app foi removido da conta, ou a chave do servidor mudou). Conecte de novo.",
+      "account": "Conta",
+      "connectedBy": "Conectada por",
+      "connectedAt": "Conectada em",
+      "connected": "Conta do Spotify conectada!",
+      "cancelled": "Conexão cancelada no Spotify. Nada mudou.",
+      "expired": "O pedido de conexão expirou. Tente de novo.",
+      "failed": "Não foi possível conectar ao Spotify. Tente de novo.",
+      "disconnected": "Conta do Spotify desconectada."
     }
   },
   "offline": {

@@ -161,6 +161,9 @@ export async function seed() {
   for (const expense of EXPENSES) await api('POST', '/api/expenses', expense)
 
   const admin = { id: paulaId, name: 'Paula Admin', email: 'paula@example.com' }
+  // The platform's Spotify account, as if Paula had connected it (the token is never used)
+  sql(`INSERT INTO spotify_connection (id, spotify_user_id, display_name, refresh_token, connected_by_id)
+       VALUES (1, 'minhabanda', 'minhabanda.com', 'v1:made-up', ${paulaId})`)
   const adminToken = signIn({ scope: 'platform', superAdminId: paulaId, email: admin.email, name: admin.name })
 
   const session = {

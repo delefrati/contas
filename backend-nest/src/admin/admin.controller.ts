@@ -1,8 +1,25 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { AdminLoginResponse, AdminPayload, AuthService } from '../auth/auth.service';
 import { MemberDto } from '../member/member.service';
 import { AdminAuthGuard, AdminRequest } from './admin-auth.guard';
 import { AdminBandDto, AdminService, NewBand, SuperAdminDto } from './admin.service';
+import { BandService } from '../band/band.service';
+import { SpotifyService, SpotifyStatusDto } from '../spotify/spotify.service';
 
 // Sign-in to the admin panel; the panel itself is AdminController
 @Controller('api/admin/auth')
@@ -104,5 +121,46 @@ export class AdminController {
     @Req() req: AdminRequest,
   ): Promise<{ data: SuperAdminDto }> {
     return { data: await this.adminService.toggleSuperAdminActive(id, req.admin!.superAdminId) };
+  }
+}
+
+// The platform's Spotify account (MB-16), connected by a super admin from the admin panel
+@Controller('api/admin/spotify')
+export class AdminSpotifyController {
+  constructor(
+    private spotifyService: SpotifyService,
+    private bandService: BandService,
+  ) {}
+
+  @Get()
+  @UseGuards(AdminAuthGuard)
+  async status(): Promise<{ data: SpotifyStatusDto }> {
+    return { data: await this.spotifyService.status() };
+  }
+
+  // Answers Spotify's page to open; the admin page navigates there
+  @Post('connect')
+  @UseGuards(AdminAuthGuard)
+  connect(@Req() req: AdminRequest): { data: { url: string } } {
+    return { data: { url: this.spotifyService.startConnect(req.admin!.superAdminId, req.headers.origin) } };
+  }
+
+  @Delete()
+  @UseGuards(AdminAuthGuard)
+  async disconnect(): Promise<{ message: string }> {
+    await this.spotifyService.disconnect();
+    return { message: 'Disconnected' };
+  }
+
+  // Spotify's redirect: a plain browser visit without the admin's token, so the single-use
+  // state the connect handed out is what proves it. Only on the central host, like the panel.
+  @Get('callback')
+  async callback(
+    @Req() req: AdminRequest,
+    @Query() query: { code?: string; state?: string; error?: string },
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!this.bandService.isCentralHost(req.headers.host)) throw new NotFoundException();
+    res.redirect(302, await this.spotifyService.finishConnect(query));
   }
 }

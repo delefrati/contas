@@ -55,6 +55,7 @@ const PART_BY_ROUTE = {
   AdminBands: 'admin',
   AdminBand: 'admin',
   AdminSuperAdmins: 'admin',
+  AdminSpotify: 'admin',
 }
 
 export function helpPath(routeName) {

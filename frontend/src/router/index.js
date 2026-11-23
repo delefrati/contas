@@ -15,6 +15,7 @@ import NotFound from '../pages/NotFound.vue'
 import AdminBands from '../pages/admin/AdminBands.vue'
 import AdminBand from '../pages/admin/AdminBand.vue'
 import AdminSuperAdmins from '../pages/admin/AdminSuperAdmins.vue'
+import AdminSpotify from '../pages/admin/AdminSpotify.vue'
 import { adminUrl, centralLoginUrl, currentBandSlug, isCentralHost } from '../hosts'
 import { loadBand } from '../composables/useBand'
 import { connectionLost } from '../offline/connection'
@@ -111,6 +112,12 @@ const routes = [
     name: 'AdminSuperAdmins',
     component: AdminSuperAdmins,
     meta: { admin: true, titleKey: 'admin.superAdmins.title' },
+  },
+  {
+    path: '/admin/spotify',
+    name: 'AdminSpotify',
+    component: AdminSpotify,
+    meta: { admin: true, titleKey: 'admin.spotify.title' },
   },
   // The user manual, the same on every host: it opens signed out and offline (see the guard)
   {

@@ -389,6 +389,28 @@
       "you": "you",
       "added": "Super admin added!",
       "confirmDisable": "Disable {name}? They lose access to this panel right away."
+    },
+    "spotify": {
+      "title": "Spotify",
+      "hint": "Every band's playlists are made in one Spotify account of minhabanda.com. Connect that account here; members don't connect anything.",
+      "notSetUp": "Spotify isn't set up on this server. See section 8 of DEPLOY-OCI.md.",
+      "notConnected": "No account connected. Without one, bands can't make playlists.",
+      "connect": "Connect Spotify account",
+      "connectOther": "Connect another account",
+      "reconnect": "Connect again",
+      "disconnect": "Disconnect",
+      "confirmDisconnect": "Disconnect the Spotify account? Bands can't make playlists until someone connects again. Playlists already made stay on Spotify.",
+      "working": "Working",
+      "broken": "Disconnected by Spotify",
+      "brokenHint": "Spotify no longer accepts this connection (the app was removed from the account, or the server's key changed). Connect again.",
+      "account": "Account",
+      "connectedBy": "Connected by",
+      "connectedAt": "Connected on",
+      "connected": "Spotify account connected!",
+      "cancelled": "Connection cancelled on Spotify. Nothing changed.",
+      "expired": "The connection request expired. Try again.",
+      "failed": "Couldn't connect to Spotify. Try again.",
+      "disconnected": "Spotify account disconnected."
     }
   },
   "offline": {

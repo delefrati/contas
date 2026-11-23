@@ -29,6 +29,10 @@ if [[ -f .env ]]; then
   source .env
   set +a
 fi
+# Made-up Spotify keys, never used to call Spotify: they only turn the admin page's Spotify section
+# on, so its screenshot shows the account seed.mjs records as connected
+export SPOTIFY_CLIENT_ID=manual-screenshots SPOTIFY_CLIENT_SECRET=manual-screenshots
+export SPOTIFY_TOKEN_KEY="$(head -c 32 /dev/zero | base64)"
 
 KEEP=0
 SHOTS=()

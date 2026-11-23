@@ -24,6 +24,7 @@ const googleButton = ref(null)
 const sections = [
   { path: '/admin', icon: 'fa-guitar', titleKey: 'admin.bands.title' },
   { path: '/admin/super-admins', icon: 'fa-user-shield', titleKey: 'admin.superAdmins.title' },
+  { path: '/admin/spotify', icon: 'fa-spotify', iconSet: 'fa-brands', titleKey: 'admin.spotify.title' },
 ]
 
 async function handleCredential(credential) {
@@ -91,7 +92,7 @@ onMounted(async () => {
               :title="$t(section.titleKey)"
               :aria-label="$t(section.titleKey)"
             >
-              <i class="fa-solid" :class="section.icon"></i>
+              <i :class="[section.iconSet || 'fa-solid', section.icon]"></i>
             </router-link>
             <router-link
               :to="helpPath('AdminBands')"

@@ -29,6 +29,11 @@ services:
       # localhost isn't a band subdomain, so local requests use this band
       DEFAULT_BAND: ${DEFAULT_BAND:-maverick}
       CORS_ORIGIN: http://localhost:51731,http://localhost:5173
+      # Optional: without all four, Spotify playlists are off (DEPLOY-OCI.md, section 8)
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://127.0.0.1:8001/api/admin/spotify/callback}
+      SPOTIFY_TOKEN_KEY: ${SPOTIFY_TOKEN_KEY:-}
     ports:
       - "8001:3000"
     depends_on:

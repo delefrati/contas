@@ -38,6 +38,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       BASE_DOMAIN: ${BASE_DOMAIN}
+      # Optional: without all four, Spotify playlists are off (DEPLOY-OCI.md, section 8)
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-}
+      SPOTIFY_TOKEN_KEY: ${SPOTIFY_TOKEN_KEY:-}
     deploy:
       resources:
         limits:
