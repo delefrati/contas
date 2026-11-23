@@ -43,7 +43,7 @@ const show = {
   id: 7, typeId: 1, type: showType, title: 'Bar do Zé', date: '2026-10-24', time: '21:00',
   location: 'Centro', notes: null, songCount: 2,
   setlist: [
-    { id: 1, type: 'song', songId: 3, title: 'Exagerado', artist: 'Cazuza', label: null, position: 0 },
+    { id: 1, type: 'song', songId: 3, title: 'Exagerado', artist: 'Cazuza', spotifyUrl: 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC', label: null, position: 0 },
     { id: 2, type: 'pause', songId: null, title: null, artist: null, label: 'BIS', position: 1 },
     { id: 3, type: 'song', songId: 4, title: 'Malandragem', artist: null, label: null, position: 2 },
   ],
@@ -117,6 +117,14 @@ describe('EventDetail', () => {
       expect(wrapper.find('.event-heading').text()).toContain('Bar do Zé')
       expect(wrapper.findAll('.song-order-item')).toHaveLength(3)
       expect(wrapper.find('.alert-error').exists()).toBe(false)
+    })
+
+    it('should still open the Spotify links of the downloaded setlist', async () => {
+      const { wrapper } = await createWrapper()
+
+      const items = wrapper.findAll('.song-order-item')
+      expect(items[0].find('a.spotify-link').attributes('href')).toBe('https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC')
+      expect(items[2].find('a.spotify-link').exists()).toBe(false)
     })
 
     it('should not let an old copy be edited', async () => {

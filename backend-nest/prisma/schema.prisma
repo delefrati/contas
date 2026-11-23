@@ -169,6 +169,8 @@ model Song {
   artist    String?   @db.VarChar(255)
   notes     String?   @db.Text
   lyrics    String?   @db.Text
+  // The version the band plays; the API takes and gives a link
+  spotifyTrackId String? @map("spotify_track_id") @db.VarChar(22)
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
 

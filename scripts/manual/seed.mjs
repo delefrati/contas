@@ -80,11 +80,11 @@ pra ela me ajudar a voltar`,
 }
 
 const SONGS = [
-  { title: 'Estrada de Terra', artist: 'Os Exemplos', notes: 'Tom: G' },
-  { title: 'Luz do Farol', artist: 'Banda Inventada', notes: 'Tom: D' },
+  { title: 'Estrada de Terra', artist: 'Os Exemplos', notes: 'Tom: G', spotifyUrl: 'https://open.spotify.com/track/0sExemp1osEstradaTerra' },
+  { title: 'Luz do Farol', artist: 'Banda Inventada', notes: 'Tom: D', spotifyUrl: 'https://open.spotify.com/track/0sExemp1osLuzDoFarol01' },
   { title: 'Café Sem Açúcar', artist: 'Trio Fictício' },
   { title: 'Segunda-feira', artist: 'Os Exemplos' },
-  { title: 'Vento Norte', artist: 'Banda Inventada' },
+  { title: 'Vento Norte', artist: 'Banda Inventada', spotifyUrl: 'https://open.spotify.com/track/0sExemp1osVentoNorte01' },
   { title: 'Domingo no Parque de Papel', artist: 'Trio Fictício' },
   { title: 'Rádio Velho', artist: 'Os Exemplos' },
   { title: 'Passo Lento' },

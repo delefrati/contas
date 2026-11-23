@@ -291,7 +291,12 @@
     "lyrics": "Lyrics",
     "lyricsPlaceholder": "Type or paste the lyrics. Leave a blank line between verses.",
     "hasLyrics": "Has lyrics",
-    "lyricsLoadingError": "Could not load the lyrics. Try opening the song again."
+    "lyricsLoadingError": "Could not load the lyrics. Try opening the song again.",
+    "spotify": "Spotify",
+    "spotifyPlaceholder": "Paste the link to the version the band plays",
+    "spotifyHint": "In Spotify: Share → Copy Song Link.",
+    "openInSpotify": "Open in Spotify",
+    "invalidSpotifyLink": "This is not a Spotify song link. In Spotify, use Share → Copy Song Link."
   },
   "repertoires": {
     "title": "Setlist",

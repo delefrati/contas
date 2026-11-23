@@ -277,6 +277,7 @@ function addSong(song) {
     title: song.title,
     artist: song.artist,
     notes: song.notes,
+    spotifyUrl: song.spotifyUrl,
     position: event.value.setlist.length,
   })
   persistOrder()
@@ -657,6 +658,16 @@ onBeforeUnmount(() => {
                       {{ song.title }}
                       <small v-if="song.artist">— {{ song.artist }}</small>
                     </span>
+                    <a
+                      v-if="song.spotifyUrl"
+                      :href="song.spotifyUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      draggable="false"
+                      class="spotify-link"
+                      :title="$t('songs.openInSpotify')"
+                      :aria-label="$t('songs.openInSpotify')"
+                    ><i class="fa-brands fa-spotify"></i></a>
                   </template>
                   <span class="order-actions">
                     <button @click="moveSong(index, -1)" :disabled="index === 0" class="btn-icon" :title="$t('repertoires.moveUp')">
@@ -966,6 +977,12 @@ onBeforeUnmount(() => {
 .song-name small {
   color: var(--text-light, #718096);
   opacity: 1;
+}
+.spotify-link {
+  flex-shrink: 0;
+  padding: 4px;
+  color: #1db954;
+  text-decoration: none;
 }
 .order-actions {
   display: flex;

@@ -6,6 +6,7 @@ import { useOfflineCopy } from '../composables/useOfflineCopy'
 import AppHeader from '../components/AppHeader.vue'
 import Modal from '../components/Modal.vue'
 import OfflineBar from '../components/OfflineBar.vue'
+import { isSpotifyLink } from '../utils/spotify'
 
 const { t } = useI18n()
 const { getAuthHeader, scheduleCopySync } = useAuth()
@@ -21,7 +22,7 @@ const successMessage = ref('')
 // Song form
 const isSongModalOpen = ref(false)
 const editingSong = ref(null)
-const songForm = ref({ title: '', artist: '', notes: '', lyrics: '' })
+const songForm = ref({ title: '', artist: '', notes: '', lyrics: '', spotifyUrl: '' })
 const savingSong = ref(false)
 // The list doesn't carry lyrics: they're fetched when a song is opened for editing
 const lyricsLoaded = ref(false)
@@ -100,14 +101,20 @@ async function loadData() {
 // ---- Songs CRUD ----
 function openCreateSong() {
   editingSong.value = null
-  songForm.value = { title: '', artist: '', notes: '', lyrics: '' }
+  songForm.value = { title: '', artist: '', notes: '', lyrics: '', spotifyUrl: '' }
   lyricsLoaded.value = true
   isSongModalOpen.value = true
 }
 
 async function openEditSong(song) {
   editingSong.value = song
-  songForm.value = { title: song.title, artist: song.artist || '', notes: song.notes || '', lyrics: '' }
+  songForm.value = {
+    title: song.title,
+    artist: song.artist || '',
+    notes: song.notes || '',
+    lyrics: '',
+    spotifyUrl: song.spotifyUrl || '',
+  }
   lyricsLoaded.value = !song.hasLyrics
   isSongModalOpen.value = true
   if (!song.hasLyrics) return
@@ -131,6 +138,10 @@ async function saveSong() {
     error.value = t('songs.titleRequired')
     return
   }
+  if (!isSpotifyLink(songForm.value.spotifyUrl)) {
+    error.value = t('songs.invalidSpotifyLink')
+    return
+  }
 
   savingSong.value = true
   error.value = ''
@@ -139,6 +150,7 @@ async function saveSong() {
       title,
       artist: songForm.value.artist.trim(),
       notes: songForm.value.notes.trim(),
+      spotifyUrl: songForm.value.spotifyUrl.trim(),
     }
     // Lyrics that failed to load stay as they are instead of being wiped
     if (lyricsLoaded.value) payload.lyrics = songForm.value.lyrics
@@ -155,7 +167,7 @@ async function saveSong() {
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
-      throw new Error(body?.message || t('errors.genericError'))
+      throw new Error(body?.code === 'INVALID_SPOTIFY_LINK' ? t('songs.invalidSpotifyLink') : body?.message || t('errors.genericError'))
     }
 
     isSongModalOpen.value = false
@@ -281,6 +293,15 @@ onBeforeUnmount(() => {
               <td>
                 {{ song.title }}
                 <i v-if="song.hasLyrics" class="fa-solid fa-align-left lyrics-mark" :title="$t('songs.hasLyrics')"></i>
+                <a
+                  v-if="song.spotifyUrl"
+                  :href="song.spotifyUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="spotify-link"
+                  :title="$t('songs.openInSpotify')"
+                  :aria-label="$t('songs.openInSpotify')"
+                ><i class="fa-brands fa-spotify"></i></a>
               </td>
               <td>{{ song.artist || '—' }}</td>
               <td>{{ song.notes || '—' }}</td>
@@ -307,6 +328,15 @@ onBeforeUnmount(() => {
                     <i class="fa-solid fa-ellipsis-vertical"></i>
                   </button>
                   <div v-if="openActionMenuId === song.id" class="action-dropdown">
+                    <a
+                      v-if="song.spotifyUrl"
+                      :href="song.spotifyUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      @click="openActionMenuId = null"
+                    >
+                      <i class="fa-brands fa-spotify"></i> {{ $t('songs.openInSpotify') }}
+                    </a>
                     <button @click="openEditSong(song); openActionMenuId = null">
                       <i class="fa-solid fa-pencil"></i> {{ $t('actions.edit') }}
                     </button>
@@ -336,6 +366,19 @@ onBeforeUnmount(() => {
         <div class="form-group">
           <label>{{ $t('songs.notes') }}</label>
           <textarea v-model="songForm.notes" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="song-spotify"><i class="fa-brands fa-spotify"></i> {{ $t('songs.spotify') }}</label>
+          <input
+            id="song-spotify"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            v-model="songForm.spotifyUrl"
+            class="spotify-input"
+            :placeholder="$t('songs.spotifyPlaceholder')"
+          />
+          <small class="field-hint">{{ $t('songs.spotifyHint') }}</small>
         </div>
         <div class="form-group">
           <label>{{ $t('songs.lyrics') }}</label>
@@ -428,6 +471,15 @@ onBeforeUnmount(() => {
   margin-left: 6px;
   font-size: 0.8em;
   color: var(--text-light, #718096);
+}
+.spotify-link {
+  margin-left: 6px;
+  color: #1db954;
+  text-decoration: none;
+}
+.field-hint {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 .import-hint {
   font-size: 0.85rem;

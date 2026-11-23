@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import { parseSpotifyLink, spotifyTrackUrl } from './spotify-link';
 
 export class SongDto {
   id!: number;
@@ -9,6 +10,8 @@ export class SongDto {
   artist!: string | null;
   notes!: string | null;
   hasLyrics!: boolean;
+  spotifyTrackId!: string | null;
+  spotifyUrl!: string | null;
   createdAt!: string;
 }
 
@@ -22,6 +25,8 @@ export class CreateSongDto {
   artist?: string;
   notes?: string;
   lyrics?: string;
+  // A track link or URI; empty removes it
+  spotifyUrl?: string;
 }
 
 export class UpdateSongDto {
@@ -29,6 +34,8 @@ export class UpdateSongDto {
   artist?: string;
   notes?: string;
   lyrics?: string;
+  // A track link or URI; empty removes it
+  spotifyUrl?: string;
 }
 
 export class ImportSongItemDto {
@@ -53,6 +60,7 @@ type SongRow = {
   artist: string | null;
   notes: string | null;
   lyrics: string | null;
+  spotifyTrackId: string | null;
   createdAt: Date;
 };
 
@@ -71,6 +79,8 @@ export class SongService {
       artist: song.artist,
       notes: song.notes,
       hasLyrics: !!song.lyrics,
+      spotifyTrackId: song.spotifyTrackId,
+      spotifyUrl: spotifyTrackUrl(song.spotifyTrackId),
       createdAt: song.createdAt.toISOString(),
     };
   }
@@ -134,6 +144,7 @@ export class SongService {
         artist: dto.artist?.trim() || null,
         notes: dto.notes?.trim() || null,
         lyrics: dto.lyrics !== undefined ? this.normalizeLyrics(dto.lyrics) : null,
+        spotifyTrackId: parseSpotifyLink(dto.spotifyUrl),
       },
     });
 
@@ -223,7 +234,13 @@ export class SongService {
       throw new NotFoundException('Song not found.');
     }
 
-    const data: { title?: string; artist?: string | null; notes?: string | null; lyrics?: string | null } = {};
+    const data: {
+      title?: string;
+      artist?: string | null;
+      notes?: string | null;
+      lyrics?: string | null;
+      spotifyTrackId?: string | null;
+    } = {};
 
     if (dto.title !== undefined) {
       const title = dto.title.trim();
@@ -241,6 +258,10 @@ export class SongService {
 
     if (dto.lyrics !== undefined) {
       data.lyrics = this.normalizeLyrics(dto.lyrics);
+    }
+
+    if (dto.spotifyUrl !== undefined) {
+      data.spotifyTrackId = parseSpotifyLink(dto.spotifyUrl);
     }
 
     const song = await this.prisma.song.update({ where: { id }, data });

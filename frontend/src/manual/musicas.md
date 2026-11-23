@@ -8,22 +8,30 @@ repertórios: veja [Evento e repertório](/ajuda/evento).
 ## Procurar
 
 Escreva no campo **Buscar música ou artista...** para filtrar a lista. As músicas com letra
-cadastrada têm uma marca ao lado do nome.
+cadastrada têm uma marca ao lado do nome, e as que têm um link do Spotify mostram o ícone verde
+do Spotify: toque nele para ouvir a versão que a banda toca.
 
 ## Adicionar uma música
 
 1. Toque em **Adicionar Música**.
 2. Preencha o nome da **Música** (obrigatório) e, se quiser, o **Artista**, as
-   **Observações** (por exemplo o tom) e a **Letra**.
+   **Observações** (por exemplo o tom), o link do **Spotify** e a **Letra**.
 3. Toque em **Salvar**.
 
 Na letra, deixe uma linha em branco entre as estrofes: é assim que ela aparece no palco.
+
+## A versão no Spotify
+
+Quando a banda toca uma versão específica, como uma gravação ao vivo ou um cover, guarde o link
+dela no campo **Spotify**. No Spotify, abra a música e use **Compartilhar → Copiar link da
+música**, depois cole no campo. Só links de música são aceitos: um link de álbum, de playlist ou
+de artista não é salvo. Para tirar o link, apague o campo e salve.
 
 O lápis muda uma música e o X remove, depois de confirmar. Uma música removida continua nos
 repertórios que já tinham ela.
 
 No celular, o lápis e o X ficam no menu de três pontos de cada música, como **Editar** e
-**Deletar**.
+**Deletar**, junto com **Abrir no Spotify** para as músicas que têm o link.
 
 ## Importar uma lista
 

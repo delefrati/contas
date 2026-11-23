@@ -128,7 +128,7 @@ describe('EventService', () => {
       prisma.event.findFirst.mockResolvedValue({
         ...baseEvent,
         setlist: [
-          { id: 1, type: 'song', songId: 3, label: null, position: 0, song: { title: 'Exagerado', artist: 'Cazuza', notes: null, lyrics: 'Amor da minha vida' } },
+          { id: 1, type: 'song', songId: 3, label: null, position: 0, song: { title: 'Exagerado', artist: 'Cazuza', notes: null, lyrics: 'Amor da minha vida', spotifyTrackId: '4uLU6hMCjMI75M1A2tKUQC' } },
           { id: 2, type: 'pause', songId: null, label: 'BIS', position: 1, song: null },
         ],
       });
@@ -137,8 +137,8 @@ describe('EventService', () => {
 
       expect(result.songCount).toBe(1);
       expect(result.setlist).toEqual([
-        { id: 1, type: 'song', songId: 3, title: 'Exagerado', artist: 'Cazuza', notes: null, lyrics: 'Amor da minha vida', label: null, position: 0 },
-        { id: 2, type: 'pause', songId: null, title: null, artist: null, notes: null, lyrics: null, label: 'BIS', position: 1 },
+        { id: 1, type: 'song', songId: 3, title: 'Exagerado', artist: 'Cazuza', notes: null, lyrics: 'Amor da minha vida', spotifyUrl: 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC', label: null, position: 0 },
+        { id: 2, type: 'pause', songId: null, title: null, artist: null, notes: null, lyrics: null, spotifyUrl: null, label: 'BIS', position: 1 },
       ]);
     });
 

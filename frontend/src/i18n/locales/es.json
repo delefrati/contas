@@ -291,7 +291,12 @@
     "lyrics": "Letra",
     "lyricsPlaceholder": "Escribe o pega la letra. Deja una línea en blanco entre las estrofas.",
     "hasLyrics": "Tiene letra",
-    "lyricsLoadingError": "No se pudo cargar la letra. Intenta abrir la canción de nuevo."
+    "lyricsLoadingError": "No se pudo cargar la letra. Intenta abrir la canción de nuevo.",
+    "spotify": "Spotify",
+    "spotifyPlaceholder": "Pega el enlace de la versión que toca la banda",
+    "spotifyHint": "En Spotify: Compartir → Copiar enlace de la canción.",
+    "openInSpotify": "Abrir en Spotify",
+    "invalidSpotifyLink": "El enlace no es de una canción de Spotify. En Spotify, usa Compartir → Copiar enlace de la canción."
   },
   "repertoires": {
     "title": "Repertorio",

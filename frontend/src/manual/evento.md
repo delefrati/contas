@@ -14,7 +14,8 @@ agenda** leva de volta ao mês do evento.
 - À direita, em **Músicas disponíveis**, procure pelo nome da música ou do artista e toque no
   **+** para adicionar. As músicas cadastradas ficam em [Músicas](/ajuda/musicas).
 - À esquerda, em **Músicas do repertório**, arraste uma música pela alça ou use as setas para
-  mudar a ordem. O **X** tira a música do repertório.
+  mudar a ordem. O **X** tira a música do repertório. O ícone do Spotify abre a versão que a
+  banda toca, nas músicas que têm o link (veja [Músicas](/ajuda/musicas)).
 - **Pausa** coloca uma divisão na lista, como um intervalo ou o bis. Toque no texto da pausa
   para dar um nome a ela, por exemplo "BIS". As pausas separam o repertório em blocos.
 

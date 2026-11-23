@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import { spotifyTrackUrl } from '../song/spotify-link';
 
 export type SetlistItemType = 'song' | 'pause';
 
@@ -23,6 +24,7 @@ export class SetlistItemDto {
   artist!: string | null;
   notes!: string | null;
   lyrics!: string | null;
+  spotifyUrl!: string | null;
   label!: string | null;
   position!: number;
 }
@@ -286,6 +288,7 @@ export class EventService {
         artist: entry.song?.artist ?? null,
         notes: entry.song?.notes ?? null,
         lyrics: entry.song?.lyrics ?? null,
+        spotifyUrl: spotifyTrackUrl(entry.song?.spotifyTrackId ?? null),
         label: entry.label ?? null,
         position: entry.position,
       })),

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SongService } from './song.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
@@ -25,6 +25,7 @@ describe('SongService', () => {
     artist: 'Cazuza',
     notes: null,
     lyrics: null,
+    spotifyTrackId: null,
     deletedAt: null,
     createdAt,
   };
@@ -122,5 +123,75 @@ describe('SongService', () => {
     const song = await service.create({ title: 'Exagerado', lyrics: 'Amor da minha vida\n' });
 
     expect(song.lyrics).toBe('Amor da minha vida');
+  });
+
+  describe('Spotify link', () => {
+    const id = '4uLU6hMCjMI75M1A2tKUQC';
+
+    it.each([
+      [`https://open.spotify.com/track/${id}`],
+      [`https://open.spotify.com/track/${id}?si=1a2b3c4d5e6f7a8b`],
+      [`https://open.spotify.com/intl-pt/track/${id}`],
+      [`https://open.spotify.com/intl-pt-br/track/${id}?si=abc`],
+      [`  spotify:track:${id}  `],
+    ])('should keep only the track ID of %s', async (link) => {
+      prisma.song.findFirst.mockResolvedValue(baseSong);
+
+      const song = await service.update(3, { spotifyUrl: link });
+
+      expect(prisma.song.update.mock.calls[0][0].data.spotifyTrackId).toBe(id);
+      expect(song.spotifyTrackId).toBe(id);
+      expect(song.spotifyUrl).toBe(`https://open.spotify.com/track/${id}`);
+    });
+
+    it.each([
+      [`https://open.spotify.com/album/${id}`],
+      [`https://open.spotify.com/playlist/${id}`],
+      [`spotify:artist:${id}`],
+      [`https://example.com/track/${id}`],
+      ['https://open.spotify.com/track/curto'],
+      ['Exagerado'],
+    ])('should refuse %s with a code the page translates', async (link) => {
+      prisma.song.findFirst.mockResolvedValue(baseSong);
+
+      const error = await service.update(3, { spotifyUrl: link }).catch((e) => e);
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getResponse()).toMatchObject({ code: 'INVALID_SPOTIFY_LINK' });
+      expect(prisma.song.update).not.toHaveBeenCalled();
+    });
+
+    it('should remove the link when it is left empty', async () => {
+      prisma.song.findFirst.mockResolvedValue({ ...baseSong, spotifyTrackId: id });
+
+      const song = await service.update(3, { spotifyUrl: ' ' });
+
+      expect(prisma.song.update.mock.calls[0][0].data.spotifyTrackId).toBeNull();
+      expect(song.spotifyUrl).toBeNull();
+    });
+
+    it('should leave the link alone when the update does not mention it', async () => {
+      prisma.song.findFirst.mockResolvedValue({ ...baseSong, spotifyTrackId: id });
+
+      await service.update(3, { title: 'Exagerado' });
+
+      expect(prisma.song.update.mock.calls[0][0].data).not.toHaveProperty('spotifyTrackId');
+    });
+
+    it('should save a link given when creating a song, and none without one', async () => {
+      const song = await service.create({ title: 'Exagerado', spotifyUrl: `spotify:track:${id}` });
+      await service.create({ title: 'Malandragem' });
+
+      expect(song.spotifyUrl).toBe(`https://open.spotify.com/track/${id}`);
+      expect(prisma.song.create.mock.calls[1][0].data.spotifyTrackId).toBeNull();
+    });
+
+    it('should bring the link in the list', async () => {
+      prisma.song.findMany.mockResolvedValue([{ ...baseSong, spotifyTrackId: id }, { ...baseSong, id: 4 }]);
+
+      const songs = await service.findAll();
+
+      expect(songs.map((s) => s.spotifyUrl)).toEqual([`https://open.spotify.com/track/${id}`, null]);
+    });
   });
 });

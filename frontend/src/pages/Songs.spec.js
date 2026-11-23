@@ -23,9 +23,11 @@ vi.mock('../composables/useAuth', () => ({
   }),
 }))
 
+const TRACK_URL = 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC'
+
 const songs = [
-  { id: 3, title: 'Exagerado', artist: 'Cazuza', notes: null, hasLyrics: true },
-  { id: 4, title: 'Malandragem', artist: null, notes: null, hasLyrics: false },
+  { id: 3, title: 'Exagerado', artist: 'Cazuza', notes: null, hasLyrics: true, spotifyUrl: TRACK_URL },
+  { id: 4, title: 'Malandragem', artist: null, notes: null, hasLyrics: false, spotifyUrl: null },
 ]
 
 let lyricsResponse
@@ -102,6 +104,7 @@ describe('Songs', () => {
       artist: 'Cazuza',
       notes: '',
       lyrics: 'Amor da minha vida\n\nDaqui até a eternidade',
+      spotifyUrl: TRACK_URL,
     })
   })
 
@@ -127,6 +130,72 @@ describe('Songs', () => {
     expect(savedPayload()).not.toHaveProperty('lyrics')
   })
 
+  describe('Spotify link', () => {
+    function spotifyInput(wrapper) {
+      return wrapper.find('.modal-stub .spotify-input')
+    }
+
+    async function submit(wrapper) {
+      await wrapper.find('.modal-stub form').trigger('submit')
+      await flushPromises()
+    }
+
+    it('should show the Spotify icon only on songs with a link, opening it in a new tab', async () => {
+      const wrapper = await createWrapper()
+      const rows = wrapper.findAll('tbody tr')
+      const link = rows[0].find('a.spotify-link')
+      expect(link.attributes('href')).toBe(TRACK_URL)
+      expect(link.attributes('target')).toBe('_blank')
+      expect(link.attributes('rel')).toContain('noopener')
+      expect(rows[1].find('a.spotify-link').exists()).toBe(false)
+    })
+
+    it('should save a pasted link with the song', async () => {
+      const wrapper = await createWrapper()
+      await editButton(wrapper, 1).trigger('click')
+      await spotifyInput(wrapper).setValue(' spotify:track:4uLU6hMCjMI75M1A2tKUQC ')
+      await submit(wrapper)
+
+      expect(savedPayload().spotifyUrl).toBe('spotify:track:4uLU6hMCjMI75M1A2tKUQC')
+    })
+
+    it('should send an empty link to remove it', async () => {
+      const wrapper = await createWrapper()
+      await editButton(wrapper, 0).trigger('click')
+      await flushPromises()
+      expect(spotifyInput(wrapper).element.value).toBe(TRACK_URL)
+      await spotifyInput(wrapper).setValue('')
+      await submit(wrapper)
+
+      expect(savedPayload().spotifyUrl).toBe('')
+    })
+
+    it('should refuse a link that is not a Spotify track without saving', async () => {
+      const wrapper = await createWrapper()
+      await editButton(wrapper, 1).trigger('click')
+      await spotifyInput(wrapper).setValue('https://open.spotify.com/album/4uLU6hMCjMI75M1A2tKUQC')
+      await submit(wrapper)
+
+      expect(mockFetch.mock.calls.some(([, o]) => o?.method === 'PATCH')).toBe(false)
+      expect(wrapper.find('.alert-error').text()).toBe('songs.invalidSpotifyLink')
+      expect(wrapper.find('.modal-stub').exists()).toBe(true)
+    })
+
+    it('should translate the server refusing the link', async () => {
+      mockFetch.mockImplementation((url, options = {}) => {
+        if (options.method) {
+          return Promise.resolve({ ok: false, status: 400, json: () => Promise.resolve({ message: 'Not a Spotify track link.', code: 'INVALID_SPOTIFY_LINK' }) })
+        }
+        return respond(songs)
+      })
+      const wrapper = await createWrapper()
+      await editButton(wrapper, 1).trigger('click')
+      await submit(wrapper)
+
+      expect(wrapper.find('.alert-error').text()).toBe('songs.invalidSpotifyLink')
+    })
+  })
+
   describe('on a phone', () => {
     function phoneMenu(wrapper, row) {
       return wrapper.findAll('tbody tr')[row].find('.actions-mobile')
@@ -139,6 +208,7 @@ describe('Songs', () => {
       await phoneMenu(wrapper, 0).find('.btn-dots').trigger('click')
       const items = phoneMenu(wrapper, 0).findAll('.action-dropdown button')
       expect(items).toHaveLength(2)
+      expect(phoneMenu(wrapper, 0).find('.action-dropdown a').attributes('href')).toBe(TRACK_URL)
       expect(phoneMenu(wrapper, 1).find('.action-dropdown').exists()).toBe(false)
 
       await items[0].trigger('click')
