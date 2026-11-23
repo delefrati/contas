@@ -1,5 +1,10 @@
 - number: 1
   start: 2026-11-10
   end: 2026-11-23
-  state: active
+  state: closed
   goal: Manual do sistema no app, e a autenticação sem as brechas mais simples
+- number: 2
+  start: 2026-11-23
+  end: 2026-12-06
+  state: active
+  goal: Playlist no Spotify com as músicas da banda ou com o repertório de um evento

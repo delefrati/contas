@@ -2,7 +2,7 @@
 id: MB-2
 title: "Rate-limit the sign-in endpoints"
 status: todo
-sprint: 1
+sprint: backlog
 points: 2
 epic: security
 ---
