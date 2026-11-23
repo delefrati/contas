@@ -1,7 +1,7 @@
 ---
 id: MB-1
 title: "Refuse to start without a strong JWT_SECRET"
-status: in-progress
+status: done
 sprint: 1
 points: 1
 epic: security
