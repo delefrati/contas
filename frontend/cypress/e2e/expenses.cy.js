@@ -41,12 +41,18 @@ describe('Expenses', () => {
 
     cy.contains('button', 'Add Expense').click()
 
-    // Fill form (these selectors depend on actual DOM structure)
-    cy.get('input[type="text"], input[placeholder]').first().type('New expense')
-    cy.get('input[type="number"]').first().type('25')
+    cy.get('#description').type('New expense')
+    cy.get('#type').select('Food')
+    cy.get('#amount').type('25')
+    cy.get('#date').type('2024-01-17')
+    cy.get('#description').closest('form').submit()
 
-    cy.get('form').submit()
-    cy.wait('@createExpense')
+    cy.wait('@createExpense').its('request.body').should('include', {
+      description: 'New expense',
+      typeId: 1,
+      amount: 25,
+      date: '2024-01-17',
+    })
   })
 
   it('should delete an expense', () => {
@@ -66,15 +72,14 @@ describe('Expenses', () => {
   })
 
   it('should filter expenses by text', () => {
-    // Open filters
-    cy.get('button[title]').first().click()
+    cy.get('.fa-filter').click()
     cy.get('.filters input[type="text"]').type('Groceries')
     cy.get('.expense-row').should('have.length', 1)
     cy.get('.expense-row').first().should('contain', 'Groceries')
   })
 
   it('should clear filters', () => {
-    cy.get('button[title]').first().click()
+    cy.get('.fa-filter').click()
     cy.get('.filters input[type="text"]').type('Groceries')
     cy.get('.expense-row').should('have.length', 1)
     cy.contains('button', 'Clear').click()

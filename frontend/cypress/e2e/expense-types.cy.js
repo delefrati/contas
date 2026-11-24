@@ -6,32 +6,37 @@ describe('Expense Types', () => {
     cy.wait(['@health', '@expenses', '@members', '@report', '@types'])
   })
 
-  it('should show expense types in the add expense form', () => {
+  it('should offer only the types in use in the add expense form', () => {
     cy.contains('button', 'Add Expense').click()
-    cy.get('select').first().within(() => {
-      cy.get('option').should('have.length.at.least', 2)
+    cy.get('#type option:not([disabled])').then((options) => {
+      expect([...options].map((o) => o.textContent.trim())).to.deep.equal(['Food', 'Transport'])
     })
   })
 
-  it('should create a new expense type', () => {
+  it('should create a new expense type from the form and select it', () => {
     cy.intercept('POST', '**/api/expense-types', {
       statusCode: 201,
       body: { data: { id: 4, name: 'Entertainment', deletedAt: null } },
     }).as('createType')
 
     cy.contains('button', 'Add Expense').click()
+    cy.get('.type-quick-add input').type('Entertainment')
+    // The page loads the types again after creating one
+    cy.intercept('GET', '**/api/expense-types*', {
+      statusCode: 200,
+      body: {
+        data: [
+          { id: 1, name: 'Food', deletedAt: null },
+          { id: 2, name: 'Transport', deletedAt: null },
+          { id: 4, name: 'Entertainment', deletedAt: null },
+        ],
+      },
+    }).as('typesAgain')
+    cy.get('.type-quick-add button').click()
 
-    // Type name in the new type input and submit
-    cy.get('input[placeholder*="type"], input[placeholder*="tipo"], input[placeholder*="Type"]')
-      .first()
-      .type('Entertainment')
-  })
-
-  it('should delete an expense type', () => {
-    cy.intercept('DELETE', '**/api/expense-types/1', { statusCode: 200 }).as('deleteType')
-
-    // This depends on UI having a delete button for types
-    // The test validates the intercept is set up correctly
-    expect(true).to.be.true
+    cy.wait('@createType').its('request.body').should('deep.equal', { name: 'Entertainment' })
+    cy.wait('@typesAgain')
+    cy.get('#type').should('have.value', '4')
+    cy.get('#type option:selected').invoke('text').invoke('trim').should('eq', 'Entertainment')
   })
 })

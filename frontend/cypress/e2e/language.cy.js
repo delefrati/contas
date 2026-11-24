@@ -1,34 +1,36 @@
+// The language is chosen in Settings (on the admin panel too, see AdminLayout)
 describe('Language Switching', () => {
   beforeEach(() => {
     cy.login()
     cy.setupApiIntercepts()
-    cy.visit('/financeiro')
-    cy.wait(['@health', '@expenses', '@members', '@report', '@types'])
+    cy.visit('/configuracoes')
   })
 
   it('should display language selector', () => {
-    cy.get('.language-selector, #language-select, select').should('exist')
+    cy.get('#settings-language').should('exist')
   })
 
   it('should switch to English', () => {
-    cy.get('#language-select, .language-select').select('en')
-    cy.contains('Expenses').should('exist')
+    cy.get('#settings-language').select('en')
+    cy.get('h1').should('contain', 'Settings')
   })
 
   it('should switch to Spanish', () => {
-    cy.get('#language-select, .language-select').select('es')
-    cy.contains('Gastos').should('exist')
+    cy.get('#settings-language').select('es')
+    cy.get('h1').should('contain', 'Configuración')
   })
 
   it('should switch to Portuguese', () => {
-    cy.get('#language-select, .language-select').select('pt')
-    cy.contains('Despesas').should('exist')
+    cy.get('#settings-language').select('pt')
+    cy.get('h1').should('contain', 'Configurações')
   })
 
   it('should persist language selection', () => {
-    cy.get('#language-select, .language-select').select('en')
+    cy.get('#settings-language').select('es')
     cy.window().then((win) => {
-      expect(win.localStorage.getItem('language')).to.eq('en')
+      expect(win.localStorage.getItem('language')).to.eq('es')
     })
+    cy.reload()
+    cy.get('#settings-language').should('have.value', 'es')
   })
 })

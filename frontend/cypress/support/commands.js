@@ -4,7 +4,38 @@ Cypress.Commands.add('login', (member = { id: 1, name: 'Test User', email: 'test
   window.localStorage.setItem('auth_member', JSON.stringify(member))
 })
 
+// Signs in with a fake Google: the page gets a stand-in for Google's script, whose button hands
+// the app `credential` as if Google had. Nothing reaches Google.
+Cypress.Commands.add('visitWithGoogle', (url, credential = 'fake-google-credential') => {
+  cy.intercept('GET', 'https://accounts.google.com/**', { statusCode: 200, body: '' })
+  cy.visit(url, {
+    onBeforeLoad(win) {
+      let respond
+      win.google = {
+        accounts: {
+          id: {
+            initialize: (options) => { respond = options.callback },
+            renderButton: (element) => {
+              const button = win.document.createElement('button')
+              button.type = 'button'
+              button.className = 'fake-google-signin'
+              button.textContent = 'Sign in with Google'
+              button.onclick = () => respond({ credential })
+              element.appendChild(button)
+            },
+          },
+        },
+      }
+    },
+  })
+})
+
 Cypress.Commands.add('setupApiIntercepts', () => {
+  cy.intercept('GET', '**/api/band', { statusCode: 200, body: { data: { name: 'Maverick', logoUrl: null } } }).as('band')
+  cy.intercept('GET', '**/api/auth/me', {
+    statusCode: 200,
+    body: { data: { id: 1, name: 'Test User', email: 'test@test.com', superAdmin: false } },
+  }).as('me')
   cy.intercept('GET', '**/api/health', { statusCode: 200, body: { status: 'ok' } }).as('health')
 
   cy.intercept('GET', '**/api/expenses', {

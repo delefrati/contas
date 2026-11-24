@@ -23,6 +23,12 @@ describe('Members', () => {
     cy.get('.modal-overlay, .modal-stub').within(() => {
       cy.get('input').first().type('David')
       cy.get('input').eq(1).type('david@test.com')
+      cy.get('button[type="submit"]').click()
+    })
+
+    cy.wait('@createMember').its('request.body').should('include', {
+      name: 'David',
+      email: 'david@test.com',
     })
   })
 
@@ -32,8 +38,8 @@ describe('Members', () => {
       body: { data: { id: 1, name: 'Alice', active: false } },
     }).as('toggleActive')
 
-    // Find toggle button for first member and click
-    cy.get('[class*="toggle"], button[title*="toggle"], button[title*="ativ"]').first().click({ force: true })
+    cy.get('.expenses-table tbody tr').first().contains('button', 'Disable').click()
+    cy.wait('@toggleActive')
   })
 
   it('should open edit modal and update a member', () => {
