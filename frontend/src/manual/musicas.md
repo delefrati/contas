@@ -5,6 +5,9 @@ repertórios: veja [Evento e repertório](/ajuda/evento).
 
 ![As músicas](/manual/musicas.png)
 
+As músicas são numeradas na ordem da lista, para a banda falar "a 12ª" e ver quantas tem. Cada
+música guarda o seu número quando a busca esconde as outras.
+
 ## Procurar
 
 Escreva no campo **Buscar música ou artista...** para filtrar a lista. As músicas com letra

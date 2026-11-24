@@ -82,6 +82,21 @@ describe('Songs', () => {
     })
   })
 
+  it('should number the songs in the order of the list', async () => {
+    const wrapper = await createWrapper()
+    const numbers = wrapper.findAll('tbody tr .song-number').map((n) => n.text())
+    expect(numbers).toEqual(['1.', '2.'])
+  })
+
+  it('should keep a song\'s number when the filter hides the others', async () => {
+    const wrapper = await createWrapper()
+    await wrapper.find('.search-input').setValue('malandragem')
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].find('.song-number').text()).toBe('2.')
+    expect(rows[0].text()).toContain('Malandragem')
+  })
+
   it('should mark the songs that have lyrics', async () => {
     const wrapper = await createWrapper()
     const rows = wrapper.findAll('tbody tr')

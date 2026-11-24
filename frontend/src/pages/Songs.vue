@@ -55,6 +55,9 @@ function closeActionMenu(e) {
   if (!e.target.closest('.actions-mobile')) openActionMenuId.value = null
 }
 
+// A song's place in the whole repertoire, so a filtered song keeps its number.
+const songNumbers = computed(() => new Map(songs.value.map((s, i) => [s.id, i + 1])))
+
 const filteredSongs = computed(() => {
   const term = songFilter.value.trim().toLowerCase()
   if (!term) return songs.value
@@ -304,6 +307,7 @@ onBeforeUnmount(() => {
           <tbody>
             <tr v-for="song in filteredSongs" :key="song.id">
               <td>
+                <span class="song-number">{{ songNumbers.get(song.id) }}.</span>
                 {{ song.title }}
                 <i v-if="song.hasLyrics" class="fa-solid fa-align-left lyrics-mark" :title="$t('songs.hasLyrics')"></i>
                 <a
@@ -479,6 +483,13 @@ onBeforeUnmount(() => {
   margin: 0;
   white-space: pre-line;
   line-height: 1.5;
+}
+.song-number {
+  margin-right: 4px;
+  font-size: 0.85em;
+  color: var(--text-light, #718096);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .lyrics-mark {
   margin-left: 6px;
