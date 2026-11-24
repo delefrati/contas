@@ -2,7 +2,7 @@
 id: MB-8
 title: "Run the Cypress specs in CI"
 status: todo
-sprint: backlog
+sprint: 3
 points: 3
 epic: testing
 depends_on: [MB-7]

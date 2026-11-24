@@ -5,6 +5,11 @@
   goal: Manual do sistema no app, e a autenticação sem as brechas mais simples
 - number: 2
   start: 2026-11-23
-  end: 2026-12-06
-  state: active
+  end: 2026-11-23
+  state: closed
   goal: Playlist no Spotify com as músicas da banda ou com o repertório de um evento
+- number: 3
+  start: 2026-11-24
+  end: 2026-12-07
+  state: active
+  goal: Entradas da API mais seguras, e os testes E2E rodando no CI

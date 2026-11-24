@@ -2,7 +2,7 @@
 id: MB-7
 title: "E2E tests for the central login, the band picker and the logs page"
 status: todo
-sprint: backlog
+sprint: 3
 points: 3
 epic: testing
 ---

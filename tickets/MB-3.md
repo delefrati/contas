@@ -2,7 +2,7 @@
 id: MB-3
 title: "Validate every request body with DTOs and a global ValidationPipe"
 status: todo
-sprint: backlog
+sprint: 3
 points: 5
 epic: security
 ---
