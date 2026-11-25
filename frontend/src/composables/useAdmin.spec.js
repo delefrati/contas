@@ -58,6 +58,11 @@ describe('useAdmin', () => {
     await expect(useAdmin().post('/bands', { slug: 'nova' })).rejects.toThrow('Address nova is already taken')
   })
 
+  it('should keep the code of a refused sign-in, so the page can say it in the user\'s language', async () => {
+    mockFetch.mockResolvedValueOnce(reply(429, { message: 'Too many sign-in attempts.', code: 'TOO_MANY_ATTEMPTS' }))
+    await expect(useAdmin().login('credential')).rejects.toMatchObject({ code: 'TOO_MANY_ATTEMPTS' })
+  })
+
   it('should drop a session the API rejects and flag it as expired', async () => {
     mockFetch.mockResolvedValueOnce(reply(200, {
       data: { token: 'admin-token', superAdmin: { id: 3, name: 'Root', email: 'root@test.com' } },

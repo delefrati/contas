@@ -1,4 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { ExpenseModule } from './expense/expense.module';
@@ -16,9 +17,10 @@ import { SpotifyModule } from './spotify/spotify.module';
 import { OfflineModule } from './offline/offline.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { RequestContextMiddleware } from './common/request-context.middleware';
+import { signInThrottlerOptions } from './common/sign-in-throttle';
 
 @Module({
-  imports: [PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, EventModule, EventTypeModule, BandModule, AdminModule, SpotifyModule, OfflineModule, CalendarModule],
+  imports: [ThrottlerModule.forRoot(signInThrottlerOptions), PrismaModule, HealthModule, ExpenseModule, MemberModule, ExpenseTypeModule, LogModule, AuthModule, CommonModule, SongModule, EventModule, EventTypeModule, BandModule, AdminModule, SpotifyModule, OfflineModule, CalendarModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

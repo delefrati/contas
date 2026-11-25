@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { readJwtSecret } from './auth/jwt-secret';
+import { trustCaddy } from './common/sign-in-throttle';
 
 async function bootstrap() {
   // Checked before anything starts, so a bad secret stops the backend with one clear line
@@ -11,7 +13,8 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  trustCaddy(app);
   
   // In production the frontend calls the API on the same host (<band>.<BASE_DOMAIN>/api),
   // so CORS is only needed when CORS_ORIGIN is set (local development).

@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { signInThrottlerOptions } from '../common/sign-in-throttle';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -21,6 +23,8 @@ describe('AuthController', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
+      // For the sign-in routes' rate limit (see sign-in-throttle.spec.ts)
+      imports: [ThrottlerModule.forRoot(signInThrottlerOptions)],
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: authService }],
     }).compile();

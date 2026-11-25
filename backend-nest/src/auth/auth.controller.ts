@@ -11,6 +11,7 @@ import {
 import { Request } from 'express';
 import { AuthService, CentralLoginResponse, LoginResponse, SessionState } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { SignInThrottlerGuard } from '../common/sign-in-throttle';
 import { AuthPayload } from './auth.service';
 
 @Controller('api/auth')
@@ -18,6 +19,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login/google')
+  @UseGuards(SignInThrottlerGuard)
   async loginWithGoogle(
     @Body() body: { credential: string },
   ): Promise<{ data: LoginResponse }> {
@@ -26,6 +28,7 @@ export class AuthController {
   }
 
   @Post('central/google')
+  @UseGuards(SignInThrottlerGuard)
   async centralLoginWithGoogle(
     @Body() body: { credential: string; band?: string },
   ): Promise<{ data: CentralLoginResponse }> {
@@ -34,6 +37,7 @@ export class AuthController {
   }
 
   @Post('central/exchange')
+  @UseGuards(SignInThrottlerGuard)
   async exchangeLoginCode(@Body() body: { code: string }): Promise<{ data: LoginResponse }> {
     const data = await this.authService.exchangeLoginCode(body.code);
     return { data };

@@ -46,7 +46,8 @@
     "errors": {
       "MEMBER_NOT_FOUND": "Your account is not registered. Please contact a band administrator.",
       "MEMBER_NOT_IN_BAND": "Your account is not registered in this band. Please contact a band administrator.",
-      "MEMBER_DISABLED": "Your account is disabled. Please contact a band administrator."
+      "MEMBER_DISABLED": "Your account is disabled. Please contact a band administrator.",
+      "TOO_MANY_ATTEMPTS": "Too many sign-in attempts. Please wait a moment and try again."
     },
     "info": "Only authorized accounts can sign in. Contact an administrator if you need access.",
     "chooseBand": "Choose your band:",

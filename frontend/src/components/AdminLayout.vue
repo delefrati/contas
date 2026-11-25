@@ -34,7 +34,9 @@ async function handleCredential(credential) {
     await login(credential)
     emit('ready')
   } catch (err) {
-    loginError.value = err.message || t('login.loginFailed')
+    loginError.value = err.code === 'TOO_MANY_ATTEMPTS'
+      ? t('login.errors.TOO_MANY_ATTEMPTS')
+      : err.message || t('login.loginFailed')
   } finally {
     signingIn.value = false
   }

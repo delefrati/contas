@@ -25,7 +25,7 @@ function clearSession() {
   localStorage.removeItem(ADMIN_KEY)
 }
 
-// Calls /api/admin<path>; throws an Error with the API's message on failure
+// Calls /api/admin<path>; throws an Error with the API's message, and its code if it has one
 async function request(method, path, body) {
   const response = await fetch(`${API_BASE_URL}/api/admin${path}`, {
     method,
@@ -43,7 +43,9 @@ async function request(method, path, body) {
   }
   if (!response.ok) {
     const message = Array.isArray(data?.message) ? data.message.join(', ') : data?.message
-    throw new Error(message || `Request failed (${response.status})`)
+    const err = new Error(message || `Request failed (${response.status})`)
+    err.code = data?.code
+    throw err
   }
   return data?.data
 }

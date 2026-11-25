@@ -119,6 +119,19 @@ describe('Central login', () => {
     cy.location('host').should('eq', `localhost:${port}`)
   })
 
+  it('should ask to wait a moment after too many sign-in attempts', () => {
+    cy.intercept('POST', '**/api/auth/central/google', {
+      statusCode: 429,
+      body: { statusCode: 429, message: 'Too many sign-in attempts. Please try again in a moment.', code: 'TOO_MANY_ATTEMPTS' },
+    }).as('centralLogin')
+
+    cy.visitWithGoogle(`${central}/entrar?band=maverick`)
+    cy.get('.fake-google-signin').click()
+
+    cy.wait('@centralLogin')
+    cy.get('.error-message').should('contain', 'Too many sign-in attempts. Please wait a moment and try again.')
+  })
+
   describe('on the band\'s host', () => {
     beforeEach(() => {
       cy.setupApiIntercepts()
@@ -150,6 +163,19 @@ describe('Central login', () => {
       cy.get('.error-message').should('contain', 'Could not complete the login.')
       cy.contains('a', 'Back to login').should('have.attr', 'href', '/login')
       cy.window().its('localStorage.auth_token').should('be.undefined')
+    })
+
+    it('should ask to wait a moment when the code comes after too many attempts', () => {
+      cy.intercept('POST', '**/api/auth/central/exchange', {
+      statusCode: 429,
+      body: { statusCode: 429, message: 'Too many sign-in attempts. Please try again in a moment.', code: 'TOO_MANY_ATTEMPTS' },
+    }).as('exchange')
+
+      cy.visit(`${bandHost('maverick')}/auth/callback?code=one-time-code`)
+
+      cy.wait('@exchange')
+      cy.get('.error-message').should('contain', 'Too many sign-in attempts. Please wait a moment and try again.')
+      cy.contains('a', 'Back to login')
     })
   })
 })

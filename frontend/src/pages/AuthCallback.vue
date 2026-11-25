@@ -28,8 +28,9 @@ onMounted(async () => {
   try {
     await exchangeLoginCode(route.query.code)
     router.replace(safeRedirectPath(route.query.redirect))
-  } catch {
-    error.value = t('login.codeFailed')
+  } catch (err) {
+    // Too many attempts says to wait; any other failure, that the code didn't work
+    error.value = err?.code === 'TOO_MANY_ATTEMPTS' ? t('login.errors.TOO_MANY_ATTEMPTS') : t('login.codeFailed')
   }
 })
 </script>

@@ -125,6 +125,7 @@ describe('Login', () => {
       ['MEMBER_NOT_FOUND', 'Sua conta não está cadastrada. Fale com um administrador da banda.'],
       ['MEMBER_NOT_IN_BAND', 'Sua conta não está cadastrada nesta banda. Fale com um administrador da banda.'],
       ['MEMBER_DISABLED', 'Sua conta está desativada. Fale com um administrador da banda.'],
+      ['TOO_MANY_ATTEMPTS', 'Muitas tentativas de entrar. Espere um pouco e tente de novo.'],
     ])('should say %s in Portuguese', async (code, text) => {
       auth.loginWithGoogle.mockRejectedValue(refusal(code))
       const wrapper = createWrapper('pt')

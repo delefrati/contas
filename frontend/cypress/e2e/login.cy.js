@@ -45,6 +45,32 @@ describe('Login Page', () => {
     cy.location('pathname').should('eq', '/login')
   })
 
+  it('should ask to wait a moment after too many sign-in attempts', () => {
+    cy.intercept('POST', '**/api/auth/login/google', {
+      statusCode: 429,
+      body: { statusCode: 429, message: 'Too many sign-in attempts. Please try again in a moment.', code: 'TOO_MANY_ATTEMPTS' },
+    }).as('login')
+
+    cy.visitWithGoogle('/login')
+    cy.get('.fake-google-signin').click()
+
+    cy.wait('@login')
+    cy.get('.error-message').should('contain', 'Too many sign-in attempts. Please wait a moment and try again.')
+  })
+
+  it('should ask the same on the admin panel\'s sign-in', () => {
+    cy.intercept('POST', '**/api/admin/auth/google', {
+      statusCode: 429,
+      body: { statusCode: 429, message: 'Too many sign-in attempts. Please try again in a moment.', code: 'TOO_MANY_ATTEMPTS' },
+    }).as('adminLogin')
+
+    cy.visitWithGoogle('/admin')
+    cy.get('.fake-google-signin').click()
+
+    cy.wait('@adminLogin')
+    cy.get('.admin-login .alert-error').should('have.text', 'Too many sign-in attempts. Please wait a moment and try again.')
+  })
+
   it('should redirect authenticated user to dashboard', () => {
     cy.login()
     cy.setupApiIntercepts()

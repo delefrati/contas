@@ -46,7 +46,8 @@
     "errors": {
       "MEMBER_NOT_FOUND": "Tu cuenta no está registrada. Habla con un administrador de la banda.",
       "MEMBER_NOT_IN_BAND": "Tu cuenta no está registrada en esta banda. Habla con un administrador de la banda.",
-      "MEMBER_DISABLED": "Tu cuenta está desactivada. Habla con un administrador de la banda."
+      "MEMBER_DISABLED": "Tu cuenta está desactivada. Habla con un administrador de la banda.",
+      "TOO_MANY_ATTEMPTS": "Demasiados intentos de inicio de sesión. Espera un momento e inténtalo de nuevo."
     },
     "info": "Solo las cuentas autorizadas pueden iniciar sesión. Contacta a un administrador si necesitas acceso.",
     "chooseBand": "Elige la banda:",

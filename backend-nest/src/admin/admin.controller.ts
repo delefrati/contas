@@ -20,6 +20,7 @@ import { AdminAuthGuard, AdminRequest } from './admin-auth.guard';
 import { AdminBandDto, AdminService, NewBand, SuperAdminDto } from './admin.service';
 import { BandService } from '../band/band.service';
 import { SpotifyService, SpotifyStatusDto } from '../spotify/spotify.service';
+import { SignInThrottlerGuard } from '../common/sign-in-throttle';
 
 // Sign-in to the admin panel; the panel itself is AdminController
 @Controller('api/admin/auth')
@@ -27,6 +28,7 @@ export class AdminAuthController {
   constructor(private authService: AuthService) {}
 
   @Post('google')
+  @UseGuards(SignInThrottlerGuard)
   async login(@Body() body: { credential: string }): Promise<{ data: AdminLoginResponse }> {
     const data = await this.authService.adminLoginWithGoogle(body.credential);
     return { data };

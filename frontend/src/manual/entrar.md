@@ -25,6 +25,9 @@ O login vale por 24 horas. Depois disso o sistema pede para entrar de novo.
   seu cadastro nessa banda pode estar desativado. Peça para um integrante ativar você de novo.
 - **"Não foi possível concluir o login. Tente novamente."** O login demorou mais de um minuto
   para terminar. Toque em **Voltar ao login** e entre de novo.
+- **"Muitas tentativas de entrar. Espere um pouco e tente de novo."** Houve tentativas demais de
+  entrar a partir da mesma rede em pouco tempo, o que também acontece quando muita gente da banda
+  entra ao mesmo tempo no mesmo Wi-Fi. Espere um minuto e entre de novo.
 - **Sem internet.** Não dá para entrar sem conexão. O que já foi baixado no celular continua
   aberto: veja [No celular](/ajuda/celular).
 
