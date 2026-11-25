@@ -4,6 +4,8 @@ import { LogService } from '../log/log.service';
 import { MemberDto, MemberService } from '../member/member.service';
 import { RequestContextService } from '../common/request-context.service';
 import { isValidSlug } from '../band/band.service';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
 export interface AdminBandDto {
   id: number;
@@ -22,11 +24,24 @@ export interface SuperAdminDto {
   createdAt: Date;
 }
 
-export interface NewBand {
-  slug?: string;
-  name?: string;
+// A member or super admin as the panel's forms send them. The service requires the name and
+// checks the email; an empty email clears a member's.
+export class PersonFields {
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsString() @MaxLength(255) email?: string;
+}
+
+export class NewBand {
+  // The service checks it's a valid address
+  @IsOptional() @IsString() @MaxLength(63) slug?: string;
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
   // Optional first member, so someone other than super admins can sign in
-  member?: { name?: string; email?: string };
+  @IsOptional() @ValidateNested() @Type(() => PersonFields) member?: PersonFields;
+}
+
+export class BandChanges {
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsBoolean() active?: boolean;
 }
 
 // Every new band starts with these, as scripts/create-band.sh did
@@ -129,7 +144,7 @@ export class AdminService {
     return this.getBand(band.id);
   }
 
-  async updateBand(id: number, changes: { name?: string; active?: boolean }): Promise<AdminBandDto> {
+  async updateBand(id: number, changes: BandChanges): Promise<AdminBandDto> {
     const existing = await this.getBand(id);
     const data: { name?: string; active?: boolean } = {};
     if (changes.name !== undefined) data.name = requireText(changes.name, 'Band name is required');
@@ -154,7 +169,7 @@ export class AdminService {
     return this.requestContext.withBand(bandId, () => this.memberService.findAll());
   }
 
-  async createMember(bandId: number, input: { name?: string; email?: string }): Promise<MemberDto> {
+  async createMember(bandId: number, input: PersonFields): Promise<MemberDto> {
     await this.getBand(bandId);
     const name = requireText(input.name, 'Member name is required');
     const email = optionalEmail(input.email);
@@ -164,7 +179,7 @@ export class AdminService {
   async updateMember(
     bandId: number,
     memberId: number,
-    input: { name?: string; email?: string },
+    input: PersonFields,
   ): Promise<MemberDto> {
     await this.getBand(bandId);
     const name = input.name !== undefined ? requireText(input.name, 'Member name is required') : undefined;
@@ -186,7 +201,7 @@ export class AdminService {
   }
 
   // Adding an email that belongs to a disabled super admin enables them again
-  async createSuperAdmin(input: { name?: string; email?: string }): Promise<SuperAdminDto> {
+  async createSuperAdmin(input: PersonFields): Promise<SuperAdminDto> {
     const name = requireText(input.name, 'Name is required');
     const email = optionalEmail(input.email);
     if (!email) throw new BadRequestException('Email is required');

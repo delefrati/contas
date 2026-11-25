@@ -2,6 +2,22 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+
+export class CreateMemberDto {
+  @IsString() @MaxLength(255) name!: string;
+  @IsOptional() @IsString() @MaxLength(255) email?: string;
+  @IsOptional() @IsString() @MaxLength(255) oidcSub?: string;
+}
+
+export class UpdateMemberDto {
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsString() @MaxLength(255) email?: string;
+}
+
+export class LinkOidcDto {
+  @IsString() @MaxLength(255) oidcSub!: string;
+}
 
 export class MemberDto {
   id!: number;

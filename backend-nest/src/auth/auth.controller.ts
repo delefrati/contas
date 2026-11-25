@@ -9,7 +9,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthService, CentralLoginResponse, LoginResponse, SessionState } from './auth.service';
+import {
+  AuthService,
+  CentralGoogleCredentialDto,
+  CentralLoginResponse,
+  GoogleCredentialDto,
+  LoginCodeDto,
+  LoginResponse,
+  SessionState,
+} from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { SignInThrottlerGuard } from '../common/sign-in-throttle';
 import { AuthPayload } from './auth.service';
@@ -21,7 +29,7 @@ export class AuthController {
   @Post('login/google')
   @UseGuards(SignInThrottlerGuard)
   async loginWithGoogle(
-    @Body() body: { credential: string },
+    @Body() body: GoogleCredentialDto,
   ): Promise<{ data: LoginResponse }> {
     const data = await this.authService.loginWithGoogle(body.credential);
     return { data };
@@ -30,7 +38,7 @@ export class AuthController {
   @Post('central/google')
   @UseGuards(SignInThrottlerGuard)
   async centralLoginWithGoogle(
-    @Body() body: { credential: string; band?: string },
+    @Body() body: CentralGoogleCredentialDto,
   ): Promise<{ data: CentralLoginResponse }> {
     const data = await this.authService.centralLoginWithGoogle(body.credential, body.band);
     return { data };
@@ -38,7 +46,7 @@ export class AuthController {
 
   @Post('central/exchange')
   @UseGuards(SignInThrottlerGuard)
-  async exchangeLoginCode(@Body() body: { code: string }): Promise<{ data: LoginResponse }> {
+  async exchangeLoginCode(@Body() body: LoginCodeDto): Promise<{ data: LoginResponse }> {
     const data = await this.authService.exchangeLoginCode(body.code);
     return { data };
   }

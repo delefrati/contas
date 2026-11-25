@@ -4,6 +4,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
 import { spotifyTrackUrl } from '../song/spotify-link';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsByteLength,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { TEXT_COLUMN_BYTES } from '../common/request-validation';
 
 export type SetlistItemType = 'song' | 'pause';
 
@@ -11,9 +23,9 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class SetlistItemInput {
-  type!: SetlistItemType;
-  songId?: number;
-  label?: string;
+  @IsIn(['song', 'pause']) type!: SetlistItemType;
+  @IsOptional() @IsInt() songId?: number;
+  @IsOptional() @IsString() @MaxLength(255) label?: string;
 }
 
 export class SetlistItemDto {
@@ -51,31 +63,35 @@ export class EventDto {
   setlist?: SetlistItemDto[];
 }
 
+// The date and times are strings whose format the service checks
 export class CreateEventDto {
-  typeId!: number;
-  title?: string;
-  date!: string;
-  time?: string;
-  endTime?: string;
-  location?: string;
-  notes?: string;
+  @IsInt() typeId!: number;
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsString() date!: string;
+  @IsOptional() @IsString() time?: string;
+  @IsOptional() @IsString() endTime?: string;
+  @IsOptional() @IsString() @MaxLength(255) location?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => SetlistItemInput)
   items?: SetlistItemInput[];
 }
 
 export class UpdateEventDto {
-  typeId?: number;
-  title?: string;
-  date?: string;
-  time?: string;
-  endTime?: string;
-  location?: string;
-  notes?: string;
+  @IsOptional() @IsInt() typeId?: number;
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsOptional() @IsString() date?: string;
+  @IsOptional() @IsString() time?: string;
+  @IsOptional() @IsString() endTime?: string;
+  @IsOptional() @IsString() @MaxLength(255) location?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => SetlistItemInput)
   items?: SetlistItemInput[];
 }
 
+// A class, so the global ValidationPipe checks it: other query parameters are a 400 too
 export class ListEventsQuery {
-  from?: string;
-  to?: string;
+  @IsOptional() @IsString() from?: string;
+  @IsOptional() @IsString() to?: string;
 }
 
 type EventFields = {

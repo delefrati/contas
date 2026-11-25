@@ -1,3 +1,4 @@
+import { describeRequestBodies } from '../common/request-validation.testing';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExpenseController } from './expense.controller';
 import { ExpenseService } from './expense.service';
@@ -82,3 +83,37 @@ describe('ExpenseController', () => {
     });
   });
 });
+
+const resolves = () => jest.fn().mockResolvedValue({ id: 1 });
+
+describeRequestBodies(
+  'ExpenseController',
+  () => ({
+    controllers: [ExpenseController],
+    services: [[ExpenseService, { create: resolves(), update: resolves(), markPaid: resolves() }]],
+  }),
+  {
+    accepts: [
+      // Finance
+      ['a new expense from the form', 'post', '/api/expenses', {
+        description: 'Cordas', typeId: 1, amount: 49.9, date: '2026-11-25', paid: false, notes: '', memberIds: [1, 2],
+      }],
+      ['a refund', 'post', '/api/expenses', { description: 'Devolução', typeId: 1, amount: -20, date: '2026-11-25' }],
+      ['a changed expense without notes', 'patch', '/api/expenses/1', {
+        description: 'Cordas', typeId: 1, amount: 49.9, date: '2026-11-25', paid: true, notes: null,
+      }],
+      ['expenses marked paid', 'patch', '/api/expenses/mark-paid', { ids: [1, 2], paid: true }],
+    ],
+    refuses: [
+      ['an extra field', 'post', '/api/expenses', { description: 'Cordas', amount: 10, bandId: 2 }],
+      ['an amount as text', 'post', '/api/expenses', { description: 'Cordas', amount: '10' }],
+      ['an amount the column cannot hold', 'post', '/api/expenses', { description: 'Cordas', amount: 1e12 }],
+      ['an amount that did not parse', 'patch', '/api/expenses/1', { amount: null }],
+      ['a description over 255 characters', 'patch', '/api/expenses/1', { description: 'x'.repeat(256) }],
+      ['paid as text', 'patch', '/api/expenses/1', { paid: 'yes' }],
+      ['a member id as text', 'patch', '/api/expenses/1', { memberIds: ['1'] }],
+      ['no expenses to mark', 'patch', '/api/expenses/mark-paid', { ids: [], paid: true }],
+      ['an expense id with a fraction', 'patch', '/api/expenses/mark-paid', { ids: [1.5], paid: true }],
+    ],
+  },
+);

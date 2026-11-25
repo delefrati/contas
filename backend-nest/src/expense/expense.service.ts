@@ -2,6 +2,24 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsByteLength,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
+import { TEXT_COLUMN_BYTES } from '../common/request-validation';
+
+// What the amount column, DECIMAL(12, 2), holds
+export const MAX_AMOUNT = 9_999_999_999.99;
 
 export class ExpenseDto {
   id!: number;
@@ -18,29 +36,34 @@ export class ExpenseDto {
   members!: string[];
 }
 
+// Refunds are negative amounts; the service checks the date's format and that the type and
+// members are the band's
 export class CreateExpenseDto {
-  description!: string;
-  typeId?: number;
-  amount!: number;
-  date?: string;
-  paid?: boolean;
-  notes?: string | null;
-  memberIds?: number[];
+  @IsString() @MaxLength(255) description!: string;
+  @IsOptional() @IsInt() typeId?: number;
+  @IsNumber({ allowNaN: false, allowInfinity: false }) @Min(-MAX_AMOUNT) @Max(MAX_AMOUNT) amount!: number;
+  @IsOptional() @IsString() date?: string;
+  @IsOptional() @IsBoolean() paid?: boolean;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string | null;
+  @IsOptional() @IsArray() @IsInt({ each: true }) memberIds?: number[];
 }
 
 export class UpdateExpenseDto {
-  description?: string;
-  typeId?: number;
+  @IsOptional() @IsString() @MaxLength(255) description?: string;
+  @IsOptional() @IsInt() typeId?: number;
+  // Left out to keep it; null is what the form sends for an amount that didn't parse
+  @ValidateIf((_, value) => value !== undefined)
+  @IsNumber({ allowNaN: false, allowInfinity: false }) @Min(-MAX_AMOUNT) @Max(MAX_AMOUNT)
   amount?: number;
-  date?: string;
-  paid?: boolean;
-  notes?: string | null;
-  memberIds?: number[];
+  @IsOptional() @IsString() date?: string;
+  @IsOptional() @IsBoolean() paid?: boolean;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string | null;
+  @IsOptional() @IsArray() @IsInt({ each: true }) memberIds?: number[];
 }
 
 export class MarkPaidDto {
-  ids!: number[];
-  paid!: boolean;
+  @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) ids!: number[];
+  @IsBoolean() paid!: boolean;
 }
 
 export class ReportByMemberDto {

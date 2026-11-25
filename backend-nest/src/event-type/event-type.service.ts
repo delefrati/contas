@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const DEFAULT_COLOR = '#667eea';
@@ -13,14 +14,15 @@ export class EventTypeDto {
   deletedAt!: string | null;
 }
 
+// The service checks the color is #rrggbb
 export class CreateEventTypeDto {
-  name!: string;
-  color?: string;
+  @IsString() @MaxLength(255) name!: string;
+  @IsOptional() @IsString() color?: string;
 }
 
 export class UpdateEventTypeDto {
-  name?: string;
-  color?: string;
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsString() color?: string;
 }
 
 @Injectable()

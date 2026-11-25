@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class BandDto {
   id!: number;
@@ -13,9 +14,10 @@ export class BandDto {
   defaultEventMinutes!: number;
 }
 
-export interface CalendarSettings {
-  timeZone?: string;
-  defaultEventMinutes?: number;
+// The service checks the zone is known and the length is in range
+export class CalendarSettings {
+  @IsOptional() @IsString() timeZone?: string;
+  @IsOptional() @IsInt() defaultEventMinutes?: number;
 }
 
 export const MAX_LOGO_BYTES = 1024 * 1024;

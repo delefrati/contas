@@ -1,3 +1,4 @@
+import { describeRequestBodies } from '../common/request-validation.testing';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { BandController } from './band.controller';
@@ -144,3 +145,29 @@ describe('BandController', () => {
     });
   });
 });
+
+const resolves = () => jest.fn().mockResolvedValue({ id: 1 });
+
+describeRequestBodies(
+  'BandController',
+  () => ({
+    controllers: [BandController],
+    services: [
+      [BandService, { updateCalendarSettings: resolves() }],
+      [RequestContextService, { requireBandId: jest.fn().mockReturnValue(1) }],
+      [LogService, { log: resolves() }],
+    ],
+  }),
+  {
+    accepts: [
+      // CalendarFeedModal
+      ['calendar settings', 'patch', '/api/band/calendar', { timeZone: 'America/Sao_Paulo', defaultEventMinutes: 120 }],
+    ],
+    refuses: [
+      ['an extra field', 'patch', '/api/band/calendar', { timeZone: 'America/Sao_Paulo', name: 'Other' }],
+      ['minutes as text', 'patch', '/api/band/calendar', { defaultEventMinutes: '120' }],
+      ['minutes with a fraction', 'patch', '/api/band/calendar', { defaultEventMinutes: 90.5 }],
+      ['a time zone that is not text', 'patch', '/api/band/calendar', { timeZone: -3 }],
+    ],
+  },
+);

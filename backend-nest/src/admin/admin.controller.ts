@@ -14,10 +14,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { AdminLoginResponse, AdminPayload, AuthService } from '../auth/auth.service';
+import { AdminLoginResponse, AdminPayload, AuthService, GoogleCredentialDto } from '../auth/auth.service';
 import { MemberDto } from '../member/member.service';
 import { AdminAuthGuard, AdminRequest } from './admin-auth.guard';
-import { AdminBandDto, AdminService, NewBand, SuperAdminDto } from './admin.service';
+import { AdminBandDto, AdminService, BandChanges, NewBand, PersonFields, SuperAdminDto } from './admin.service';
 import { BandService } from '../band/band.service';
 import { SpotifyService, SpotifyStatusDto } from '../spotify/spotify.service';
 import { SignInThrottlerGuard } from '../common/sign-in-throttle';
@@ -29,7 +29,7 @@ export class AdminAuthController {
 
   @Post('google')
   @UseGuards(SignInThrottlerGuard)
-  async login(@Body() body: { credential: string }): Promise<{ data: AdminLoginResponse }> {
+  async login(@Body() body: GoogleCredentialDto): Promise<{ data: AdminLoginResponse }> {
     const data = await this.authService.adminLoginWithGoogle(body.credential);
     return { data };
   }
@@ -72,7 +72,7 @@ export class AdminController {
   @Patch('bands/:id')
   async updateBand(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { name?: string; active?: boolean },
+    @Body() body: BandChanges,
   ): Promise<{ data: AdminBandDto }> {
     return { data: await this.adminService.updateBand(id, body) };
   }
@@ -85,7 +85,7 @@ export class AdminController {
   @Post('bands/:id/members')
   async createMember(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { name?: string; email?: string },
+    @Body() body: PersonFields,
   ): Promise<{ data: MemberDto }> {
     return { data: await this.adminService.createMember(id, body) };
   }
@@ -94,7 +94,7 @@ export class AdminController {
   async updateMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('memberId', ParseIntPipe) memberId: number,
-    @Body() body: { name?: string; email?: string },
+    @Body() body: PersonFields,
   ): Promise<{ data: MemberDto }> {
     return { data: await this.adminService.updateMember(id, memberId, body) };
   }
@@ -113,7 +113,7 @@ export class AdminController {
   }
 
   @Post('super-admins')
-  async createSuperAdmin(@Body() body: { name?: string; email?: string }): Promise<{ data: SuperAdminDto }> {
+  async createSuperAdmin(@Body() body: PersonFields): Promise<{ data: SuperAdminDto }> {
     return { data: await this.adminService.createSuperAdmin(body) };
   }
 

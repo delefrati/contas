@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
-import { MemberService, MemberDto } from './member.service';
+import { CreateMemberDto, LinkOidcDto, MemberDto, MemberService, UpdateMemberDto } from './member.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/members')
@@ -27,7 +27,7 @@ export class MemberController {
 
   @Post()
   async create(
-    @Body() body: { name: string; email?: string; oidcSub?: string },
+    @Body() body: CreateMemberDto,
   ): Promise<{ data: MemberDto }> {
     const data = await this.memberService.create(
       body.name,
@@ -40,7 +40,7 @@ export class MemberController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { name?: string; email?: string },
+    @Body() body: UpdateMemberDto,
   ): Promise<{ data: MemberDto }> {
     const data = await this.memberService.update(id, body.name, body.email);
     return { data };
@@ -55,7 +55,7 @@ export class MemberController {
   @Patch(':id/link-oidc')
   async linkOidc(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { oidcSub: string },
+    @Body() body: LinkOidcDto,
   ): Promise<{ data: MemberDto }> {
     const data = await this.memberService.linkOidcSub(id, body.oidcSub);
     return { data };

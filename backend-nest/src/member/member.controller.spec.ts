@@ -1,3 +1,4 @@
+import { describeRequestBodies } from '../common/request-validation.testing';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MemberController } from './member.controller';
 import { MemberService } from './member.service';
@@ -111,3 +112,30 @@ describe('MemberController', () => {
     });
   });
 });
+
+const resolves = () => jest.fn().mockResolvedValue({ id: 1 });
+
+describeRequestBodies(
+  'MemberController',
+  () => ({
+    controllers: [MemberController],
+    services: [[MemberService, { create: resolves(), update: resolves(), linkOidcSub: resolves() }]],
+  }),
+  {
+    accepts: [
+      // Members and Settings
+      ['a new member', 'post', '/api/members', { name: 'Ana', email: 'ana@example.com' }],
+      ['a new member without an email', 'post', '/api/members', { name: 'Ana' }],
+      ['a changed member', 'patch', '/api/members/1', { name: 'Ana', email: 'ana@example.com' }],
+      ['one\'s own name', 'patch', '/api/members/1', { name: 'Ana' }],
+      ['a linked Google account', 'patch', '/api/members/1/link-oidc', { oidcSub: '1234' }],
+    ],
+    refuses: [
+      ['an extra field', 'patch', '/api/members/1', { name: 'Ana', active: false }],
+      ['no name', 'post', '/api/members', { email: 'ana@example.com' }],
+      ['a name that is not text', 'post', '/api/members', { name: 1 }],
+      ['an email over 255 characters', 'patch', '/api/members/1', { email: `${'a'.repeat(250)}@example.com` }],
+      ['no Google account to link', 'patch', '/api/members/1/link-oidc', {}],
+    ],
+  },
+);

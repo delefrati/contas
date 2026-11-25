@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { MemberService } from '../member/member.service';
 import { Identity, RequestContextService } from '../common/request-context.service';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 // Identifies either a band member or a super admin (see Identity)
 export interface AuthPayload extends Identity {
@@ -14,6 +15,20 @@ export interface AuthPayload extends Identity {
   email?: string;
   name: string;
   oidcSub?: string;
+}
+
+// The sign-in bodies. A Google ID token is a JWT of a few kilobytes at most.
+export class GoogleCredentialDto {
+  @IsString() @MaxLength(8192) credential!: string;
+}
+
+export class CentralGoogleCredentialDto extends GoogleCredentialDto {
+  // The band picked when the account is in several
+  @IsOptional() @IsString() @MaxLength(63) band?: string;
+}
+
+export class LoginCodeDto {
+  @IsString() @MaxLength(255) code!: string;
 }
 
 export interface CentralLoginResponse {

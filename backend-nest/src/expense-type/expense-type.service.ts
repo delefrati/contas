@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
+import { IsString, MaxLength } from 'class-validator';
 
 export class ExpenseTypeDto {
   id!: number;
@@ -10,7 +11,7 @@ export class ExpenseTypeDto {
 }
 
 export class CreateExpenseTypeDto {
-  name!: string;
+  @IsString() @MaxLength(255) name!: string;
 }
 
 @Injectable()

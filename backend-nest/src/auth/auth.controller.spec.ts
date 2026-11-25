@@ -1,3 +1,4 @@
+import { describeRequestBodies } from '../common/request-validation.testing';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -114,3 +115,32 @@ describe('AuthController', () => {
     });
   });
 });
+
+const resolves = () => jest.fn().mockResolvedValue({ id: 1 });
+
+describeRequestBodies(
+  'AuthController',
+  () => ({
+    controllers: [AuthController],
+    services: [[AuthService, {
+      loginWithGoogle: resolves(), centralLoginWithGoogle: resolves(), exchangeLoginCode: resolves(),
+    }]],
+  }),
+  {
+    accepts: [
+      // useAuth
+      ['a sign-in on the band host', 'post', '/api/auth/login/google', { credential: 'token' }],
+      ['a central sign-in', 'post', '/api/auth/central/google', { credential: 'token' }],
+      ['a central sign-in for a picked band', 'post', '/api/auth/central/google', { credential: 'token', band: 'maverick' }],
+      ['a login code', 'post', '/api/auth/central/exchange', { code: 'abc' }],
+    ],
+    refuses: [
+      ['a sign-in without a credential', 'post', '/api/auth/login/google', {}],
+      ['a credential that is not text', 'post', '/api/auth/login/google', { credential: { token: 'x' } }],
+      ['an extra field', 'post', '/api/auth/login/google', { credential: 'token', bandId: 2 }],
+      ['a band that is not text', 'post', '/api/auth/central/google', { credential: 'token', band: 3 }],
+      ['a login code that is not text', 'post', '/api/auth/central/exchange', { code: 123 }],
+      ['an extra field with the code', 'post', '/api/auth/central/exchange', { code: 'abc', memberId: 1 }],
+    ],
+  },
+);

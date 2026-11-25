@@ -3,6 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LogService } from '../log/log.service';
 import { RequestContextService } from '../common/request-context.service';
 import { parseSpotifyLink, spotifyTrackUrl } from './spotify-link';
+import { Type } from 'class-transformer';
+import { IsArray, IsByteLength, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { TEXT_COLUMN_BYTES } from '../common/request-validation';
 
 export class SongDto {
   id!: number;
@@ -21,31 +24,34 @@ export class SongWithLyricsDto extends SongDto {
 }
 
 export class CreateSongDto {
-  title!: string;
-  artist?: string;
-  notes?: string;
-  lyrics?: string;
+  @IsString() @MaxLength(255) title!: string;
+  @IsOptional() @IsString() @MaxLength(255) artist?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) lyrics?: string;
   // A track link or URI; empty removes it
-  spotifyUrl?: string;
+  @IsOptional() @IsString() @MaxLength(255) spotifyUrl?: string;
 }
 
 export class UpdateSongDto {
-  title?: string;
-  artist?: string;
-  notes?: string;
-  lyrics?: string;
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsOptional() @IsString() @MaxLength(255) artist?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) notes?: string;
+  @IsOptional() @IsString() @IsByteLength(0, TEXT_COLUMN_BYTES) lyrics?: string;
   // A track link or URI; empty removes it
-  spotifyUrl?: string;
+  @IsOptional() @IsString() @MaxLength(255) spotifyUrl?: string;
 }
 
 export class ImportSongItemDto {
-  title!: string;
-  artist?: string;
+  // Items without a title are skipped
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsOptional() @IsString() @MaxLength(255) artist?: string;
 }
 
 export class ImportSongsDto {
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ImportSongItemDto)
   songs?: ImportSongItemDto[];
-  text?: string;
+  // One song a line, as "Title - Artist"; importMany checks each line's lengths
+  @IsOptional() @IsString() text?: string;
 }
 
 export class ImportSongsResultDto {
@@ -189,6 +195,10 @@ export class SongService {
 
     if (normalized.length === 0) {
       throw new BadRequestException('No songs to import.');
+    }
+    // Lines of the text aren't checked by the DTO, and the columns take 255 characters
+    if (normalized.some((item) => item.title.length > 255 || (item.artist?.length ?? 0) > 255)) {
+      throw new BadRequestException('A title or artist is longer than 255 characters.');
     }
 
     const bandId = this.requestContext.requireBandId();

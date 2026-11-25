@@ -1,3 +1,4 @@
+import { describeRequestBodies } from '../common/request-validation.testing';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExpenseTypeController } from './expense-type.controller';
 import { ExpenseTypeService } from './expense-type.service';
@@ -61,3 +62,24 @@ describe('ExpenseTypeController', () => {
     });
   });
 });
+
+const resolves = () => jest.fn().mockResolvedValue({ id: 1 });
+
+describeRequestBodies(
+  'ExpenseTypeController',
+  () => ({
+    controllers: [ExpenseTypeController],
+    services: [[ExpenseTypeService, { create: resolves() }]],
+  }),
+  {
+    accepts: [
+      // Finance
+      ['a new type', 'post', '/api/expense-types', { name: 'Equipamento' }],
+    ],
+    refuses: [
+      ['an extra field', 'post', '/api/expense-types', { name: 'Equipamento', deletedAt: null }],
+      ['a name that is not text', 'post', '/api/expense-types', { name: ['Equipamento'] }],
+      ['a name over 255 characters', 'post', '/api/expense-types', { name: 'x'.repeat(256) }],
+    ],
+  },
+);
