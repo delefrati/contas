@@ -1,7 +1,7 @@
 ---
 id: MB-2
 title: "Rate-limit the sign-in endpoints"
-status: in-progress
+status: done
 sprint: 3
 points: 2
 epic: security
