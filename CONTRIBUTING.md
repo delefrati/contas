@@ -38,8 +38,9 @@ cd frontend && npx vitest run
 cd frontend && npx cypress run
 ```
 
-The Cypress specs need nothing running: `cypress.config.js` starts its own copies of the app on
-ports 5190 and 5191, and the specs answer every API call themselves, Google sign-in included.
+The Cypress specs need nothing running: `cypress.config.js` builds two copies of the app and
+serves them on ports 5190 and 5191, and the specs answer every API call themselves, Google
+sign-in included.
 Port 5190 runs the app as local development does. Port 5191 runs it as production does, with
 `localhost` as the central login host and `<slug>.localhost` as a band, for the central login
 specs. In VS Code's terminal, run `env -u ELECTRON_RUN_AS_NODE npx cypress run`: VS Code sets

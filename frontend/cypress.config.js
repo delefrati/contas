@@ -1,26 +1,35 @@
 import { defineConfig } from 'cypress'
-import { createServer } from 'vite'
+import { build, preview } from 'vite'
 
-// The specs start their own copies of the app, so `npx cypress run` needs nothing running first.
-// Every API call is answered by cy.intercept (see cypress/support), so no backend either.
+// The specs build and serve their own copies of the app, so `npx cypress run` needs nothing
+// running first. Every API call is answered by cy.intercept (see cypress/support), so no
+// backend either. They're production builds, not the dev server: that one compiles each page on
+// its first visit and can reload it halfway through a test, which made the specs flaky.
 //
-// - LOCAL: the app as `npm run dev` runs it, without VITE_BASE_DOMAIN: one band, signing in on
-//   the same host. The default for the specs.
+// - LOCAL: the app without VITE_BASE_DOMAIN, as local development runs it: one band, signing
+//   in on the same host. The default for the specs.
 // - CENTRAL: the app as production runs it, with VITE_BASE_DOMAIN=localhost:
 //   http://localhost:PORT is the central login host and http://<slug>.localhost:PORT is a band.
 //   Browsers send *.localhost to this machine, so no hosts file is needed.
 const LOCAL_PORT = 5190
 const CENTRAL_PORT = 5191
 
+const configFile = new URL('./vite.config.js', import.meta.url).pathname
+
 async function startApp(port, baseDomain = '') {
-  const server = await createServer({
-    configFile: new URL('./vite.config.js', import.meta.url).pathname,
-    server: { port, strictPort: true, host: 'localhost' },
+  const outDir = `node_modules/.cypress-app-${port}`
+  await build({
+    configFile,
     define: { 'import.meta.env.VITE_BASE_DOMAIN': JSON.stringify(baseDomain) },
+    build: { outDir, emptyOutDir: true },
     logLevel: 'warn',
   })
-  await server.listen()
-  return server
+  return preview({
+    configFile,
+    build: { outDir },
+    preview: { port, strictPort: true, host: 'localhost' },
+    logLevel: 'warn',
+  })
 }
 
 export default defineConfig({

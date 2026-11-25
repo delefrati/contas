@@ -5,29 +5,29 @@ Cypress.Commands.add('login', (member = { id: 1, name: 'Test User', email: 'test
 })
 
 // Signs in with a fake Google: the page gets a stand-in for Google's script, whose button hands
-// the app `credential` as if Google had. Nothing reaches Google.
+// the app `credential` as if Google had. Nothing reaches Google. Every page the test loads gets
+// it, so a reload doesn't bring the real script back.
 Cypress.Commands.add('visitWithGoogle', (url, credential = 'fake-google-credential') => {
   cy.intercept('GET', 'https://accounts.google.com/**', { statusCode: 200, body: '' })
-  cy.visit(url, {
-    onBeforeLoad(win) {
-      let respond
-      win.google = {
-        accounts: {
-          id: {
-            initialize: (options) => { respond = options.callback },
-            renderButton: (element) => {
-              const button = win.document.createElement('button')
-              button.type = 'button'
-              button.className = 'fake-google-signin'
-              button.textContent = 'Sign in with Google'
-              button.onclick = () => respond({ credential })
-              element.appendChild(button)
-            },
+  cy.on('window:before:load', (win) => {
+    let respond
+    win.google = {
+      accounts: {
+        id: {
+          initialize: (options) => { respond = options.callback },
+          renderButton: (element) => {
+            const button = win.document.createElement('button')
+            button.type = 'button'
+            button.className = 'fake-google-signin'
+            button.textContent = 'Sign in with Google'
+            button.onclick = () => respond({ credential })
+            element.appendChild(button)
           },
         },
-      }
-    },
+      },
+    }
   })
+  cy.visit(url)
 })
 
 Cypress.Commands.add('setupApiIntercepts', () => {
